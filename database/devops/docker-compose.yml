@@ -1,0 +1,222 @@
+# ============================================================
+#  Eurotrips Booking System — DEV environment
+#  Запуск: docker-compose up
+#  З інструментами: docker-compose --profile tools up
+# ============================================================
+
+version: "3.9"
+
+services:
+
+  # ── PostgreSQL 16 ────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: eurotrips_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER:     ${POSTGRES_USER:-eurotrips}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dev_postgres_pass}
+      POSTGRES_DB:       ${POSTGRES_DB:-eurotrips_booking}
+      PGDATA:            /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init.sql:/docker-entrypoint-initdb.d/00_init.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-eurotrips} -d ${POSTGRES_DB:-eurotrips_booking}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  # ── Redis 7 ──────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: eurotrips_redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD:-dev_redis_pass}
+      --save 60 1
+      --loglevel warning
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-dev_redis_pass}", "--no-auth-warning", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
+
+  # ── Backend (Node.js 20 + Fastify + Prisma) ──────────────
+  backend:
+    image: node:20-alpine
+    container_name: eurotrips_backend
+    restart: unless-stopped
+    working_dir: /app
+    # npm install → prisma generate → migrate deploy → hot-reload dev
+    command: >
+      sh -c "
+        npm install &&
+        npx prisma generate &&
+        npx prisma migrate deploy &&
+        npm run dev
+      "
+    environment:
+      NODE_ENV:                development
+      PORT:                    3000
+
+      # Database
+      DATABASE_URL:            postgresql://${POSTGRES_USER:-eurotrips}:${POSTGRES_PASSWORD:-dev_postgres_pass}@postgres:5432/${POSTGRES_DB:-eurotrips_booking}
+
+      # Redis / BullMQ
+      REDIS_URL:               redis://:${REDIS_PASSWORD:-dev_redis_pass}@redis:6379
+      QUEUE_CONCURRENCY:       ${QUEUE_CONCURRENCY:-5}
+      QUEUE_MAX_RETRIES:       ${QUEUE_MAX_RETRIES:-3}
+
+      # JWT (мін. 32 символи)
+      JWT_SECRET:              ${JWT_SECRET:-dev_jwt_secret_REPLACE_min_32_chars_}
+      JWT_REFRESH_SECRET:      ${JWT_REFRESH_SECRET:-dev_refresh_REPLACE_min_32_chars__}
+      JWT_EXPIRES_IN:          ${JWT_EXPIRES_IN:-15m}
+      JWT_REFRESH_EXPIRES_IN:  ${JWT_REFRESH_EXPIRES_IN:-30d}
+
+      # Email (у dev — MailHog; у prod — SendGrid)
+      SMTP_HOST:               mailhog
+      SMTP_PORT:               1025
+      SENDGRID_API_KEY:        ${SENDGRID_API_KEY:-}
+      SENDGRID_FROM_EMAIL:     ${SENDGRID_FROM_EMAIL:-noreply@eurotrips.ua}
+      SENDGRID_FROM_NAME:      ${SENDGRID_FROM_NAME:-Eurotrips}
+
+      # Месенджери
+      TELEGRAM_BOT_TOKEN:      ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_NOTIFY_CHAT_ID: ${TELEGRAM_NOTIFY_CHAT_ID:-}
+      VIBER_AUTH_TOKEN:        ${VIBER_AUTH_TOKEN:-}
+      VIBER_WEBHOOK_URL:       ${VIBER_WEBHOOK_URL:-}
+
+      # URLs
+      FRONTEND_URL:            http://localhost:5173
+      API_URL:                 http://localhost:3000
+      CORS_ORIGIN:             http://localhost:5173,http://localhost:80
+
+      # Rate limiting
+      RATE_LIMIT_MAX:          ${RATE_LIMIT_MAX:-200}
+      RATE_LIMIT_WINDOW_MS:    ${RATE_LIMIT_WINDOW_MS:-60000}
+
+      # Puppeteer (PDF)
+      PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: ${PUPPETEER_SKIP_CHROMIUM_DOWNLOAD:-true}
+      PUPPETEER_EXECUTABLE_PATH:        ${PUPPETEER_EXECUTABLE_PATH:-}
+    volumes:
+      - ./backend:/app
+      - backend_modules:/app/node_modules
+      # Зберігаємо Prisma Client між перезапусками
+      - backend_prisma:/app/node_modules/.prisma
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # ── Frontend (React 18 + Vite) ───────────────────────────
+  frontend:
+    image: node:20-alpine
+    container_name: eurotrips_frontend
+    restart: unless-stopped
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    environment:
+      VITE_API_URL:       http://localhost:3000/api/v1
+      VITE_APP_NAME:      Eurotrips Booking
+      VITE_APP_LOCALE:    uk
+      # Vite HMR через localhost (не через контейнер)
+      VITE_HMR_HOST:      localhost
+      VITE_HMR_PORT:      5173
+    volumes:
+      - ./frontend:/app
+      - frontend_modules:/app/node_modules
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+  # ── Nginx (dev reverse proxy) ────────────────────────────
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: eurotrips_nginx
+    restart: unless-stopped
+    volumes:
+      - ./nginx/nginx.dev.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+      - frontend
+
+  # ── MailHog (SMTP перехоплювач для dev) ──────────────────
+  # Запуск: docker-compose --profile tools up
+  # UI:     http://localhost:8025
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: eurotrips_mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # Web UI
+    profiles:
+      - tools
+
+  # ── pgAdmin 4 (БД GUI) ───────────────────────────────────
+  # Запуск: docker-compose --profile tools up
+  # URL:    http://localhost:5050
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: eurotrips_pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL:    admin@eurotrips.ua
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_LISTEN_PORT:      80
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    ports:
+      - "5050:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles:
+      - tools
+
+  # ── RedisInsight (Redis GUI) ──────────────────────────────
+  # Запуск: docker-compose --profile tools up
+  # URL:    http://localhost:8001
+  redis-insight:
+    image: redislabs/redisinsight:latest
+    container_name: eurotrips_redis_insight
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    depends_on:
+      redis:
+        condition: service_healthy
+    profiles:
+      - tools
+
+# ── Volumes ───────────────────────────────────────────────
+volumes:
+  postgres_data:
+  redis_data:
+  backend_modules:
+  backend_prisma:
+  frontend_modules:
+  pgadmin_data:
+
+# ── Networks ──────────────────────────────────────────────
+networks:
+  default:
+    name: eurotrips_dev
