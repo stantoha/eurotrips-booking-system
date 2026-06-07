@@ -1,0 +1,14 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "Eurotrips Dev",
+      "Group": "Servers",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "eurotrips_dev",
+      "Username": "eurotrips",
+      "SSLMode": "prefer",
+      "PassFile": "/tmp/pgpass"
+    }
+  }
+}
