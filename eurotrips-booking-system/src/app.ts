@@ -18,8 +18,7 @@ import { registerErrorHandler } from './shared/utils/errors';
 
 // Маршрути
 import { authRoutes } from './modules/auth/auth.routes';
-// Решта маршрутів підключаються по мірі готовності модулів:
-// import { tourRoutes } from './modules/tours/tour.routes';
+import { tourRoutes } from './modules/tours/tours.routes';
 // import { bookingRoutes } from './modules/bookings/booking.routes';
 // import { agentRoutes } from './modules/agents/agent.routes';
 // ...
@@ -135,8 +134,11 @@ export async function buildApp(app: FastifyInstance) {
       // Auth (завжди перший)
       await api.register(authRoutes, { prefix: '/auth' });
 
+      // Tours — каталог (підключено)
+      await api.register(tourRoutes, { prefix: '/tours' });
+
       // Підключаємо по мірі готовності:
-      // await api.register(tourRoutes,     { prefix: '/tours' });
+      // await api.register(bookingRoutes,  { prefix: '/bookings' });
       // await api.register(bookingRoutes,  { prefix: '/bookings' });
       // await api.register(touristRoutes,  { prefix: '/tourists' });
       // await api.register(agentRoutes,    { prefix: '/agents' });

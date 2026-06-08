@@ -78,41 +78,83 @@ async function main() {
     },
   });
 
-  // ── 3. TOURS (на основі реальних CSV-даних) ─────────────────────────────────
-  const tourParis = await prisma.tour.upsert({
-    where: { code: 'PN25102505' },
+  // ── 3. TOURS — 5 реальних турів з CSV-даних ──────────────────────────────
+  // Джерела: собівартість_NEW.csv, AGcomission.csv
+  // Включає: 2 завершені (для аналітики), 1 активний, 2 майбутніх (для тестів бронювання)
+
+  // ── Тур 1: Адріатичне море + Доломіти (МАЙБУТНІЙ — 3 липня 2026) ────────
+  const tourAdriatic = await prisma.tour.upsert({
+    where: { code: 'VD26070301' },
     update: {},
     create: {
-      code: 'PN25102505',
-      name: 'Париж + Нормандія',
-      product: 'Париж + Нормандія',
-      direction: 'Франція',
-      countries: ['Франція'],
+      code: 'VD26070301',
+      name: 'Адріатичне море + Доломітові Альпи',
+      product: 'Адріатичне море + Доломіти',
+      direction: 'Хорватія / Словенія',
+      countries: ['Хорватія', 'Словенія', 'Австрія'],
       tourType: TourType.bus,
       format: 'автобусний',
-      departureDate: new Date('2025-10-25'),
-      returnDate: new Date('2025-11-02'),
-      durationDays: 8,
-      departureCity: 'Київ',
-      arrivalCity: 'Київ',
+      departureDate: new Date('2026-07-03'),
+      returnDate: new Date('2026-07-12'),
+      durationDays: 9,
+      departureCity: 'Львів',
+      arrivalCity: 'Львів',
       basePrice: 840,
       currency: 'EUR',
       depositAmount: 168,
-      depositDeadline: new Date('2025-10-01'),
+      depositDeadline: new Date('2026-06-15'),
       cancelPolicyId: standardPolicy.id,
-      agentCommissionPct: 0.14,  // 14% з AGcomission.csv
-      totalSeats: 48,
-      availableSeats: 12,
+      agentCommissionPct: 0.14,
+      totalSeats: 52,
+      availableSeats: 19,
       status: TourStatus.active,
       guideId: guideOlena.id,
-      costPrice: 620,            // НІКОЛИ не показувати агентам (BR-04)
-      included: 'Транспорт, готель 3*, сніданки, гід',
-      notIncluded: 'Авіаквитки, особисті витрати, страхування',
-      tags: ['premium', 'culture', 'europe'],
-      isPremium: true,
+      costPrice: 620,
+      included: 'Автобусний трансфер, готель 3*, сніданки, страховка, супровід турлідера',
+      notIncluded: 'Особисті витрати, обіди/вечері, в\'їздні збори',
+      tags: ['sea', 'mountains', 'summer', 'popular'],
+      isPremium: false,
+      isFamily: false,
     },
   });
 
+  // ── Тур 2: Адріатичне море + Доломіти (МАЙБУТНІЙ — 28 серпня 2026) ──────
+  const tourAdriaticAug = await prisma.tour.upsert({
+    where: { code: 'VD26082801' },
+    update: {},
+    create: {
+      code: 'VD26082801',
+      name: 'Адріатичне море + Доломітові Альпи',
+      product: 'Адріатичне море + Доломіти',
+      direction: 'Хорватія / Словенія',
+      countries: ['Хорватія', 'Словенія', 'Австрія'],
+      tourType: TourType.bus,
+      format: 'автобусний',
+      departureDate: new Date('2026-08-28'),
+      returnDate: new Date('2026-09-06'),
+      durationDays: 9,
+      departureCity: 'Київ',
+      arrivalCity: 'Київ',
+      basePrice: 890,
+      currency: 'EUR',
+      depositAmount: 178,
+      depositDeadline: new Date('2026-08-08'),
+      cancelPolicyId: standardPolicy.id,
+      agentCommissionPct: 0.14,
+      totalSeats: 52,
+      availableSeats: 52,   // 0 бронювань — відкрито для продажу
+      status: TourStatus.open,
+      guideId: guideDmytro.id,
+      costPrice: 655,
+      included: 'Автобусний трансфер, готель 3*, сніданки, страховка, супровід турлідера',
+      notIncluded: 'Особисті витрати, обіди/вечері, в\'їздні збори',
+      tags: ['sea', 'mountains', 'summer'],
+      isPremium: false,
+      isFamily: false,
+    },
+  });
+
+  // ── Тур 3: Лапландія (ЗАВЕРШЕНИЙ — січень 2026) — для аналітики ─────────
   const tourLapland = await prisma.tour.upsert({
     where: { code: 'LP26010301' },
     update: {},
@@ -126,7 +168,7 @@ async function main() {
       format: 'комбінований',
       departureDate: new Date('2026-01-03'),
       returnDate: new Date('2026-01-10'),
-      durationDays: 7,
+      durationDays: 8,
       departureCity: 'Київ',
       arrivalCity: 'Київ',
       basePrice: 1290,
@@ -134,43 +176,78 @@ async function main() {
       depositAmount: 258,
       cancelPolicyId: premiumPolicy.id,
       agentCommissionPct: 0.14,
-      totalSeats: 36,
-      availableSeats: 3,
-      status: TourStatus.almost_full,
+      totalSeats: 52,
+      availableSeats: 0,   // повністю заповнений
+      status: TourStatus.completed,
       guideId: guideDmytro.id,
-      costPrice: 980,
-      tags: ['family', 'winter', 'premium', 'kids'],
+      costPrice: 139,      // з CSV: Собівартість 139 EUR
+      tags: ['family', 'winter', 'premium', 'kids', 'lapland'],
       isFamily: true,
       isPremium: true,
     },
   });
 
-  const tourVenice = await prisma.tour.upsert({
-    where: { code: 'VV25112101' },
+  // ── Тур 4: Париж + Нормандія (ЗАВЕРШЕНИЙ — травень 2026) ────────────────
+  const tourParis = await prisma.tour.upsert({
+    where: { code: 'PN26052301' },
     update: {},
     create: {
-      code: 'VV25112101',
-      name: 'Вікенд у Венеції',
-      product: 'Вікенд у Венеції',
-      direction: 'Італія',
-      countries: ['Італія'],
+      code: 'PN26052301',
+      name: 'Париж + Нормандія',
+      product: 'Париж + Нормандія',
+      direction: 'Франція',
+      countries: ['Франція'],
       tourType: TourType.bus,
       format: 'автобусний',
-      departureDate: new Date('2025-11-21'),
-      returnDate: new Date('2025-11-24'),
-      durationDays: 3,
+      departureDate: new Date('2026-05-23'),
+      returnDate: new Date('2026-05-29'),
+      durationDays: 7,
       departureCity: 'Львів',
       arrivalCity: 'Львів',
-      basePrice: 280,
+      basePrice: 840,
       currency: 'EUR',
-      depositAmount: 84,
+      depositAmount: 168,
       cancelPolicyId: standardPolicy.id,
-      agentCommissionPct: 0.13,
+      agentCommissionPct: 0.14,
       totalSeats: 52,
-      availableSeats: 28,
-      status: TourStatus.open,
-      costPrice: 210,
-      tags: ['weekend', 'romantic', 'budget'],
+      availableSeats: 0,
+      status: TourStatus.completed,
+      guideId: guideOlena.id,
+      costPrice: 300,       // з CSV: Собівартість 300 EUR
+      tags: ['culture', 'history', 'france', 'popular'],
+      isPremium: true,
+    },
+  });
+
+  // ── Тур 5: Швейцарія (АКТИВНИЙ — 24 травня 2026, ще є місця) ────────────
+  const tourSwitzerland = await prisma.tour.upsert({
+    where: { code: 'SW26052401' },
+    update: {},
+    create: {
+      code: 'SW26052401',
+      name: 'Швейцарія',
+      product: 'Швейцарія',
+      direction: 'Швейцарія',
+      countries: ['Швейцарія'],
+      tourType: TourType.combined,
+      format: 'комбінований',
+      departureDate: new Date('2026-05-24'),
+      returnDate: new Date('2026-05-29'),
+      durationDays: 6,
+      departureCity: 'Київ',
+      arrivalCity: 'Київ',
+      basePrice: 790,
+      currency: 'EUR',
+      depositAmount: 158,
+      cancelPolicyId: premiumPolicy.id,
+      agentCommissionPct: 0.14,
+      totalSeats: 50,
+      availableSeats: 2,   // майже заповнений
+      status: TourStatus.almost_full,
+      guideId: guideDmytro.id,
+      costPrice: 280,      // з CSV: Собівартість 280 EUR
+      tags: ['mountains', 'alps', 'premium', 'switzerland'],
+      isPremium: true,
     },
   });
 
@@ -338,7 +415,7 @@ async function main() {
     update: {},
     create: {
       bookingNumber: 'ET-2025-04521',
-      tourId: tourParis.id,
+      tourId: tourAdriatic.id,        // VD26070301 — Адріатика (активний)
       bookingType: 'agent',
       contactTouristId: touristMaria.id,
       managerId: managerAndrii.id,
@@ -347,10 +424,10 @@ async function main() {
       totalAmount: 1680,
       depositAmount: 336,
       depositPaid: 336,
-      depositDeadline: new Date('2025-10-01'),
+      depositDeadline: new Date('2026-06-15'),
       balanceAmount: 1344,
       balancePaid: 504,
-      balanceDeadline: new Date('2025-10-10'),
+      balanceDeadline: new Date('2026-06-25'),
       paymentStatus: 'partially_paid',
       status: 'confirmed',
       agentCommissionRate: 0.14,
@@ -366,18 +443,18 @@ async function main() {
     update: {},
     create: {
       bookingNumber: 'ET-2025-04522',
-      tourId: tourLapland.id,
+      tourId: tourAdriaticAug.id,     // VD26082801 — Адріатика серпень
       bookingType: 'direct',
       contactTouristId: touristIvan.id,
       managerId: managerOlena.id,
       personsCount: 1,
-      totalAmount: 1290,
-      depositAmount: 258,
+      totalAmount: 890,
+      depositAmount: 178,
       depositPaid: 0,
-      depositDeadline: new Date('2025-11-15'),
-      balanceAmount: 1032,
+      depositDeadline: new Date('2026-08-08'),
+      balanceAmount: 712,
       balancePaid: 0,
-      balanceDeadline: new Date('2025-12-15'),
+      balanceDeadline: new Date('2026-08-18'),
       paymentStatus: 'unpaid',
       status: 'awaiting_payment',
       sourceChannel: 'site',
@@ -408,15 +485,15 @@ async function main() {
     data: {
       touristId: touristIvan.id,
       managerId: managerOlena.id,
-      tourId: tourLapland.id,
+      tourId: tourAdriatic.id,        // VD26070301 — Адріатика липень
       source: LeadSource.instagram,
       status: 'in_work',
-      interestNote: 'Цікавить Лапландія на Новий рік. Є діти 5 та 8 років',
+      interestNote: 'Цікавить Адріатичне море влітку. Є діти 5 та 8 років',
       personsCount: 3,
-      budget: 4000,
-      nextActionAt: new Date('2025-10-20T10:00:00Z'),
+      budget: 3000,
+      nextActionAt: new Date('2026-06-15T10:00:00Z'),
     },
-  }).catch(() => {}); // ігноруємо duplicate на повторних запусках
+  }).catch(() => {});
 
   console.log('✅ Seed завершено успішно!');
   console.log('');
@@ -425,8 +502,14 @@ async function main() {
   console.log('   Manager: a.sych@eurotrips.ua / manager123!');
   console.log('   Agent:   i.koval@ta-mriia.ua / agent123!');
   console.log('');
-  console.log('🗺️  Тестові тури: PN25102505, LP26010301, VV25112101');
-  console.log('📋  Тестові бронювання: ET-2025-04521, ET-2025-04522');
+  console.log('🗺️  Тури (5 реальних турів з CSV):');
+  console.log('   VD26070301 — Адріатика + Доломіти (active, 03.07.2026)  ← МАЙБУТНІЙ');
+  console.log('   VD26082801 — Адріатика + Доломіти (open, 28.08.2026)    ← МАЙБУТНІЙ');
+  console.log('   LP26010301 — Лапландія (completed, 03.01.2026)');
+  console.log('   PN26052301 — Париж + Нормандія (completed, 23.05.2026)');
+  console.log('   SW26052401 — Швейцарія (almost_full, 24.05.2026)');
+  console.log('');
+  console.log('📋 Бронювання: ET-2025-04521 (confirmed), ET-2025-04522 (awaiting_payment)');
 }
 
 main()
