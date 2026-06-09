@@ -122,8 +122,17 @@ export class AuthService {
   }
 
   // ── LOGOUT ───────────────────────────────────────────────────────────────
+  // TC-AUTH-015: після logout старий access token має повертати 401
   async logout(userId: string): Promise<void> {
+    // 1. Видаляємо refresh token
     await this.app.redis.del(`${REFRESH_TOKEN_PREFIX}${userId}`);
+    // 2. Записуємо blacklist: всі токени видані ДО цього timestamp → недійсні
+    //    TTL = 15хв (час життя access token)
+    await this.app.redis.setex(
+      `jwt:blacklist:${userId}`,
+      15 * 60,
+      String(Math.floor(Date.now() / 1000)) // поточний unix timestamp
+    );
   }
 
   // ── ME ───────────────────────────────────────────────────────────────────

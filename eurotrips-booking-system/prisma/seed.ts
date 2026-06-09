@@ -251,76 +251,110 @@ async function main() {
     },
   });
 
-  // ── 4. USERS ─────────────────────────────────────────────────────────────────
-  const adminPassword = await bcrypt.hash('admin123!', 12);
-  const managerPassword = await bcrypt.hash('manager123!', 12);
-  const agentPassword = await bcrypt.hash('agent123!', 12);
+  // ── 4. USERS — точно відповідають tests/fixtures/auth.fixtures.ts ──────────
+  // КРИТИЧНО: будь-яка зміна тут = зміна у CREDENTIALS в auth.fixtures.ts
+  // Всі паролі: test1234 (як у QA fixtures)
+  const SEED_PASSWORD = 'test1234';
+
+  const hashPassword = (p: string) => bcrypt.hash(p, 4); // rounds=4 для швидкості seed
 
   const adminUser = await prisma.user.upsert({
     where: { email: 'admin@eurotrips.ua' },
-    update: {},
+    update: { passwordHash: await hashPassword(SEED_PASSWORD) },
     create: {
       email: 'admin@eurotrips.ua',
-      passwordHash: adminPassword,
+      passwordHash: await hashPassword(SEED_PASSWORD),
       role: UserRole.admin,
-      firstName: 'Адмін',
+      firstName: 'Адміністратор',
       lastName: 'Системи',
       phone: '+380441234567',
       isActive: true,
     },
   });
 
-  const managerAndrii = await prisma.user.upsert({
-    where: { email: 'a.sych@eurotrips.ua' },
-    update: {},
+  // manager@eurotrips.ua / test1234 → name: "Олена Коваль"
+  const managerOlena = await prisma.user.upsert({
+    where: { email: 'manager@eurotrips.ua' },
+    update: { passwordHash: await hashPassword(SEED_PASSWORD) },
     create: {
-      email: 'a.sych@eurotrips.ua',
-      passwordHash: managerPassword,
+      email: 'manager@eurotrips.ua',
+      passwordHash: await hashPassword(SEED_PASSWORD),
       role: UserRole.manager,
-      firstName: 'Андрій',
-      lastName: 'Сич',
+      firstName: 'Олена',
+      lastName: 'Коваль',
       phone: '+380671111111',
       isActive: true,
     },
   });
 
-  const managerOlena = await prisma.user.upsert({
-    where: { email: 'o.romaniuk@eurotrips.ua' },
-    update: {},
+  // Другий менеджер для тестів
+  const managerAndrii = await prisma.user.upsert({
+    where: { email: 'a.sych@eurotrips.ua' },
+    update: { passwordHash: await hashPassword(SEED_PASSWORD) },
     create: {
-      email: 'o.romaniuk@eurotrips.ua',
-      passwordHash: managerPassword,
+      email: 'a.sych@eurotrips.ua',
+      passwordHash: await hashPassword(SEED_PASSWORD),
       role: UserRole.manager,
-      firstName: 'Олена',
-      lastName: 'Романюк',
+      firstName: 'Андрій',
+      lastName: 'Сич',
       phone: '+380672222222',
       isActive: true,
     },
   });
 
-  const agentUserStandard = await prisma.user.upsert({
-    where: { email: 'i.koval@ta-mriia.ua' },
-    update: {},
+  // ops@eurotrips.ua / test1234
+  const opsUser = await prisma.user.upsert({
+    where: { email: 'ops@eurotrips.ua' },
+    update: { passwordHash: await hashPassword(SEED_PASSWORD) },
     create: {
-      email: 'i.koval@ta-mriia.ua',
-      passwordHash: agentPassword,
+      email: 'ops@eurotrips.ua',
+      passwordHash: await hashPassword(SEED_PASSWORD),
+      role: UserRole.ops,
+      firstName: 'Операційний',
+      lastName: 'Менеджер',
+      isActive: true,
+    },
+  });
+
+  // finance@eurotrips.ua / test1234
+  const financeUser = await prisma.user.upsert({
+    where: { email: 'finance@eurotrips.ua' },
+    update: { passwordHash: await hashPassword(SEED_PASSWORD) },
+    create: {
+      email: 'finance@eurotrips.ua',
+      passwordHash: await hashPassword(SEED_PASSWORD),
+      role: UserRole.accountant,
+      firstName: 'Фінансист',
+      lastName: 'Бухгалтер',
+      isActive: true,
+    },
+  });
+
+  // agent@agency.ua / test1234 → name: "Тестовий Агент"
+  const agentUserStandard = await prisma.user.upsert({
+    where: { email: 'agent@agency.ua' },
+    update: { passwordHash: await hashPassword(SEED_PASSWORD) },
+    create: {
+      email: 'agent@agency.ua',
+      passwordHash: await hashPassword(SEED_PASSWORD),
       role: UserRole.agent,
-      firstName: 'Ірина',
-      lastName: 'Коваль',
+      firstName: 'Тестовий',
+      lastName: 'Агент',
       phone: '+380501234567',
       isActive: true,
     },
   });
 
+  // agent2@agency.ua / test1234 → name: "Другий Агент" (для IDOR тесту TC-RBAC-011)
   const agentUserNetwork = await prisma.user.upsert({
-    where: { email: 'b.lysenko@ta-halychyna.ua' },
-    update: {},
+    where: { email: 'agent2@agency.ua' },
+    update: { passwordHash: await hashPassword(SEED_PASSWORD) },
     create: {
-      email: 'b.lysenko@ta-halychyna.ua',
-      passwordHash: agentPassword,
+      email: 'agent2@agency.ua',
+      passwordHash: await hashPassword(SEED_PASSWORD),
       role: UserRole.agent,
-      firstName: 'Богдан',
-      lastName: 'Лисенко',
+      firstName: 'Другий',
+      lastName: 'Агент',
       phone: '+380509876543',
       isActive: true,
     },
@@ -410,16 +444,17 @@ async function main() {
   });
 
   // ── 8. BOOKINGS ──────────────────────────────────────────────────────────
+  // booking1: belongs to agent@agency.ua (agentStandard)
   const booking1 = await prisma.booking.upsert({
     where: { bookingNumber: 'ET-2025-04521' },
     update: {},
     create: {
       bookingNumber: 'ET-2025-04521',
-      tourId: tourAdriatic.id,        // VD26070301 — Адріатика (активний)
+      tourId: tourAdriatic.id,
       bookingType: 'agent',
       contactTouristId: touristMaria.id,
-      managerId: managerAndrii.id,
-      agentId: agentStandard.id,
+      managerId: managerOlena.id,
+      agentId: agentStandard.id,       // ← agent@agency.ua
       personsCount: 2,
       totalAmount: 1680,
       depositAmount: 336,
@@ -438,15 +473,17 @@ async function main() {
     },
   });
 
+  // booking2: belongs to agent2@agency.ua (agentNetwork) — для IDOR тесту TC-RBAC-011
   const booking2 = await prisma.booking.upsert({
     where: { bookingNumber: 'ET-2025-04522' },
     update: {},
     create: {
       bookingNumber: 'ET-2025-04522',
-      tourId: tourAdriaticAug.id,     // VD26082801 — Адріатика серпень
-      bookingType: 'direct',
+      tourId: tourAdriaticAug.id,
+      bookingType: 'agent',
       contactTouristId: touristIvan.id,
       managerId: managerOlena.id,
+      agentId: agentNetwork.id,        // ← agent2@agency.ua (ІНШИЙ агент)
       personsCount: 1,
       totalAmount: 890,
       depositAmount: 178,
@@ -457,7 +494,7 @@ async function main() {
       balanceDeadline: new Date('2026-08-18'),
       paymentStatus: 'unpaid',
       status: 'awaiting_payment',
-      sourceChannel: 'site',
+      sourceChannel: 'agent',
     },
   });
 

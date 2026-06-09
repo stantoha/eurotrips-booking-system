@@ -58,8 +58,8 @@ export async function authRoutes(app: FastifyInstance) {
       return reply.code(200).send({
         data: {
           user,
-          accessToken: tokens.accessToken,
-          expiresIn: tokens.expiresIn,
+          access_token: tokens.accessToken,
+          expires_in: tokens.expiresIn,
         },
       });
     }
@@ -83,8 +83,8 @@ export async function authRoutes(app: FastifyInstance) {
       return reply.code(201).send({
         data: {
           user,
-          accessToken: tokens.accessToken,
-          expiresIn: tokens.expiresIn,
+          access_token: tokens.accessToken,
+          expires_in: tokens.expiresIn,
         },
       });
     }
@@ -113,8 +113,8 @@ export async function authRoutes(app: FastifyInstance) {
 
       return reply.code(200).send({
         data: {
-          accessToken: tokens.accessToken,
-          expiresIn: tokens.expiresIn,
+          access_token: tokens.accessToken,
+          expires_in: tokens.expiresIn,
         },
       });
     }

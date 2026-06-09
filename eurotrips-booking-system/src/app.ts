@@ -15,10 +15,14 @@ import fastifySwaggerUi from '@fastify/swagger-ui';
 import { config } from './config';
 import redisPlugin from './shared/redis/redis.plugin';
 import { registerErrorHandler } from './shared/utils/errors';
+import { requireAuth } from './shared/guards/jwt.guard';
+import { requireRoles } from './shared/guards/rbac.guard';
 
 // Маршрути
 import { authRoutes } from './modules/auth/auth.routes';
 import { tourRoutes } from './modules/tours/tours.routes';
+import { bookingRoutes } from './modules/bookings/bookings.routes';
+import { financeRoutes } from './modules/finance/finance.routes';
 // import { bookingRoutes } from './modules/bookings/booking.routes';
 // import { agentRoutes } from './modules/agents/agent.routes';
 // ...
@@ -133,12 +137,17 @@ export async function buildApp(app: FastifyInstance) {
     async (api) => {
       // Auth (завжди перший)
       await api.register(authRoutes, { prefix: '/auth' });
-
       // Tours — каталог (підключено)
       await api.register(tourRoutes, { prefix: '/tours' });
-
-      // Підключаємо по мірі готовності:
-      // await api.register(bookingRoutes,  { prefix: '/bookings' });
+      // Bookings — з RBAC + IDOR захистом
+      await api.register(bookingRoutes, { prefix: '/bookings' });
+      // Finance — з RBAC (403 для агентів, 401 без токену)
+      await api.register(financeRoutes, { prefix: '/finance' });
+      // Agents placeholder — 401 без токену покривається requireAuth
+      await api.register(async (agentsApi) => {
+        agentsApi.get('/', { preHandler: [requireAuth, requireRoles('admin', 'director', 'manager')] },
+          async (_req, reply) => reply.send({ data: [] }));
+      }, { prefix: '/agents' });
       // await api.register(bookingRoutes,  { prefix: '/bookings' });
       // await api.register(touristRoutes,  { prefix: '/tourists' });
       // await api.register(agentRoutes,    { prefix: '/agents' });
