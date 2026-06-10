@@ -162,6 +162,42 @@ refund         → [terminal]
 // CommissionStatus → 'cancelled'
 ```
 
+### BR-09: OPS-01 — Структура номерів обов'язкова перед відкриттям туру
+```typescript
+// Тур НЕ може перейти зі статусу 'draft' → 'open' якщо:
+// hotel_bookings.structure_status === 'draft' (не затверджено)
+// Виняток: tour.isFastLaunch === true (high season — одразу фінал)
+```
+
+### BR-10: OPS-01 — Валідація структури номерів
+```typescript
+// При PUT /tours/:id/room-structure:
+// sum(planned_twin×2 + planned_double×2 + planned_triple×3 + planned_single×1) ≤ tour.total_seats
+// Zod schema з .refine() — інакше 422
+// Після structure_status = 'approved' → тільки admin може змінити
+```
+
+### BR-11: OPS-02 — BullMQ тригери румінгу (НЕ дублювати)
+```typescript
+// Тригер A: confirmedBookings >= 30 туристів по туру
+// Тригер Б: (tour.departureDate - today) <= 14 днів
+// Дедуплікація: якщо rooming_trigger_sent_at IS NOT NULL цього тижня → не слати
+// Виняток: isFastLaunch === true → нотифікація НЕ надсилається
+// Після відправки: opsRoomingRequired = true
+```
+
+### BR-12: OPS-03 — Self-service туриста (місце + тип номеру)
+```typescript
+// PATCH /bookings/:id/tourist/:tId/preferences → BLOCKED якщо:
+// hotel_bookings.final_rooming_done === true  → 403
+// booking.status < 'confirmed'               → 403
+// hotel_bookings.structure_status === 'draft' → 200 з повідомленням "Розміщення ще готується"
+
+// Унікальність місця в автобусі — 2 рівні захисту:
+// 1. @@unique([bookingId, bus_seat_number]) в БД
+// 2. SELECT FOR UPDATE у prisma.$transaction перед записом
+```
+
 ---
 
 ## 5. Database schema (20 таблиць)
@@ -242,6 +278,14 @@ POST   /finance/payments
 
 GET    /hotels                   ?country=&city=&stars=
 GET    /hotels/:id
+
+// ── OPS-01/02/03: Румінг та структура номерів ──────────────────────────────
+GET    /tours/:id/room-structure          [ops, manager, admin]  → структура + доступність
+PUT    /tours/:id/room-structure          [ops, admin]           → внести/оновити (blocked after APPROVED)
+PATCH  /tours/:id/room-structure/approve  [admin, director]      → затвердити → APPROVED
+PATCH  /tours/:id/room-structure/finalize [ops, admin]           → закрити фінальний румінг → FINAL
+GET    /bookings/:id/seat-map             [tourist, manager, ops] → схема автобуса (tourist: тільки is_occupied)
+PATCH  /bookings/:id/tourist/:tId/preferences [tourist, manager] → preferred_room_type + bus_seat_number
 ```
 
 ---

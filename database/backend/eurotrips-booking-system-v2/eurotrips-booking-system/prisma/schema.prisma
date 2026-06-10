@@ -1,8 +1,10 @@
 // =============================================================================
 // EUROTRIPS — Система бронювання
-// Prisma Schema v1.0
+// Prisma Schema v1.1 — OPS Migration
 // Мова проекту: Українська
-// Джерело: ADR-001 + Frontend CLAUDE.md + statuses.ts + mock data
+// Джерело: ADR-001 + Frontend CLAUDE.md + statuses.ts + OPS-01/02/03
+// Зміни v1.1: +2 enum (RoomingStatus, RoomType оновлено),
+//             +6 полів booking_tourists, +14 полів hotel_bookings, +3 індекси
 // =============================================================================
 
 generator client {
@@ -237,13 +239,26 @@ enum CommunicationStatus {
   @@map("communication_status")
 }
 
+/// Тип номеру. Використовується в booking_tourists (preferred + actual)
+/// Оновлено: OPS-01/OPS-03 — додано no_preference, перейменовано dbl/sngl/trpl
 enum RoomType {
-  twin
-  dbl
-  sngl
-  trpl
+  twin          // Двомісний, роздільні ліжка
+  double        // Двомісний, двоспальне ліжко
+  triple        // Тримісний
+  single        // Одномісний
+  no_preference // Турист не має переваги (OPS-03)
 
   @@map("room_type")
+}
+
+/// Машина стану румінгу (OPS-01/OPS-02/OPS-03)
+/// DRAFT → APPROVED → FINAL
+enum RoomingStatus {
+  draft    // Структуру внесено, не затверджено продактом
+  approved // Продакт затвердив — редагування заблоковано для ops
+  final    // Передано логісту, румінг закрито, self-service туриста вимкнено
+
+  @@map("rooming_status")
 }
 
 // =============================================================================
@@ -271,6 +286,7 @@ model User {
   confirmedPayments  Payment[]  @relation("PaymentConfirmer")
   generatedDocuments Document[]
   auditLogs          AuditLog[]
+  approvedHotelBookings HotelBooking[] @relation("HotelBookingApprover")
 
   @@index([role])
   @@index([isActive])
@@ -619,6 +635,7 @@ model Booking {
 // MODEL 10: booking_tourists
 // M:N між bookings і tourists.
 // Розсадка в автобусі + тип кімнати (з CSV: Бронь_готелів)
+// OPS-01/OPS-03: додано 6 полів румінгу та self-service туриста
 // =============================================================================
 model BookingTourist {
   id           String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
@@ -626,18 +643,41 @@ model BookingTourist {
   touristId    String    @map("tourist_id") @db.Uuid
   /// contact = контактна особа, participant = учасник
   role         String    @default("participant") @db.VarChar(20)
-  /// Місце в автобусі (з CSV Транспорт: Розсадка)
+  /// Рядкова мітка місця (напр. "14A") — для відображення
   seatNumber   String?   @map("seat_number") @db.VarChar(20)
+  /// Поточний підтверджений тип кімнати
   roomType     RoomType? @map("room_type")
   /// Індивідуальна ціна для цього учасника (EUR)
   price        Decimal?  @db.Decimal(10, 2)
   specialNotes String?   @map("special_notes") @db.Text
+
+  // ── OPS-03: Self-service туриста — побажання ──────────────────────────────
+  /// Бажаний тип номеру (турист обирає сам). НЕ гарантія — фінальне рішення за продактом
+  preferredRoomType  RoomType? @map("preferred_room_type")
+  /// Номер місця в автобусі (1..total_seats). NULL = немає переваги.
+  /// UNIQUE в межах бронювання — перевірка на рівні БД + SELECT FOR UPDATE у сервісі
+  busSeaNumber       Int?      @map("bus_seat_number")
+
+  // ── OPS-01: Фактичне розміщення після затвердження румінгу ───────────────
+  /// Фактичний номер кімнати в готелі (проставляє ops після затвердження)
+  actualRoomNumber   String?   @map("actual_room_number") @db.VarChar(20)
+  /// Фактичний тип номеру (може відрізнятись від preferred)
+  actualRoomType     RoomType? @map("actual_room_type")
+
+  // ── OPS-03: Додаткові побажання ───────────────────────────────────────────
+  /// Побажання по сусіду — free-text, контролюється менеджером
+  roommatePreference String?   @map("roommate_preference") @db.Text
+  /// Алергії, медичні обмеження, VIP — бачить ops та турлідер
+  specialRequirements String?  @map("special_requirements") @db.Text
 
   // Relations
   booking  Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   tourist  Tourist @relation(fields: [touristId], references: [id])
 
   @@unique([bookingId, touristId])
+  /// OPS-03: місце в автобусі унікальне в межах бронювання.
+  /// NULL не порушує UNIQUE в PostgreSQL (кілька туристів можуть мати NULL)
+  @@unique([bookingId, busSeaNumber])
   @@index([bookingId])
   @@index([touristId])
   @@map("booking_tourists")
@@ -774,6 +814,7 @@ model Hotel {
 // MODEL 14: hotel_bookings
 // Бронювання готелів по конкретних турах.
 // Джерело: Бронь_готелів.csv (2577 записів)
+// OPS-01/OPS-02/OPS-03: додано 14 полів румінгу та нотифікацій
 // =============================================================================
 model HotelBooking {
   id                  String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
@@ -813,13 +854,54 @@ model HotelBooking {
   createdAt           DateTime  @default(now()) @map("created_at")
   updatedAt           DateTime  @updatedAt @map("updated_at")
 
+  // ── OPS-01: Стандартна структура номерів ──────────────────────────────────
+  /// К-сть TWIN за стандартною структурою заїзду (OPS-01)
+  plannedTwin              Int           @default(0) @map("planned_twin")
+  /// К-сть DOUBLE (двоспальне ліжко) (OPS-01)
+  plannedDouble            Int           @default(0) @map("planned_double")
+  /// К-сть TRIPLE (тримісних) (OPS-01)
+  plannedTriple            Int           @default(0) @map("planned_triple")
+  /// К-сть SINGLE (одномісних) — контроль рентабельності (OPS-01)
+  plannedSingle            Int           @default(0) @map("planned_single")
+
+  // ── OPS-01: Статусна машина румінгу ──────────────────────────────────────
+  /// DRAFT→APPROVED→FINAL. Блокує зміни структури після APPROVED (тільки admin)
+  structureStatus          RoomingStatus @default(draft) @map("structure_status")
+  /// FK → users.id — продакт, який затвердив структуру (OPS-01)
+  structureApprovedBy      String?       @map("structure_approved_by") @db.Uuid
+  /// Час затвердження структури (OPS-01)
+  structureApprovedAt      DateTime?     @map("structure_approved_at")
+
+  // ── OPS-02: Автонотифікації BullMQ ───────────────────────────────────────
+  /// Час надсилання тригерної нотифікації (для дедуплікації — не слати двічі)
+  roomingTriggerSentAt     DateTime?     @map("rooming_trigger_sent_at")
+  /// BullMQ виставляє true після тригера (30 туристів АБО 14 днів до старту)
+  opsRoomingRequired       Boolean       @default(false) @map("ops_rooming_required")
+
+  // ── OPS-02/OPS-03: Прапорці виконання румінгу ────────────────────────────
+  /// Попередній румінг виконано (менеджер закриває чекліст)
+  preliminaryRoomingDone   Boolean       @default(false) @map("preliminary_rooming_done")
+  /// Дата виконання попереднього румінгу
+  preliminaryRoomingAt     DateTime?     @map("preliminary_rooming_at")
+  /// Фінальний румінг закрито — після цього self-service туриста вимкнено (OPS-03)
+  finalRoomingDone         Boolean       @default(false) @map("final_rooming_done")
+  /// Дата закриття фінального румінгу (дедлайн ≤ 5 днів до старту туру)
+  finalRoomingAt           DateTime?     @map("final_rooming_at")
+  /// High season: тур запущено за тиждень — структура одразу фінальна, нотифікація не надсилається
+  isFastLaunch             Boolean       @default(false) @map("is_fast_launch")
+
   // Relations
-  tour  Tour  @relation(fields: [tourId], references: [id])
-  hotel Hotel @relation(fields: [hotelId], references: [id])
+  tour                Tour  @relation(fields: [tourId], references: [id])
+  hotel               Hotel @relation(fields: [hotelId], references: [id])
+  structureApprover   User? @relation("HotelBookingApprover", fields: [structureApprovedBy], references: [id])
 
   @@index([tourId])
   @@index([hotelId])
   @@index([status])
+  /// OPS-02: BullMQ scheduler — ефективний запит "всіх турів, де потрібен румінг"
+  @@index([structureStatus, opsRoomingRequired])
+  /// OPS-02: Дедуплікація нотифікацій — перевірка чи вже надсилалось цього тижня
+  @@index([roomingTriggerSentAt])
   @@map("hotel_bookings")
 }
 
