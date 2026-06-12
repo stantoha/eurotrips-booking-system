@@ -19,10 +19,11 @@ import { requireAuth } from './shared/guards/jwt.guard';
 import { requireRoles } from './shared/guards/rbac.guard';
 
 // Маршрути
-import { authRoutes } from './modules/auth/auth.routes';
-import { tourRoutes } from './modules/tours/tours.routes';
+import { authRoutes }    from './modules/auth/auth.routes';
+import { tourRoutes }    from './modules/tours/tours.routes';
 import { bookingRoutes } from './modules/bookings/bookings.routes';
 import { financeRoutes } from './modules/finance/finance.routes';
+import { leadRoutes }    from './modules/leads/leads.routes';
 // import { bookingRoutes } from './modules/bookings/booking.routes';
 // import { agentRoutes } from './modules/agents/agent.routes';
 // ...
@@ -135,15 +136,17 @@ export async function buildApp(app: FastifyInstance) {
   // ── 8. API Routes ────────────────────────────────────────────────────────
   await app.register(
     async (api) => {
-      // Auth (завжди перший)
-      await api.register(authRoutes, { prefix: '/auth' });
-      // Tours — каталог (підключено)
-      await api.register(tourRoutes, { prefix: '/tours' });
-      // Bookings — з RBAC + IDOR захистом
+      // Auth
+      await api.register(authRoutes,    { prefix: '/auth' });
+      // Tours — каталог
+      await api.register(tourRoutes,    { prefix: '/tours' });
+      // Bookings — повна реалізація (BR-01/06/08)
       await api.register(bookingRoutes, { prefix: '/bookings' });
-      // Finance — з RBAC (403 для агентів, 401 без токену)
+      // Finance — RBAC (403 для агентів)
       await api.register(financeRoutes, { prefix: '/finance' });
-      // Agents placeholder — 401 без токену покривається requireAuth
+      // Leads / CRM — включно з /convert
+      await api.register(leadRoutes,    { prefix: '/leads' });
+      // Agents placeholder
       await api.register(async (agentsApi) => {
         agentsApi.get('/', { preHandler: [requireAuth, requireRoles('admin', 'director', 'manager')] },
           async (_req, reply) => reply.send({ data: [] }));
