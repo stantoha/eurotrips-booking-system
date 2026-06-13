@@ -123,9 +123,3 @@ export async function requireAgentBookingEdit(req: FastifyRequest, reply: Fastif
   // Тут тільки перевіряємо що це агент
 }
 
-// ── Декларація розширення FastifyRequest ────────────────────────────────────
-declare module 'fastify' {
-  interface FastifyRequest {
-    user?: JwtPayload;
-  }
-}

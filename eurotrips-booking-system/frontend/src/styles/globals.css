@@ -1,0 +1,39 @@
+/* ── Eurotrips Brand ── */
+:root {
+  --et-cyan:       #53c7d6;
+  --et-cyan-dark:  #3fb4c3;
+  --et-red:        #f0366d;
+  --et-red-dark:   #d42b5f;
+  --et-gold:       #f9c01d;
+  --et-gold-dark:  #e0aa10;
+  --et-blue:       #2d70b9;
+  --et-blue-dark:  #245d9c;
+  --et-dark:       #1a1a2e;
+  --et-white:      #ffffff;
+  --et-pink:       #f7c5d0;
+
+  --font-heading: 'Montserrat', Impact, sans-serif;
+  --font-body:    'IBM Plex Sans', Inter, sans-serif;
+  --font-mono:    'IBM Plex Mono', monospace;
+
+  --radius-pill: 9999px;
+  --radius-card: 10px;
+  --radius-tile: 8px;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Tour Card overlay pattern (з брендбуку Eurotrips) ── */
+.tour-overlay {
+  position: absolute;
+  bottom: 0; left: 0;
+  width: 55%;
+  min-height: 60%;
+  padding: 16px;
+}
+.tour-overlay--cyan { background: var(--et-cyan); }
+.tour-overlay--red  { background: var(--et-red);  }
+.tour-overlay--blue { background: var(--et-blue); }
+.tour-overlay--gold { background: var(--et-gold); }

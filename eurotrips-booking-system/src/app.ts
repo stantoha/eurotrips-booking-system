@@ -15,13 +15,15 @@ import fastifySwaggerUi from '@fastify/swagger-ui';
 import { config } from './config';
 import redisPlugin from './shared/redis/redis.plugin';
 import { registerErrorHandler } from './shared/utils/errors';
+import { requireAuth } from './shared/guards/jwt.guard';
+import { requireRoles } from './shared/guards/rbac.guard';
 
 // Маршрути
-import { authRoutes } from './modules/auth/auth.routes';
-import { tourRoutes } from './modules/tours/tours.routes';
-// import { bookingRoutes } from './modules/bookings/booking.routes';
-// import { agentRoutes } from './modules/agents/agent.routes';
-// ...
+import { authRoutes }    from './modules/auth/auth.routes';
+import { tourRoutes }    from './modules/tours/tours.routes';
+import { bookingRoutes } from './modules/bookings/bookings.routes';
+import { financeRoutes } from './modules/finance/finance.routes';
+import { leadRoutes }    from './modules/leads/leads.routes';
 
 export async function buildApp(app: FastifyInstance) {
 
@@ -31,7 +33,7 @@ export async function buildApp(app: FastifyInstance) {
   });
 
   await app.register(fastifyCors, {
-    origin: [config.FRONTEND_URL, config.SITE_URL],
+    origin: [config.FRONTEND_URL],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   });
@@ -131,23 +133,21 @@ export async function buildApp(app: FastifyInstance) {
   // ── 8. API Routes ────────────────────────────────────────────────────────
   await app.register(
     async (api) => {
-      // Auth (завжди перший)
-      await api.register(authRoutes, { prefix: '/auth' });
-
-      // Tours — каталог (підключено)
-      await api.register(tourRoutes, { prefix: '/tours' });
-
-      // Підключаємо по мірі готовності:
-      // await api.register(bookingRoutes,  { prefix: '/bookings' });
-      // await api.register(bookingRoutes,  { prefix: '/bookings' });
-      // await api.register(touristRoutes,  { prefix: '/tourists' });
-      // await api.register(agentRoutes,    { prefix: '/agents' });
-      // await api.register(leadRoutes,     { prefix: '/leads' });
-      // await api.register(paymentRoutes,  { prefix: '/payments' });
-      // await api.register(hotelRoutes,    { prefix: '/hotels' });
-      // await api.register(financeRoutes,  { prefix: '/finance' });
-      // await api.register(documentRoutes, { prefix: '/documents' });
-      // await api.register(analyticsRoutes,{ prefix: '/analytics' });
+      // Auth
+      await api.register(authRoutes,    { prefix: '/auth' });
+      // Tours — каталог
+      await api.register(tourRoutes,    { prefix: '/tours' });
+      // Bookings — повна реалізація (BR-01/06/08)
+      await api.register(bookingRoutes, { prefix: '/bookings' });
+      // Finance — RBAC (403 для агентів)
+      await api.register(financeRoutes, { prefix: '/finance' });
+      // Leads / CRM — включно з /convert
+      await api.register(leadRoutes,    { prefix: '/leads' });
+      // Agents placeholder
+      await api.register(async (agentsApi) => {
+        agentsApi.get('/', { preHandler: [requireAuth, requireRoles('admin', 'director', 'manager')] },
+          async (_req, reply) => reply.send({ data: [] }));
+      }, { prefix: '/agents' });
     },
     { prefix: '/api/v1' }
   );

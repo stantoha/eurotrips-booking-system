@@ -45,7 +45,7 @@ export const TourListQuerySchema = z.object({
 
 // ── Create ────────────────────────────────────────────────────────────────────
 
-export const CreateTourSchema = z.object({
+const CreateTourSchemaBase = z.object({
   code: z
     .string()
     .min(8, 'Код туру мінімум 8 символів')
@@ -97,15 +97,16 @@ export const CreateTourSchema = z.object({
   isCorporate: z.boolean().default(false),
   isFirstExperience: z.boolean().default(false),
   asanaLink: z.string().url().optional(),
-})
-.refine(
+});
+
+export const CreateTourSchema = CreateTourSchemaBase.refine(
   (d) => new Date(d.returnDate) >= new Date(d.departureDate),
   { message: 'Дата повернення має бути не раніше дати виїзду', path: ['returnDate'] }
 );
 
 // ── Update ────────────────────────────────────────────────────────────────────
 
-export const UpdateTourSchema = CreateTourSchema.partial().omit({ code: true });
+export const UpdateTourSchema = CreateTourSchemaBase.partial().omit({ code: true });
 
 // ── Change status ─────────────────────────────────────────────────────────────
 
