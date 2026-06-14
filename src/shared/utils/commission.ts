@@ -1,11 +1,13 @@
-// =============================================================================
+﻿// =============================================================================
 // EUROTRIPS — Розрахунок комісій агентів
 // BR-02: Комісія = basePrice × persons × rate (БЕЗ ДОПів)
 // BR-05: network агент → окремо ЦО та роялті
 // =============================================================================
 
 import { Agent, AgentType } from '@prisma/client';
-import Decimal from 'decimal.js';
+
+/** Округлення до 2 знаків після коми */
+const r2 = (n: number): number => Math.round(n * 100) / 100;
 
 export interface CommissionResult {
   /** Загальна валова комісія (EUR) */
@@ -33,47 +35,45 @@ export function calculateCommission(
   personsCount: number,
   agent: Pick<Agent, 'agentType' | 'commissionPct' | 'coCommissionPct' | 'royaltyPct'>
 ): CommissionResult {
-  const base = new Decimal(basePrice).mul(personsCount);
-  const commissionRate = new Decimal(agent.commissionPct.toString());
-
-  const grossAmount = base.mul(commissionRate);
+  const base = basePrice * personsCount;
+  const commissionRate = Number(agent.commissionPct);
+  const grossAmount = r2(base * commissionRate);
 
   if (agent.agentType === AgentType.standard) {
     return {
-      grossAmount: grossAmount.toDecimalPlaces(2).toNumber(),
-      agentAmount: grossAmount.toDecimalPlaces(2).toNumber(),
+      grossAmount,
+      agentAmount: grossAmount,
       coAmount: null,
       royaltyAmount: null,
-      commissionRate: Number(agent.commissionPct),
+      commissionRate,
       agentType: AgentType.standard,
     };
   }
 
   // network агент — вираховуємо ЦО та роялті
-  const coPct = new Decimal(agent.coCommissionPct?.toString() ?? '0');
-  const royaltyPct = new Decimal(agent.royaltyPct?.toString() ?? '0');
+  const coPct = Number(agent.coCommissionPct ?? 0);
+  const royaltyPct = Number(agent.royaltyPct ?? 0);
 
-  // coAmount та royaltyAmount як частки від grossAmount
-  const coFraction = commissionRate.eq(0) ? new Decimal(0) : coPct.div(commissionRate);
-  const royaltyFraction = commissionRate.eq(0) ? new Decimal(0) : royaltyPct.div(commissionRate);
+  const coFraction = commissionRate === 0 ? 0 : coPct / commissionRate;
+  const royaltyFraction = commissionRate === 0 ? 0 : royaltyPct / commissionRate;
 
-  const coAmount = grossAmount.mul(coFraction).toDecimalPlaces(2);
-  const royaltyAmount = grossAmount.mul(royaltyFraction).toDecimalPlaces(2);
-  const agentAmount = grossAmount.minus(coAmount).minus(royaltyAmount).toDecimalPlaces(2);
+  const coAmount = r2(grossAmount * coFraction);
+  const royaltyAmount = r2(grossAmount * royaltyFraction);
+  const agentAmount = r2(grossAmount - coAmount - royaltyAmount);
 
   return {
-    grossAmount: grossAmount.toDecimalPlaces(2).toNumber(),
-    agentAmount: agentAmount.toNumber(),
-    coAmount: coAmount.toNumber(),
-    royaltyAmount: royaltyAmount.toNumber(),
-    commissionRate: Number(agent.commissionPct),
+    grossAmount,
+    agentAmount,
+    coAmount,
+    royaltyAmount,
+    commissionRate,
     agentType: AgentType.network,
   };
 }
 
 /**
  * Форматує результат для відображення агенту в кабінеті.
- * BR-04: Agент бачить тільки свою частину, не ЦО та не роялті у деталях.
+ * BR-04: Агент бачить тільки свою частину, не ЦО та не роялті у деталях.
  */
 export function formatCommissionForAgent(result: CommissionResult): {
   label: string;

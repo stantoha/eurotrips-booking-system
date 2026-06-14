@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // EUROTRIPS — pages/Tours.tsx
 // Маршрут: /tours   Ролі: admin, director, manager, ops_manager, accountant
 //
@@ -22,7 +22,7 @@ import { Plus, Search, Grid3X3, List, SlidersHorizontal, X } from 'lucide-react'
 
 import { TourCard }   from '../components/tours/TourCard';
 import { useAuth }    from '../hooks/useAuth';
-import { MOCK_TOURS } from '../mocks';
+import { useTours }   from '../hooks/useTours';
 import {
   TOUR_STATUS_CONFIG,
   STATUS_COLOR_CLASSES,
@@ -59,11 +59,11 @@ const occupancy = (t: Tour): number =>
     ? Math.round(((t.total_seats - t.available_seats) / t.total_seats) * 100)
     : 100;
 
-/** Tailwind-клас прогрес-бару за відсотком */
+/** Tailwind-клас прогрес-бару за відсотком (brand кольори) */
 const barColor = (pct: number): string =>
-  pct >= 95 ? 'bg-red-500'
-  : pct >= 80 ? 'bg-amber-500'
-  : 'bg-emerald-500';
+  pct >= 95 ? 'bg-brand-red'
+  : pct >= 80 ? 'bg-brand-gold'
+  : 'bg-brand-cyan';
 
 // ─── SUB-COMPONENTS ───────────────────────────────────────────
 
@@ -142,7 +142,7 @@ const TourListRow: React.FC<{
       <button
         onClick={() => onBook(tour.id)}
         disabled={tour.available_seats === 0}
-        className="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-900 text-white hover:bg-slate-700 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        className="flex-shrink-0 px-3 py-1.5 rounded-pill text-xs font-semibold bg-brand-red text-white hover:bg-brand-red-dark disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
       >
         {tour.available_seats === 0 ? 'Заповнений' : 'Бронювати'}
       </button>
@@ -164,18 +164,20 @@ const ToursPage: React.FC = () => {
   const [monthF,   setMonthF]  = useState<string>('all');
   const [page,     setPage]    = useState(1);
 
+  // ── TanStack Query ─────────────────────────────────────────
+  const { data: toursData, isLoading, isError, refetch } = useTours();
+  const tours: Tour[] = toursData?.data ?? [];
+
   // ── Available months (з реальних дат) ─────────────────────
   const monthOptions = useMemo(() => {
-    const set = new Set(
-      MOCK_TOURS.map((t) => t.departure_date.substring(0, 7)),
-    );
+    const set = new Set(tours.map((t) => t.departure_date.substring(0, 7)));
     return Array.from(set).sort();
-  }, []);
+  }, [tours]);
 
   // ── Filtered data ──────────────────────────────────────────
   const filtered = useMemo(() => {
     const q = query.toLowerCase().trim();
-    return MOCK_TOURS.filter((t: Tour) => {
+    return tours.filter((t: Tour) => {
       if (statusF !== 'all' && t.status !== statusF)                     return false;
       if (typeF   !== 'all' && t.tour_type !== typeF)                    return false;
       if (monthF  !== 'all' && !t.departure_date.startsWith(monthF))     return false;
@@ -184,7 +186,7 @@ const ToursPage: React.FC = () => {
             && !t.code.toLowerCase().includes(q))                        return false;
       return true;
     });
-  }, [query, statusF, typeF, monthF]);
+  }, [tours, query, statusF, typeF, monthF]);
 
   const totalPages = Math.ceil(filtered.length / PER_PAGE);
   const paged      = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
@@ -216,7 +218,7 @@ const ToursPage: React.FC = () => {
             Каталог турів
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            {filtered.length} турів
+            {isLoading ? 'Завантаження…' : `${filtered.length} турів`}
             {hasFilters && (
               <button onClick={clearFilters} className="ml-2 text-blue-500 hover:underline inline-flex items-center gap-1">
                 <X size={11} /> Скинути
@@ -225,7 +227,7 @@ const ToursPage: React.FC = () => {
           </p>
         </div>
         {canCreate && (
-          <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-slate-900 text-white hover:bg-slate-700 dark:bg-slate-100 dark:text-slate-900 transition-colors">
+          <button className="flex items-center gap-2 px-4 py-2 rounded-pill text-sm font-semibold bg-brand-red text-white hover:bg-brand-red-dark transition-colors">
             <Plus size={14} aria-hidden="true" /> Новий тур
           </button>
         )}
@@ -286,35 +288,57 @@ const ToursPage: React.FC = () => {
         </div>
       </div>
 
+      {/* ── LOADING / ERROR ── */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-20 text-brand-cyan">
+          <div className="h-8 w-8 rounded-full border-2 border-brand-cyan border-t-transparent animate-spin mr-3" />
+          <span className="text-sm text-slate-500 dark:text-slate-400">Завантаження турів…</span>
+        </div>
+      )}
+
+      {isError && !isLoading && (
+        <div className="flex flex-col items-center justify-center py-16 gap-3">
+          <p className="text-sm text-brand-red">Не вдалося завантажити тури.</p>
+          <button
+            onClick={() => refetch()}
+            className="px-4 py-2 rounded-pill text-sm font-semibold bg-brand-red text-white hover:bg-brand-red-dark transition-colors"
+          >
+            Спробувати ще раз
+          </button>
+        </div>
+      )}
+
       {/* ── CONTENT ── */}
-      {paged.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-          <Search size={32} className="opacity-30 mb-3" aria-hidden="true" />
-          <p className="text-sm">Турів не знайдено — спробуйте змінити фільтри.</p>
-        </div>
-      ) : view === 'grid' ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
-          {paged.map((tour) => (
-            <TourCard
-              key={tour.id}
-              tour={tour}
-              userRole={canSeeMargin ? 'manager' : 'agent'}
-              variant="grid"
-              onBook={handleBook}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden mb-6">
-          {paged.map((tour) => (
-            <TourListRow
-              key={tour.id}
-              tour={tour}
-              showCost={canSeeMargin}
-              onBook={handleBook}
-            />
-          ))}
-        </div>
+      {!isLoading && !isError && (
+        paged.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+            <Search size={32} className="opacity-30 mb-3" aria-hidden="true" />
+            <p className="text-sm">Турів не знайдено — спробуйте змінити фільтри.</p>
+          </div>
+        ) : view === 'grid' ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
+            {paged.map((tour) => (
+              <TourCard
+                key={tour.id}
+                tour={tour}
+                userRole={canSeeMargin ? 'manager' : 'agent'}
+                variant="grid"
+                onBook={handleBook}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden mb-6">
+            {paged.map((tour) => (
+              <TourListRow
+                key={tour.id}
+                tour={tour}
+                showCost={canSeeMargin}
+                onBook={handleBook}
+              />
+            ))}
+          </div>
+        )
       )}
 
       {/* ── PAGINATION ── */}

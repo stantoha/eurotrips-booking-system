@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // EUROTRIPS — TourCard Component
 // Картка туру з полями з Gap Analysis + ADR-001
 // RBAC: агент НЕ бачить cost_price та margin (BR-04)
@@ -42,11 +42,11 @@ function canSeeCostPrice(role?: UserRole): boolean {
   return role === 'admin' || role === 'director' || role === 'accountant';
 }
 
-/** Колір прогрес-бару завантаженості */
+/** Колір прогрес-бару завантаженості (brand кольори) */
 function getOccupancyColor(pct: number): string {
-  if (pct >= 90) return 'bg-red-500';
-  if (pct >= 75) return 'bg-amber-500';
-  return 'bg-emerald-500';
+  if (pct >= 95) return 'bg-brand-red';
+  if (pct >= 80) return 'bg-brand-gold';
+  return 'bg-brand-cyan';
 }
 
 /** Форматування дати для UA локалі */
@@ -177,12 +177,12 @@ const TourCardGrid: React.FC<TourCardProps> = ({
           onClick={() => !isFull && onBook?.(tour.id)}
           disabled={isFull}
           className={`
-            mt-auto w-full py-2 px-4 rounded-lg text-sm font-medium
+            mt-auto w-full py-2 px-4 rounded-pill text-sm font-semibold
             flex items-center justify-center gap-1.5
             transition-all duration-150
             ${isFull
               ? 'bg-slate-100 text-slate-400 cursor-not-allowed dark:bg-slate-800 dark:text-slate-600'
-              : 'bg-slate-900 text-white hover:bg-slate-700 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white'
+              : 'bg-brand-red text-white hover:bg-brand-red-dark'
             }
           `}
         >
@@ -248,7 +248,7 @@ const TourCardList: React.FC<TourCardProps> = ({
         {showBookButton && (
           <button
             onClick={(e) => { e.stopPropagation(); onBook?.(tour.id); }}
-            className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-900 text-white hover:bg-slate-700 dark:bg-slate-100 dark:text-slate-900 transition-colors"
+            className="shrink-0 px-3 py-1.5 rounded-pill text-xs font-semibold bg-brand-red text-white hover:bg-brand-red-dark transition-colors"
           >
             Забронювати
           </button>

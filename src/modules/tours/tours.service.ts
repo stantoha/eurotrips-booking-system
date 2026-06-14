@@ -1,4 +1,4 @@
-// =============================================================================
+﻿// =============================================================================
 // EUROTRIPS — Tours Service
 // BR-01: availableSeats — тільки через транзакцію
 // BR-04: costPrice НІКОЛИ не повертається агентам/туристам
@@ -164,7 +164,7 @@ export class ToursService {
       status: tour.status,
       isAvailable:
         tour.availableSeats > 0 &&
-        [TourStatus.open, TourStatus.active, TourStatus.almost_full].includes(tour.status),
+        ([TourStatus.open, TourStatus.active, TourStatus.almost_full] as TourStatus[]).includes(tour.status),
     };
   }
 
@@ -225,7 +225,7 @@ export class ToursService {
     if (!tour) throw Errors.notFound('Тур', id);
 
     // Не можна редагувати завершений або скасований тур
-    if ([TourStatus.completed, TourStatus.cancelled].includes(tour.status)) {
+    if (([TourStatus.completed, TourStatus.cancelled] as TourStatus[]).includes(tour.status)) {
       throw new AppError(
         'TOUR_IMMUTABLE',
         `Тур зі статусом "${tour.status}" не можна редагувати`,

@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // EUROTRIPS — pages/agent/AgentCabinet.tsx
 // Маршрут: /agent/*   Роль: agent тільки (ProtectedRoute)
 //
@@ -15,17 +15,12 @@
 //   BR-03: commission виплачується тільки після tour status = completed
 //   BR-04: cost_price та margin НІКОЛИ не показуються агенту
 //   BR-07: royalty_amount нараховується після виплати комісій субагентів
-//
-// TODO: замінити моки на TanStack Query хуки:
-//   useBookings({ agentId: user.id, limit: 5 })
-//   useCommission({ agentId: user.id, period: currentPeriod })
-//   useTours({ status: ['open','active','almost_full'], limit: 5 })
 // ============================================================
 
 import React, { useMemo } from 'react';
 import {
   Plus, ArrowRight, Network, User, TrendingUp,
-  Shield, Banknote, CheckCircle2, Clock,
+  Shield, Banknote,
 } from 'lucide-react';
 
 import { TourCard }        from '../../components/tours/TourCard';
@@ -33,12 +28,8 @@ import { CommissionBadge } from '../../components/ui/CommissionBadge';
 import { PaymentBlock }    from '../../components/ui/PaymentBlock';
 import { StatusBadge }     from '../../components/ui/StatusBadge';
 import { useAuth }         from '../../hooks/useAuth';
-import {
-  MOCK_BOOKINGS,
-  MOCK_TOURS,
-  MOCK_COMMISSIONS,
-  MOCK_PAYMENTS,
-} from '../../mocks';
+import { useBookings }     from '../../hooks/useBookings';
+import { useTours }        from '../../hooks/useTours';
 import type { Booking, Tour, CommissionInfo, PaymentInfo } from '../../types';
 
 // ─── HELPERS ──────────────────────────────────────────────────
@@ -48,7 +39,6 @@ const fmtEur = (n: number) =>
 
 // ─── SUB-COMPONENTS ───────────────────────────────────────────
 
-/** Stat box — метрична картка */
 const StatBox: React.FC<{
   label:      string;
   value:      string | number;
@@ -62,7 +52,6 @@ const StatBox: React.FC<{
   </div>
 );
 
-/** Section header */
 const SectionHead: React.FC<{
   title: string;
   icon?: React.ReactNode;
@@ -82,7 +71,7 @@ const SectionHead: React.FC<{
     {onAll && (
       <button
         onClick={onAll}
-        className="flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+        className="flex items-center gap-1 text-xs text-brand-cyan-dark hover:text-brand-cyan transition-colors"
       >
         Всі <ArrowRight size={11} aria-hidden="true" />
       </button>
@@ -90,12 +79,11 @@ const SectionHead: React.FC<{
   </div>
 );
 
-/** Компактний рядок бронювання у кабінеті агента */
 const AgentBookingRow: React.FC<{ booking: Booking }> = ({ booking: b }) => (
   <div className="flex items-center gap-3 px-4 py-2.5 border-b border-slate-100 dark:border-slate-700 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors">
     <div className="flex-1 min-w-0">
       <div className="flex items-center gap-2 mb-0.5">
-        <code className="text-xs font-mono text-blue-600 dark:text-blue-400">{b.booking_number}</code>
+        <code className="text-xs font-mono text-brand-cyan-dark dark:text-brand-cyan">{b.booking_number}</code>
       </div>
       <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
         {b.tour_name} · {b.pax_count} ос. · {b.tour_date}
@@ -106,7 +94,7 @@ const AgentBookingRow: React.FC<{ booking: Booking }> = ({ booking: b }) => (
         {fmtEur(b.total_price)} EUR
       </p>
       {b.balance_due > 0 && (
-        <p className="text-xs text-amber-600 dark:text-amber-400">
+        <p className="text-xs text-brand-gold-dark dark:text-brand-gold">
           залишок {fmtEur(b.balance_due)}
         </p>
       )}
@@ -123,7 +111,7 @@ const AgentTourCard: React.FC<{
   const occ = t.total_seats > 0
     ? Math.round(((t.total_seats - t.available_seats) / t.total_seats) * 100)
     : 100;
-  const barCls = occ >= 95 ? 'bg-red-500' : occ >= 80 ? 'bg-amber-500' : 'bg-emerald-500';
+  const barCls = occ >= 95 ? 'bg-brand-red' : occ >= 80 ? 'bg-brand-gold' : 'bg-brand-cyan';
 
   return (
     <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700 last:border-0">
@@ -140,7 +128,7 @@ const AgentTourCard: React.FC<{
           <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
             {fmtEur(t.base_price)} EUR
           </p>
-          <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+          <p className="text-xs text-brand-cyan-dark dark:text-brand-cyan font-medium">
             {(t.agent_commission_pct * 100).toFixed(0)}% ком.
           </p>
         </div>
@@ -151,7 +139,7 @@ const AgentTourCard: React.FC<{
         <div className="flex justify-between text-xs text-slate-400 mb-1">
           <span>
             {t.available_seats === 0
-              ? <span className="text-red-500 font-medium">Немає місць</span>
+              ? <span className="text-brand-red font-medium">Немає місць</span>
               : `${t.available_seats} з ${t.total_seats} місць`
             }
           </span>
@@ -161,7 +149,7 @@ const AgentTourCard: React.FC<{
           <div className={`h-full rounded-full transition-all ${barCls}`} style={{ width: `${occ}%` }} />
         </div>
         {t.available_seats > 0 && t.available_seats <= 3 && (
-          <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+          <p className="text-xs text-brand-gold-dark mt-1 flex items-center gap-1">
             ⚡ Залишилось {t.available_seats} {t.available_seats === 1 ? 'місце' : 'місця'}
           </p>
         )}
@@ -170,7 +158,7 @@ const AgentTourCard: React.FC<{
       <button
         onClick={() => onBook(t.id)}
         disabled={t.available_seats === 0}
-        className="mt-3 w-full py-1.5 rounded-lg text-xs font-medium border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        className="mt-3 w-full py-1.5 rounded-pill text-xs font-semibold bg-brand-red text-white hover:bg-brand-red-dark disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
       >
         {t.available_seats === 0 ? 'Заповнений' : 'Забронювати'}
       </button>
@@ -183,52 +171,45 @@ const AgentTourCard: React.FC<{
 const AgentCabinet: React.FC = () => {
   const { user, isNetworkAgent } = useAuth();
 
-  // ── My bookings: 5 останніх, відфільтровано по agent_id ───
-  // TODO: замінити на useBookings({ agentId: user!.id, limit: 5, sort: '-created_at' })
-  const myBookings = useMemo<Booking[]>(
-    () =>
-      MOCK_BOOKINGS.filter(
-        (b) => b.agent_id !== undefined, // коли є реальний userId: b.agent_id === user?.id
-      ).slice(0, 5),
-    [],
-  );
+  // ── My bookings: 5 останніх (TanStack Query) ───────────────
+  const { data: bookingsData } = useBookings({ agent_id: user?.id, limit: 5 });
+  const myBookings: Booking[] = bookingsData?.bookings ?? [];
 
-  // ── Commission info для поточного агента ──────────────────
-  // TODO: замінити на useCommission({ agentId: user!.id })
+  // ── Available tours (TanStack Query) ───────────────────────
+  const { data: toursData } = useTours({ status: ['open', 'active', 'almost_full'], limit: 5 });
+  const availTours: Tour[] = toursData?.data ?? [];
+
+  // ── Commission info — TODO: замінити на useCommission hook ──
   const commission = useMemo<CommissionInfo>(
-    () =>
-      (isNetworkAgent
-        ? MOCK_COMMISSIONS.find((c) => c.agent_type === 'network')
-        : MOCK_COMMISSIONS.find((c) => c.agent_type === 'standard'))
-      ?? MOCK_COMMISSIONS[0],
-    [isNetworkAgent],
+    () => ({
+      agent_id:          user?.id ?? '',
+      agent_name:        user?.name ?? '—',
+      agent_type:        isNetworkAgent ? 'network' : 'standard',
+      agency_name:       '—',
+      booking_id:        '',
+      tour_name:         '—',
+      total_price:       0,
+      commission_rate:   0,
+      commission_amount: 0,
+      commission_status: 'pending',
+    }),
+    [user, isNetworkAgent],
   );
 
-  // ── PaymentInfo (для PaymentBlock з відображенням прогресу) ─
   const payment = useMemo<PaymentInfo>(
     () => ({
-      label:           commission.agency_name,
-      total_price:     commission.total_price,
-      amount_paid:     commission.commission_amount,  // виплачено
-      deposit_amount:  0,
-      balance_due:     commission.commission_amount,  // до виплати
-      payment_deadline: undefined,
-      payment_status:  commission.commission_status === 'paid' ? 'fully_paid' : 'partially_paid',
-      currency:        'EUR',
+      label:            commission.agency_name,
+      total_price:      commission.total_price,
+      amount_paid:      commission.commission_amount,
+      deposit_amount:   0,
+      balance_due:      commission.commission_amount,
+      payment_deadline: '',
+      payment_status:   commission.commission_status === 'paid' ? 'fully_paid' : 'partially_paid',
+      currency:         'EUR',
       commission_amount: commission.commission_amount,
       commission_status: commission.commission_status,
     }),
     [commission],
-  );
-
-  // ── Available tours ─────────────────────────────────────────
-  // TODO: замінити на useTours({ status: ['open','active','almost_full'], limit: 5 })
-  const availTours = useMemo<Tour[]>(
-    () =>
-      MOCK_TOURS.filter((t) =>
-        ['open', 'active', 'almost_full'].includes(t.status),
-      ).slice(0, 5),
-    [],
   );
 
   // ── Stats ────────────────────────────────────────────────────
@@ -246,17 +227,15 @@ const AgentCabinet: React.FC = () => {
       {/* ── WELCOME HEADER ── */}
       <div className="flex items-start justify-between gap-4 mb-6">
         <div className="flex items-center gap-4">
-          {/* Avatar */}
           <div className={`
-            w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0
-            border
+            w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 border
             ${isNetworkAgent
-              ? 'bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800'
+              ? 'bg-brand-blue/10 border-brand-blue/30'
               : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700'
             }
           `}>
             {isNetworkAgent
-              ? <Network size={19} className="text-blue-500" aria-hidden="true" />
+              ? <Network size={19} className="text-brand-blue" aria-hidden="true" />
               : <User     size={19} className="text-slate-500" aria-hidden="true" />
             }
           </div>
@@ -271,7 +250,7 @@ const AgentCabinet: React.FC = () => {
               <span className={`
                 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border
                 ${isNetworkAgent
-                  ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800'
+                  ? 'bg-brand-blue/10 text-brand-blue-dark border-brand-blue/30'
                   : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'
                 }
               `}>
@@ -279,7 +258,7 @@ const AgentCabinet: React.FC = () => {
                 {isNetworkAgent ? 'Мережевий агент' : 'Стандартний агент'}
               </span>
               {isNetworkAgent && commission.network_name && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-brand-blue/10 text-brand-blue-dark border border-brand-blue/30">
                   <Network size={9} aria-hidden="true" />
                   {commission.network_name}
                 </span>
@@ -288,7 +267,7 @@ const AgentCabinet: React.FC = () => {
           </div>
         </div>
 
-        <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-slate-900 text-white hover:bg-slate-700 dark:bg-slate-100 dark:text-slate-900 transition-colors flex-shrink-0">
+        <button className="flex items-center gap-2 px-4 py-2 rounded-pill text-sm font-semibold bg-brand-red text-white hover:bg-brand-red-dark transition-colors flex-shrink-0">
           <Plus size={14} aria-hidden="true" /> Нове бронювання
         </button>
       </div>
@@ -301,13 +280,13 @@ const AgentCabinet: React.FC = () => {
           label="Комісія"
           value={`${fmtEur(commission.commission_amount)} EUR`}
           sub={`${(commission.commission_rate * 100).toFixed(0)}% від суми`}
-          colorClass="text-emerald-600 dark:text-emerald-400"
+          colorClass="text-brand-cyan-dark dark:text-brand-cyan"
         />
         <StatBox
           label="Борг клієнтів"
           value={totalDebt > 0 ? `${fmtEur(totalDebt)} EUR` : '—'}
           sub="залишок до оплати"
-          colorClass={totalDebt > 0 ? 'text-amber-600 dark:text-amber-400' : undefined}
+          colorClass={totalDebt > 0 ? 'text-brand-gold-dark dark:text-brand-gold' : undefined}
         />
         {/* BR-07: тільки для мережевого агента */}
         {isNetworkAgent && commission.royalty_amount !== undefined && (
@@ -315,7 +294,7 @@ const AgentCabinet: React.FC = () => {
             label="Роялті мережі"
             value={`${fmtEur(commission.royalty_amount)} EUR`}
             sub={`${((commission.royalty_rate ?? 0) * 100).toFixed(0)}% від субагентів`}
-            colorClass="text-blue-600 dark:text-blue-400"
+            colorClass="text-brand-blue-dark dark:text-brand-blue"
           />
         )}
       </div>
@@ -346,12 +325,10 @@ const AgentCabinet: React.FC = () => {
               icon={<Banknote size={14} />}
             />
             <div className="p-4 grid sm:grid-cols-2 gap-4">
-              {/* CommissionBadge — ставка, сума, статус, BR-02/BR-03 */}
               <CommissionBadge
                 commission={commission}
                 variant={isNetworkAgent ? 'network' : 'standard'}
               />
-              {/* PaymentBlock — прогрес-бар виплат */}
               <PaymentBlock
                 payment={payment}
                 variant="compact"
@@ -361,33 +338,31 @@ const AgentCabinet: React.FC = () => {
 
           {/* Секція 3 (тільки network): Мережа та роялті — BR-07 */}
           {isNetworkAgent && (
-            <div className="border border-blue-200 dark:border-blue-800 rounded-xl overflow-hidden">
+            <div className="border border-brand-blue/30 rounded-xl overflow-hidden">
               <SectionHead
                 title="Мережа та роялті"
-                icon={<Network size={14} className="text-blue-500" />}
+                icon={<Network size={14} className="text-brand-blue" />}
                 badge="BR-07"
               />
               <div className="p-4">
-                {/* Ключові цифри мережі */}
                 <div className="grid grid-cols-3 gap-3 mb-4">
                   <StatBox label="Ставка роялті" value={`${((commission.royalty_rate ?? 0) * 100).toFixed(0)}%`} sub="від продажів субагентів" />
                   <StatBox
                     label="Нараховано роялті"
                     value={`${fmtEur(commission.royalty_amount ?? 0)} EUR`}
                     sub="поточний місяць"
-                    colorClass="text-blue-600 dark:text-blue-400"
+                    colorClass="text-brand-blue-dark dark:text-brand-blue"
                   />
                   <StatBox label="База розрахунку" value={`${fmtEur(commission.total_price)} EUR`} sub="продажі субагентів" />
                 </div>
 
-                {/* Пояснення правила BR-07 */}
-                <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3.5">
-                  <div className="flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 mb-2.5">
+                <div className="bg-brand-blue/5 border border-brand-blue/20 rounded-lg p-3.5">
+                  <div className="flex items-center gap-1.5 text-xs text-brand-blue-dark mb-2.5">
                     <Shield size={11} aria-hidden="true" />
                     Роялті нараховується після виплати комісій субагентам мережі
                   </div>
                   <div className="flex items-baseline justify-between">
-                    <span className="text-lg font-medium text-blue-700 dark:text-blue-300">
+                    <span className="text-lg font-medium text-brand-blue-dark dark:text-brand-blue">
                       {fmtEur(commission.royalty_amount ?? 0)} EUR
                     </span>
                     <StatusBadge status={commission.commission_status} domain="commission" size="xs" />
@@ -403,7 +378,7 @@ const AgentCabinet: React.FC = () => {
           <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
             <SectionHead
               title="Нові тури"
-              onAll={() => { /* TODO: navigate('/tours') — але агент не має доступу; показати окрему сторінку */ }}
+              onAll={() => { /* TODO: navigate('/agent/tours') */ }}
             />
             {availTours.length === 0 ? (
               <p className="py-8 text-center text-sm text-slate-400">Немає доступних турів</p>

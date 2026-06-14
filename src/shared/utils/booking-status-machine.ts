@@ -1,4 +1,4 @@
-// =============================================================================
+﻿// =============================================================================
 // EUROTRIPS — Статусна машина бронювань (BR-06)
 // Тільки дозволені переходи — ніяких стрибків через стадії
 // =============================================================================
@@ -93,10 +93,10 @@ export function isTerminalStatus(status: BookingStatus): boolean {
  * Перевіряє чи статус означає скасування (для повернення коштів).
  */
 export function isCancelledStatus(status: BookingStatus): boolean {
-  return [
+  return ([
     BookingStatus.cancelled_client,
     BookingStatus.cancelled_operator,
     BookingStatus.no_show,
     BookingStatus.refund,
-  ].includes(status);
+  ] as BookingStatus[]).includes(status);
 }

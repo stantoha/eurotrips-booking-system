@@ -1,4 +1,4 @@
-// =============================================================================
+﻿// =============================================================================
 // EUROTRIPS — Fastify Application Builder
 // Реєстрація плагінів, маршрутів та middleware
 // =============================================================================
@@ -24,9 +24,6 @@ import { tourRoutes }    from './modules/tours/tours.routes';
 import { bookingRoutes } from './modules/bookings/bookings.routes';
 import { financeRoutes } from './modules/finance/finance.routes';
 import { leadRoutes }    from './modules/leads/leads.routes';
-// import { bookingRoutes } from './modules/bookings/booking.routes';
-// import { agentRoutes } from './modules/agents/agent.routes';
-// ...
 
 export async function buildApp(app: FastifyInstance) {
 
@@ -36,7 +33,7 @@ export async function buildApp(app: FastifyInstance) {
   });
 
   await app.register(fastifyCors, {
-    origin: [config.FRONTEND_URL, config.SITE_URL],
+    origin: [config.FRONTEND_URL],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   });
@@ -151,15 +148,6 @@ export async function buildApp(app: FastifyInstance) {
         agentsApi.get('/', { preHandler: [requireAuth, requireRoles('admin', 'director', 'manager')] },
           async (_req, reply) => reply.send({ data: [] }));
       }, { prefix: '/agents' });
-      // await api.register(bookingRoutes,  { prefix: '/bookings' });
-      // await api.register(touristRoutes,  { prefix: '/tourists' });
-      // await api.register(agentRoutes,    { prefix: '/agents' });
-      // await api.register(leadRoutes,     { prefix: '/leads' });
-      // await api.register(paymentRoutes,  { prefix: '/payments' });
-      // await api.register(hotelRoutes,    { prefix: '/hotels' });
-      // await api.register(financeRoutes,  { prefix: '/finance' });
-      // await api.register(documentRoutes, { prefix: '/documents' });
-      // await api.register(analyticsRoutes,{ prefix: '/analytics' });
     },
     { prefix: '/api/v1' }
   );

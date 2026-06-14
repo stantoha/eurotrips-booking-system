@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // EUROTRIPS — Status Configuration
 // 15 статусів бронювання згідно ТЗ-скелету розділ 5.1
 // ============================================================
@@ -126,30 +126,35 @@ export const STATUS_COLOR_CLASSES: Record<StatusColorVariant, {
   dot: string;
   text: string;
 }> = {
+  // cyan = активні/підтверджені (brand-cyan)
   info: {
-    badge: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800',
-    dot: 'bg-blue-500',
-    text: 'text-blue-700 dark:text-blue-300',
+    badge: 'bg-brand-cyan/10 text-brand-cyan-dark border-brand-cyan/30',
+    dot: 'bg-brand-cyan',
+    text: 'text-brand-cyan-dark',
   },
+  // cyan = підтверджено/в поїздці (brand-cyan)
   success: {
-    badge: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800',
-    dot: 'bg-emerald-500',
-    text: 'text-emerald-700 dark:text-emerald-300',
+    badge: 'bg-brand-cyan/10 text-brand-cyan-dark border-brand-cyan/30',
+    dot: 'bg-brand-cyan',
+    text: 'text-brand-cyan-dark',
   },
+  // gold = очікування/попередження (brand-gold)
   warning: {
-    badge: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800',
-    dot: 'bg-amber-500',
-    text: 'text-amber-700 dark:text-amber-300',
+    badge: 'bg-brand-gold/10 text-brand-gold-dark border-brand-gold/30',
+    dot: 'bg-brand-gold',
+    text: 'text-brand-gold-dark',
   },
+  // red = скасовані/помилки (brand-red)
   danger: {
-    badge: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800',
-    dot: 'bg-red-500',
-    text: 'text-red-700 dark:text-red-300',
+    badge: 'bg-brand-red/10 text-brand-red-dark border-brand-red/30',
+    dot: 'bg-brand-red',
+    text: 'text-brand-red-dark',
   },
+  // blue = завершені/архів (brand-blue)
   secondary: {
-    badge: 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700',
-    dot: 'bg-slate-400',
-    text: 'text-slate-600 dark:text-slate-400',
+    badge: 'bg-brand-blue/10 text-brand-blue-dark border-brand-blue/30 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700',
+    dot: 'bg-brand-blue',
+    text: 'text-brand-blue-dark',
   },
 };
 

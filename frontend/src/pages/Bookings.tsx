@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // EUROTRIPS — pages/Bookings.tsx
 // Маршрут: /bookings   Ролі: admin, director, manager, ops_manager, accountant
 //
