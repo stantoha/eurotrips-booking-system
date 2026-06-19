@@ -19,11 +19,13 @@ import { requireAuth } from './shared/guards/jwt.guard';
 import { requireRoles } from './shared/guards/rbac.guard';
 
 // Маршрути
-import { authRoutes }    from './modules/auth/auth.routes';
-import { tourRoutes }    from './modules/tours/tours.routes';
-import { bookingRoutes } from './modules/bookings/bookings.routes';
-import { financeRoutes } from './modules/finance/finance.routes';
-import { leadRoutes }    from './modules/leads/leads.routes';
+import { authRoutes }         from './modules/auth/auth.routes';
+import { tourRoutes }         from './modules/tours/tours.routes';
+import { bookingRoutes }      from './modules/bookings/bookings.routes';
+import { financeRoutes }      from './modules/finance/finance.routes';
+import { leadRoutes }         from './modules/leads/leads.routes';
+import { agentRoutes }        from './modules/agents/agents.routes';
+import { zohoWebhookRoutes }  from './modules/integrations/zoho/zoho.webhook';
 
 export async function buildApp(app: FastifyInstance) {
 
@@ -142,15 +144,15 @@ export async function buildApp(app: FastifyInstance) {
       // Finance — RBAC (403 для агентів)
       await api.register(financeRoutes, { prefix: '/finance' });
       // Leads / CRM — включно з /convert
-      await api.register(leadRoutes,    { prefix: '/leads' });
-      // Agents placeholder
-      await api.register(async (agentsApi) => {
-        agentsApi.get('/', { preHandler: [requireAuth, requireRoles('admin', 'director', 'manager')] },
-          async (_req, reply) => reply.send({ data: [] }));
-      }, { prefix: '/agents' });
+      await api.register(leadRoutes,   { prefix: '/leads' });
+      // Agents — BR-04/05/07
+      await api.register(agentRoutes,  { prefix: '/agents' });
     },
     { prefix: '/api/v1' }
   );
+
+  // ── 8b. Публічні вебхуки (без JWT) ─────────────────────────────────────
+  await app.register(zohoWebhookRoutes, { prefix: '/webhooks/zoho' });
 
   // ── 9. Prisma — декоруємо app для використання в хуках ─────────────────
   app.decorate('prisma', (await import('./shared/database/prisma')).default);

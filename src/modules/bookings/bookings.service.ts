@@ -25,6 +25,12 @@ import type {
   CancelBookingDto,
   BookingListQueryDto,
 } from './bookings.schema';
+import {
+  getEmailQueue,
+  schedulePaymentReminders,
+  schedulePreDepartureEmail,
+  cancelBookingEmailJobs,
+} from '../communications/email.queue';
 
 export class BookingsService {
 
@@ -268,7 +274,14 @@ export class BookingsService {
   async changeStatus(id: string, dto: ChangeStatusDto, user: JwtPayload) {
     const booking = await prisma.booking.findUnique({
       where: { id },
-      select: { id: true, status: true, agentId: true, paymentStatus: true },
+      select: {
+        id:              true,
+        status:          true,
+        agentId:         true,
+        paymentStatus:   true,
+        balanceDeadline: true,
+        tour: { select: { departureDate: true } },
+      },
     });
 
     if (!booking) throw Errors.notFound('Бронювання', id);
@@ -308,7 +321,45 @@ export class BookingsService {
     await this.audit(prisma, user.sub, 'STATUS_CHANGE', id,
       { status: booking.status }, { status: dto.status, reason: dto.reason });
 
+    // Тригери email-нотифікацій (async, не блокуємо відповідь)
+    this.fireEmailTriggers(id, dto.status, booking).catch((err) => {
+      // Email помилки не повинні фейлити основний запит
+      console.error('[EmailTrigger] Помилка постановки в чергу:', err);
+    });
+
     return updated;
+  }
+
+  private async fireEmailTriggers(
+    bookingId: string,
+    newStatus: BookingStatus,
+    booking: { balanceDeadline: Date | null; tour: { departureDate: Date } | null }
+  ) {
+    const queue = getEmailQueue();
+
+    if (newStatus === BookingStatus.confirmed) {
+      await queue.add('booking:confirmed', { bookingId });
+
+      // Плануємо нагадування про оплату залишку (7/3/1 день до дедлайну)
+      if (booking.balanceDeadline) {
+        await schedulePaymentReminders(queue, bookingId, booking.balanceDeadline);
+      }
+      // Плануємо лист перед виїздом (-3 дні)
+      if (booking.tour?.departureDate) {
+        await schedulePreDepartureEmail(queue, bookingId, booking.tour.departureDate);
+      }
+    } else if (newStatus === BookingStatus.awaiting_payment) {
+      if (booking.balanceDeadline) {
+        await schedulePaymentReminders(queue, bookingId, booking.balanceDeadline);
+      }
+    } else if (newStatus === BookingStatus.docs_collected) {
+      if (booking.tour?.departureDate) {
+        await schedulePreDepartureEmail(queue, bookingId, booking.tour.departureDate);
+      }
+    } else if (isCancelledStatus(newStatus)) {
+      // Скасовуємо всі заплановані email jobs для цього бронювання
+      await cancelBookingEmailJobs(queue, bookingId);
+    }
   }
 
   // ── PAYMENT ───────────────────────────────────────────────────────────────
