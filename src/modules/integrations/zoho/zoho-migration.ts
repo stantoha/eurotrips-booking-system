@@ -21,7 +21,7 @@ import { PrismaClient }      from '@prisma/client';
 import {
   ZOHO_DEAL_STAGE_MAP,
   ZOHO_LEAD_STATUS_MAP,
-  ZOHO_LEAD_SOURCE_MAP,
+  ZOHO_SOURCE_MAP as ZOHO_LEAD_SOURCE_MAP,
   ZOHO_AGENCY_STAGE_MAP,
   type ZohoLead,
   type ZohoContact,
@@ -298,7 +298,7 @@ async function importProducts(stats: MigrationBatchStats): Promise<void> {
       stats.fetched++;
       try {
         const externalId = `zoho_product_${product.id}`;
-        const status     = product.Is_Active === false ? 'draft' : 'open_for_sale';
+        const status     = product.Is_Active === false ? 'draft' : 'open';
 
         const data = {
           externalId,
@@ -869,25 +869,24 @@ async function importPayments(stats: MigrationBatchStats): Promise<void> {
         const data = {
           externalId,
           amount,
-          currency:    payment.Currency ?? 'UAH',
-          method,
-          status:      'completed' as const,   // в Zoho зберігаються тільки факти оплат
-          type:        resolvePaymentType(rawPurpose),
-          exchangeRate: toNum(payment.Exchange_Rate),
+          currency:      payment.Currency ?? 'UAH',
+          paymentMethod: method,
+          status:        'confirmed' as const,  // в Zoho зберігаються тільки факти оплат
+          paymentType:   resolvePaymentType(rawPurpose) as any,
+          exchangeRate:  toNum(payment.Exchange_Rate),
           paidAt,
-          bookingId:   null as string | null,  // заповниться нижче
+          bookingId:     'unknown' as string,   // заповниться в importDeals або пропускається
           metadata: {
-            zoho_id:       payment.id,
-            zoho_name:     payment.Name      ?? null,
-            zoho_owner:    payment.Owner?.name ?? null,
+            zoho_id:        payment.id,
+            zoho_name:      payment.Name       ?? null,
+            zoho_owner:     payment.Owner?.name ?? null,
             payment_system: payment.Payment_System ?? null,
-            field2_raw:    rawAmount,      // original value for audit
-            field3_raw:    rawPaidAt,
-            field5_raw:    rawPurpose,
-            migrated_at:   new Date().toISOString(),
+            field2_raw:     rawAmount,
+            field3_raw:     rawPaidAt,
+            field5_raw:     rawPurpose,
+            migrated_at:    new Date().toISOString(),
           },
           createdAt: new Date(payment.Created_Time),
-          updatedAt: new Date(payment.Modified_Time),
         };
 
         if (!DRY_RUN) {
@@ -899,7 +898,7 @@ async function importPayments(stats: MigrationBatchStats): Promise<void> {
             stats.skipped++;
             continue;
           }
-          await prisma.payment.create({ data });
+          await prisma.payment.create({ data: data as any });
         }
         stats.created++;
       } catch (err: any) {

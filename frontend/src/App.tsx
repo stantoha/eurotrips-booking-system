@@ -4,7 +4,7 @@
 // ============================================================
 
 import React, { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useParams, useNavigate } from 'react-router-dom';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { LoginForm } from './components/auth/LoginForm';
 import { useAuth } from './hooks/useAuth';
@@ -15,9 +15,22 @@ import { useAuth } from './hooks/useAuth';
 const Dashboard       = React.lazy(() => import('./pages/Dashboard'));
 const ToursPage       = React.lazy(() => import('./pages/Tours'));
 const BookingsPage    = React.lazy(() => import('./pages/Bookings'));
+const BookingDetail   = React.lazy(() => import('./pages/BookingDetail'));
 const AgentCabinet    = React.lazy(() => import('./pages/agent/AgentCabinet'));
 const FinancePage     = React.lazy(() => import('./pages/Finance'));
 const OperationsPage  = React.lazy(() => import('./pages/Operations'));
+
+// Wrapper — дістає :id з URL та передає пропсами в BookingDetail
+const BookingDetailRoute: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  if (!id) return <Navigate to="/bookings" replace />;
+  return (
+    <React.Suspense fallback={<div className="h-screen flex items-center justify-center"><div className="animate-spin w-8 h-8 border-2 border-slate-300 border-t-blue-500 rounded-full" /></div>}>
+      <BookingDetail bookingId={id} onBack={() => navigate('/bookings')} />
+    </React.Suspense>
+  );
+};
 
 // ─── LOGIN PAGE ───────────────────────────────────────────────
 
@@ -65,10 +78,15 @@ export const App: React.FC = () => (
 
           {/* ── Internal team (manager, ops, accountant, admin) */}
           <Route element={<ProtectedRoute allowedRoles={['admin', 'director', 'manager', 'ops_manager', 'accountant']} />}>
-            <Route path="/dashboard"   element={<Dashboard />} />
-            <Route path="/tours"       element={<ToursPage />} />
-            <Route path="/bookings"    element={<BookingsPage />} />
-            <Route path="/operations"  element={<OperationsPage />} />
+            <Route path="/dashboard"     element={<Dashboard />} />
+            <Route path="/tours"         element={<ToursPage />} />
+            <Route path="/bookings"      element={<BookingsPage />} />
+            <Route path="/operations"    element={<OperationsPage />} />
+          </Route>
+
+          {/* ── Booking detail — всі ролі, RBAC на рівні API ── */}
+          <Route element={<ProtectedRoute allowedRoles={['admin', 'director', 'manager', 'ops_manager', 'accountant', 'agent']} />}>
+            <Route path="/bookings/:id"  element={<BookingDetailRoute />} />
           </Route>
 
           {/* ── Agent cabinet ──────────────────────────────── */}

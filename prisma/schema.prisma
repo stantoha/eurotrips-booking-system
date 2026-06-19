@@ -311,6 +311,16 @@ model Tourist {
   sourceChannel  String?   @map("source_channel") @db.VarChar(100)
   isRepeat       Boolean   @default(false) @map("is_repeat")
   notes          String?   @db.Text
+
+  // ── Zoho CRM Integration ─────────────────────────────────────
+  externalId          String?   @unique @map("external_id") @db.VarChar(100)
+  linkedinUrl         String?   @map("linkedin_url") @db.VarChar(255)
+  agentId             String?   @map("agent_id") @db.Uuid
+  allergies           String?   @db.Text
+  dietaryRestrictions String?   @map("dietary_restrictions") @db.Text
+  isSubscribed        Boolean   @default(false) @map("is_subscribed")
+  metadata            Json?
+
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @updatedAt @map("updated_at")
 
@@ -319,10 +329,12 @@ model Tourist {
   bookingParticipations BookingTourist[]
   leads                 Lead[]
   payments              Payment[]
+  agent                 Agent?          @relation("TouristAgent", fields: [agentId], references: [id])
 
   @@index([email])
   @@index([phone])
   @@index([lastName, firstName])
+  @@index([externalId])
   @@map("tourists")
 }
 
@@ -379,6 +391,15 @@ model Agent {
   city            String?     @db.VarChar(100)
   country         String?     @db.VarChar(100)
   notes           String?     @db.Text
+
+  // ── Zoho CRM Integration ─────────────────────────────────────
+  externalId    String?     @unique @map("external_id") @db.VarChar(100)
+  contactName   String?     @map("contact_name") @db.VarChar(255)
+  website       String?     @db.VarChar(255)
+  agencySize    String?     @map("agency_size") @db.VarChar(50)
+  taxCode       String?     @map("tax_code") @db.VarChar(50)
+  metadata      Json?
+
   createdAt       DateTime    @default(now()) @map("created_at")
   updatedAt       DateTime    @updatedAt @map("updated_at")
 
@@ -389,10 +410,12 @@ model Agent {
   leads       Lead[]
   commissions AgentCommission[]
   documents   Document[]
+  tourists    Tourist[]    @relation("TouristAgent")
 
   @@index([agentType])
   @@index([status])
   @@index([networkId])
+  @@index([externalId])
   @@map("agents")
 }
 
@@ -502,6 +525,12 @@ model Tour {
   /// Посилання на Asana task (міграція з CSV)
   asanaLink       String?   @map("asana_link") @db.Text
 
+  // ── Zoho CRM Integration ─────────────────────────────────────
+  externalId    String?   @unique @map("external_id") @db.VarChar(100)
+  imageUrl      String?   @map("image_url") @db.Text
+  sortOrder     Int       @default(0) @map("sort_order")
+  metadata      Json?
+
   isArchived      Boolean   @default(false) @map("is_archived")
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
@@ -522,6 +551,7 @@ model Tour {
   @@index([code])
   @@index([isArchived])
   @@index([tourType])
+  @@index([externalId])
   @@map("tours")
 }
 
@@ -546,6 +576,11 @@ model Lead {
   notes                String?     @db.Text
   /// Встановлюється після конвертації в бронювання
   convertedToBookingId String?     @unique @map("converted_to_booking_id") @db.Uuid
+
+  // ── Zoho CRM Integration ─────────────────────────────────────
+  externalId  String?     @unique @map("external_id") @db.VarChar(100)
+  metadata    Json?
+
   createdAt            DateTime    @default(now()) @map("created_at")
   updatedAt            DateTime    @updatedAt @map("updated_at")
 
@@ -560,6 +595,7 @@ model Lead {
   @@index([managerId])
   @@index([source])
   @@index([createdAt])
+  @@index([externalId])
   @@map("leads")
 }
 
@@ -606,6 +642,24 @@ model Booking {
   comment              String?              @db.Text
   cancelReason         String?              @map("cancel_reason") @db.Text
   cancelledAt          DateTime?            @map("cancelled_at")
+
+  // ── Zoho CRM Integration ─────────────────────────────────────
+  adultsCount         Int?      @map("adults_count")
+  childrenCount       Int       @default(0) @map("children_count")
+  childrenDetails     String?   @map("children_details") @db.Text
+  pickupPoint         String?   @map("pickup_point") @db.VarChar(100)
+  specialRequirements String?   @map("special_requirements") @db.Text
+  contractNumber      String?   @map("contract_number") @db.VarChar(50)
+  exchangeRate        Decimal?  @map("exchange_rate") @db.Decimal(10, 4)
+  utmSource           String?   @map("utm_source") @db.VarChar(100)
+  utmCampaign         String?   @map("utm_campaign") @db.VarChar(100)
+  utmContent          String?   @map("utm_content") @db.VarChar(100)
+  utmTerm             String?   @map("utm_term") @db.VarChar(100)
+  adKeyword           String?   @map("ad_keyword") @db.VarChar(200)
+  leadSource          String?   @map("lead_source") @db.VarChar(100)
+  externalId          String?   @unique @map("external_id") @db.VarChar(100)
+  metadata            Json?
+
   createdAt            DateTime             @default(now()) @map("created_at")
   updatedAt            DateTime             @updatedAt @map("updated_at")
 
@@ -628,6 +682,7 @@ model Booking {
   @@index([bookingType])
   @@index([paymentStatus])
   @@index([createdAt])
+  @@index([externalId])
   @@map("bookings")
 }
 
@@ -705,6 +760,11 @@ model Payment {
   reference     String?       @db.VarChar(100)
   confirmedById String?       @map("confirmed_by_id") @db.Uuid
   notes         String?       @db.Text
+
+  // ── Zoho CRM Integration ─────────────────────────────────────
+  externalId    String?       @unique @map("external_id") @db.VarChar(100)
+  metadata      Json?
+
   createdAt     DateTime      @default(now()) @map("created_at")
 
   // Relations
@@ -716,6 +776,7 @@ model Payment {
   @@index([status])
   @@index([paymentType])
   @@index([paidAt])
+  @@index([externalId])
   @@map("payments")
 }
 
