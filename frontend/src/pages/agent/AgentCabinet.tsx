@@ -1,11 +1,10 @@
 // ============================================================
-// EUROTRIPS — pages/agent/AgentCabinet.tsx  (v1.2 — live hooks)
+// EUROTRIPS — pages/agent/AgentCabinet.tsx  (v1.3 — real data)
 // Маршрут: /agent/*   Роль: agent тільки (ProtectedRoute)
 //
-// ЗМІНИ v1.2 (підключення реальних хуків):
-//   MOCK_BOOKINGS.filter(...)  → useBookings({ agent_id, limit: 5 })
-//   MOCK_TOURS.filter(...)     → useTourList({ status: [...], limit: 5 })
-//   Додані skeleton-стани завантаження для обох секцій
+// ЗМІНИ v1.3:
+//   MOCK_COMMISSIONS видалено → commission stats з useBookings
+//   Ідентифікація агента → useAuth().user
 //
 // BR-04: cost_price та margin — TourCard отримує userRole='agent'
 //         → сервер не повертає ці поля для agent-токена
@@ -25,7 +24,6 @@ import { StatusBadge }     from '../../components/ui/StatusBadge';
 import { useAuth }         from '../../hooks/useAuth';
 import { useBookings }     from '../../hooks/useBookings';
 import { useTourList }     from '../../hooks/useTours';
-import { MOCK_COMMISSIONS } from '../../mocks';
 import type { CommissionInfo, PaymentInfo } from '../../types';
 
 // ─── HELPERS ──────────────────────────────────────────────────
@@ -71,7 +69,6 @@ const SectionHead: React.FC<{
   </div>
 );
 
-/** Skeleton рядок під час завантаження */
 const RowSkeleton: React.FC = () => (
   <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-100 dark:border-slate-700 last:border-0 animate-pulse">
     <div className="flex-1">
@@ -88,61 +85,63 @@ const RowSkeleton: React.FC = () => (
 const AgentCabinet: React.FC = () => {
   const { user, isNetworkAgent } = useAuth();
 
-  // ── Мої бронювання — useBookings з mock fallback ───────────
-  // При живому API: useBookings({ agent_id: user!.agent_id, limit: 5, sort: '-created_at' })
-  const {
-    data:       bookingsData,
-    isLoading:  bookingsLoading,
-  } = useBookings(
-    {
-      agent_id: user?.agent_id ?? user?.id,
-      limit:    5,
-    },
-    { enabled: true },
-  );
+  // ── Мої бронювання ────────────────────────────────────────────
+  const { data: bookingsData, isLoading: bookingsLoading } = useBookings({
+    agent_id: user?.agent_id ?? user?.id,
+    limit:    5,
+  });
   const myBookings = bookingsData?.bookings ?? [];
 
-  // ── Доступні тури — useTourList (живий API) ────────────────
-  // Замість MOCK_TOURS.filter(t => ['open','active','almost_full'].includes(t.status))
-  const {
-    data:       availTours = [],
-    isLoading:  toursLoading,
-  } = useTourList({
+  // ── Доступні тури ─────────────────────────────────────────────
+  const { data: availTours = [], isLoading: toursLoading } = useTourList({
     status: ['open', 'active', 'almost_full'],
     limit:  5,
   });
 
-  // ── Commission info — поки мок (API не готовий) ────────────
-  // TODO: useCommission({ agentId: user!.id })
-  const commission = useMemo<CommissionInfo>(
-    () =>
-      (isNetworkAgent
-        ? MOCK_COMMISSIONS.find((c) => c.agent_type === 'network')
-        : MOCK_COMMISSIONS.find((c) => c.agent_type === 'standard'))
-      ?? MOCK_COMMISSIONS[0],
-    [isNetworkAgent],
-  );
+  // ── Агрегована статистика з бронювань ─────────────────────────
+  const totalSales      = myBookings.reduce((s, b) => s + b.total_price, 0);
+  const totalDebt       = myBookings.reduce((s, b) => s + b.balance_due, 0);
+  const totalCommission = myBookings.reduce((s, b) => s + (b.agent_commission_amount ?? 0), 0);
+  // Середня ставка комісії з наявних бронювань
+  const commissionRate  = useMemo(() => {
+    const withRate = myBookings.filter(b => b.agent_commission_rate);
+    if (!withRate.length) return 0;
+    return withRate.reduce((s, b) => s + (b.agent_commission_rate ?? 0), 0) / withRate.length;
+  }, [myBookings]);
 
-  // ── PaymentInfo для PaymentBlock ────────────────────────────
-  const payment = useMemo<PaymentInfo>(
-    () => ({
-      label:            commission.agency_name,
-      total_price:      commission.total_price,
-      amount_paid:      commission.commission_amount,
-      deposit_amount:   0,
-      balance_due:      commission.commission_amount,
-      payment_deadline: undefined,
-      payment_status:   commission.commission_status === 'paid' ? 'fully_paid' : 'partially_paid',
-      currency:         'EUR',
-      commission_amount:  commission.commission_amount,
-      commission_status:  commission.commission_status,
-    }),
-    [commission],
-  );
+  // ── Ідентифікатор агента ──────────────────────────────────────
+  const agentName = user ? `${user.first_name} ${user.last_name}` : '—';
 
-  // ── Stats з реальних даних useBookings ─────────────────────
-  const totalSales = myBookings.reduce((s, b) => s + b.total_price, 0);
-  const totalDebt  = myBookings.reduce((s, b) => s + b.balance_due, 0);
+  // ── CommissionInfo для CommissionBadge ────────────────────────
+  const commission = useMemo<CommissionInfo>(() => ({
+    agent_id:         user?.agent_id ?? '',
+    agent_name:       agentName,
+    agent_type:       user?.agent_type ?? 'standard',
+    agency_name:      agentName,
+    network_name:     undefined,
+    booking_id:       '',
+    tour_name:        '',
+    total_price:      totalSales,
+    commission_rate:  commissionRate,
+    commission_amount: totalCommission,
+    royalty_rate:     undefined,
+    royalty_amount:   undefined,
+    commission_status: 'pending',
+  }), [agentName, user, totalSales, commissionRate, totalCommission]);
+
+  // ── PaymentInfo для PaymentBlock ──────────────────────────────
+  const payment = useMemo<PaymentInfo>(() => ({
+    label:             agentName,
+    total_price:       totalSales,
+    amount_paid:       totalCommission,
+    deposit_amount:    0,
+    balance_due:       totalCommission,
+    payment_deadline:  '',
+    payment_status:    'partially_paid',
+    currency:          'EUR',
+    commission_amount: totalCommission,
+    commission_status: 'pending',
+  }), [agentName, totalSales, totalCommission]);
 
   const handleBook = (id: string) => {
     // TODO: navigate(`/bookings/new?tour=${id}`)
@@ -174,10 +173,10 @@ const AgentCabinet: React.FC = () => {
           </div>
           <div>
             <h1 className="text-lg font-medium text-slate-900 dark:text-slate-100">
-              {commission.agency_name}
+              {agentName}
             </h1>
             <div className="flex items-center gap-2 mt-1 flex-wrap">
-              <span className="text-xs text-slate-400">{commission.agent_name}</span>
+              <span className="text-xs text-slate-400">{user?.email}</span>
               <span className="text-slate-300 dark:text-slate-600">·</span>
               <span className={`
                 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border
@@ -189,22 +188,19 @@ const AgentCabinet: React.FC = () => {
                 {isNetworkAgent ? <Network size={9} /> : <User size={9} />}
                 {isNetworkAgent ? 'Мережевий агент' : 'Стандартний агент'}
               </span>
-              {isNetworkAgent && commission.network_name && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800">
-                  <Network size={9} />
-                  {commission.network_name}
-                </span>
-              )}
             </div>
           </div>
         </div>
 
-        <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-slate-900 text-white hover:bg-slate-700 dark:bg-slate-100 dark:text-slate-900 transition-colors flex-shrink-0">
+        <button
+          style={{ borderRadius: 9999 }}
+          className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-slate-900 text-white hover:bg-slate-700 dark:bg-slate-100 dark:text-slate-900 transition-colors flex-shrink-0"
+        >
           <Plus size={14} /> Нове бронювання
         </button>
       </div>
 
-      {/* ── STATS ROW — з реальних useBookings даних ── */}
+      {/* ── STATS ROW ── */}
       <div className={`grid gap-3 mb-6 ${isNetworkAgent ? 'grid-cols-2 sm:grid-cols-5' : 'grid-cols-2 sm:grid-cols-4'}`}>
         <StatBox
           label="Бронювань"
@@ -218,8 +214,8 @@ const AgentCabinet: React.FC = () => {
         />
         <StatBox
           label="Комісія нарахована"
-          value={`${fmtEur(commission.commission_amount)} EUR`}
-          sub={`${(commission.commission_rate * 100).toFixed(0)}% від суми`}
+          value={bookingsLoading ? '…' : `${fmtEur(totalCommission)} EUR`}
+          sub={commissionRate > 0 ? `${(commissionRate * 100).toFixed(0)}% від суми` : 'за бронюваннями'}
           colorClass="text-emerald-600 dark:text-emerald-400"
         />
         <StatBox
@@ -229,11 +225,11 @@ const AgentCabinet: React.FC = () => {
           colorClass={totalDebt > 0 ? 'text-amber-600 dark:text-amber-400' : undefined}
         />
         {/* BR-07: тільки для мережевого агента */}
-        {isNetworkAgent && commission.royalty_amount !== undefined && (
+        {isNetworkAgent && (
           <StatBox
             label="Роялті мережі"
-            value={`${fmtEur(commission.royalty_amount)} EUR`}
-            sub={`${((commission.royalty_rate ?? 0) * 100).toFixed(0)}% від субагентів`}
+            value="—"
+            sub="після виплати субагентам"
             colorClass="text-blue-600 dark:text-blue-400"
           />
         )}
@@ -245,7 +241,7 @@ const AgentCabinet: React.FC = () => {
         {/* LEFT (2/3): Bookings + Commission + [Network] */}
         <div className="lg:col-span-2 flex flex-col gap-5">
 
-          {/* Секція 1: Мої бронювання — useBookings */}
+          {/* Секція 1: Мої бронювання */}
           <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
             <SectionHead
               title="Мої бронювання"
@@ -256,7 +252,7 @@ const AgentCabinet: React.FC = () => {
               ? Array.from({ length: 4 }).map((_, i) => <RowSkeleton key={i} />)
               : myBookings.length === 0
                 ? <p className="py-10 text-center text-sm text-slate-400">Бронювань ще немає</p>
-                : myBookings.map((b) => (
+                : myBookings.map(b => (
                     <div
                       key={b.id}
                       onClick={() => handleViewBooking(b.id)}
@@ -300,7 +296,7 @@ const AgentCabinet: React.FC = () => {
             </div>
           </div>
 
-          {/* Секція 3: Мережа та роялті — тільки network (BR-07) */}
+          {/* Секція 3: Роялті мережі — тільки network (BR-07) */}
           {isNetworkAgent && (
             <div className="border border-blue-200 dark:border-blue-800 rounded-xl overflow-hidden">
               <SectionHead
@@ -309,11 +305,6 @@ const AgentCabinet: React.FC = () => {
                 badge="BR-07"
               />
               <div className="p-4">
-                <div className="grid grid-cols-3 gap-3 mb-4">
-                  <StatBox label="Ставка роялті"   value={`${((commission.royalty_rate ?? 0) * 100).toFixed(0)}%`} sub="від субагентів" />
-                  <StatBox label="Роялті"           value={`${fmtEur(commission.royalty_amount ?? 0)} EUR`}          sub="цього місяця" colorClass="text-blue-600 dark:text-blue-400" />
-                  <StatBox label="База розрахунку"  value={`${fmtEur(commission.total_price)} EUR`}                  sub="продажі субагентів" />
-                </div>
                 <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3.5">
                   <div className="flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 mb-2.5">
                     <Shield size={11} />
@@ -321,9 +312,9 @@ const AgentCabinet: React.FC = () => {
                   </div>
                   <div className="flex items-baseline justify-between">
                     <span className="text-lg font-medium text-blue-700 dark:text-blue-300">
-                      {fmtEur(commission.royalty_amount ?? 0)} EUR
+                      — EUR
                     </span>
-                    <StatusBadge status={commission.commission_status} domain="commission" size="xs" />
+                    <StatusBadge status="pending" domain="commission" size="xs" />
                   </div>
                 </div>
               </div>
@@ -331,7 +322,7 @@ const AgentCabinet: React.FC = () => {
           )}
         </div>
 
-        {/* RIGHT (1/3): Нові тури — useTourList */}
+        {/* RIGHT (1/3): Нові тури */}
         <div className="flex flex-col gap-5">
           <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
             <SectionHead
@@ -343,11 +334,11 @@ const AgentCabinet: React.FC = () => {
               ? Array.from({ length: 3 }).map((_, i) => <RowSkeleton key={i} />)
               : availTours.length === 0
                 ? <p className="py-8 text-center text-sm text-slate-400">Немає доступних турів</p>
-                : availTours.map((t) => (
+                : availTours.map(t => (
                     <TourCard
                       key={t.id}
                       tour={t}
-                      userRole="agent"   // BR-04: без cost_price
+                      userRole="agent"
                       variant="list"
                       onBook={handleBook}
                     />
@@ -355,7 +346,7 @@ const AgentCabinet: React.FC = () => {
             }
           </div>
 
-          {/* Quick stats з useBookings */}
+          {/* Статистика */}
           <div className="border border-slate-200 dark:border-slate-700 rounded-xl p-4">
             <div className="flex items-center gap-2 mb-3">
               <TrendingUp size={14} className="text-slate-400" />
@@ -363,13 +354,13 @@ const AgentCabinet: React.FC = () => {
               {bookingsLoading && <Loader2 size={12} className="animate-spin text-slate-400 ml-auto" />}
             </div>
             <dl className="space-y-2 text-sm">
-              {[
-                ['Активних',       myBookings.filter((b) => !['completed','cancelled_client','cancelled_operator','refund','no_show'].includes(b.status)).length],
-                ['Завершено',      myBookings.filter((b) => b.status === 'completed').length],
+              {([
+                ['Активних',         myBookings.filter(b => !['completed','cancelled_client','cancelled_operator','refund','no_show'].includes(b.status)).length],
+                ['Завершено',        myBookings.filter(b => b.status === 'completed').length],
                 ['Загальний оборот', `${fmtEur(totalSales)} EUR`],
-                ['Ставка комісії', `${(commission.commission_rate * 100).toFixed(0)}%`],
-              ].map(([k, v]) => (
-                <div key={k as string} className="flex items-center justify-between">
+                ['Ставка комісії',   commissionRate > 0 ? `${(commissionRate * 100).toFixed(0)}%` : '—'],
+              ] as const).map(([k, v]) => (
+                <div key={k} className="flex items-center justify-between">
                   <dt className="text-slate-500 dark:text-slate-400">{k}</dt>
                   <dd className="font-medium text-slate-900 dark:text-slate-100">
                     {bookingsLoading && typeof v === 'number' ? '…' : v}

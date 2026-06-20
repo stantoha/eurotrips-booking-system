@@ -34,3 +34,15 @@ export function useTours(filters?: TourListQueryDto) {
     staleTime: 5 * 60 * 1000,
   })
 }
+
+// Convenience hook returning Tour[] directly (used by AgentCabinet)
+export function useTourList(filters?: TourListQueryDto) {
+  return useQuery({
+    queryKey: tourKeys.list(filters),
+    queryFn:  async (): Promise<Tour[]> => {
+      const res = await api.get<TourListResult>('/tours', { params: filters })
+      return res.data.data
+    },
+    staleTime: 5 * 60 * 1000,
+  })
+}
