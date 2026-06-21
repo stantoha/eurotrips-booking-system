@@ -29,11 +29,11 @@ export const CREDENTIALS = {
     name    : 'Олена Коваль',          // ПІБ зі seed
     role    : 'manager',
   },
-  ops_manager: {
+  ops: {
     email   : 'ops@eurotrips.ua',
     password: 'test1234',
     name    : 'Операційний менеджер',
-    role    : 'ops_manager',
+    role    : 'ops',
   },
   accountant: {
     email   : 'finance@eurotrips.ua',

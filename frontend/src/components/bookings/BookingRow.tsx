@@ -43,7 +43,7 @@ function canSeeFinanceDetails(role: UserRole): boolean {
 
 /** Чи може роль бачити менеджера бронювання */
 function canSeeManager(role: UserRole): boolean {
-  return ['admin', 'director', 'manager', 'ops_manager', 'accountant'].includes(role);
+  return ['admin', 'director', 'manager', 'ops', 'accountant'].includes(role);
 }
 
 /** Чи може роль бачити агента / комісію */

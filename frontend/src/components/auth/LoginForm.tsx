@@ -234,7 +234,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
             {[
               { role: 'admin',       email: 'admin@eurotrips.ua' },
               { role: 'manager',     email: 'manager@eurotrips.ua' },
-              { role: 'ops_manager', email: 'ops@eurotrips.ua' },
+              { role: 'ops', email: 'ops@eurotrips.ua' },
               { role: 'accountant',  email: 'finance@eurotrips.ua' },
               { role: 'agent',       email: 'agent@agency.ua' },
             ].map(({ role, email }) => (

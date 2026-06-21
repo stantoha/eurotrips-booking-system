@@ -1,6 +1,6 @@
 ﻿// ============================================================
 // EUROTRIPS — pages/Bookings.tsx
-// Маршрут: /bookings   Ролі: admin, director, manager, ops_manager, accountant
+// Маршрут: /bookings   Ролі: admin, director, manager, ops, accountant
 //
 // Пошук:   booking_number (ET-YYYY-NNNNN) або contact_name
 // Фільтри: status, manager_name, дата (тиждень/місяць/довільна)

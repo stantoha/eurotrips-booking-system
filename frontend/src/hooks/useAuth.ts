@@ -120,7 +120,7 @@ export function useAuth(): UseAuthReturn {
   const isAdmin       = hasRole('admin');
   const isDirector    = hasRole('director');
   const isManager     = hasRole('manager');
-  const isOpsManager  = hasRole('ops_manager');
+  const isOpsManager  = hasRole('ops');
   const isAccountant  = hasRole('accountant');
   const isAgent       = hasRole('agent');
   const isTourist     = hasRole('tourist');

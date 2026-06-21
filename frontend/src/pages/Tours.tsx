@@ -1,6 +1,6 @@
 ﻿// ============================================================
 // EUROTRIPS — pages/Tours.tsx
-// Маршрут: /tours   Ролі: admin, director, manager, ops_manager, accountant
+// Маршрут: /tours   Ролі: admin, director, manager, ops, accountant
 //
 // Фільтри:
 //   • статус туру (TourStatus)

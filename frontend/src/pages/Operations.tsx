@@ -1,6 +1,6 @@
 // ============================================================
 // EUROTRIPS — pages/Operations.tsx
-// Маршрут: /operations   Ролі: admin, director, manager, ops_manager, accountant
+// Маршрут: /operations   Ролі: admin, director, manager, ops, accountant
 //
 // Секції:
 //   1. Готелі та розміщення (BR-09 — структура румінгів)
