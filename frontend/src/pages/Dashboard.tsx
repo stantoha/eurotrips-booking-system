@@ -143,7 +143,7 @@ const Dashboard: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">Дашборд</h1>
           <p className="text-sm text-slate-500 mt-0.5">
-            Вітаємо, {user?.firstName ?? 'Користувач'} · {new Date().toLocaleDateString('uk-UA', { weekday: 'long', day: 'numeric', month: 'long' })}
+            Вітаємо, {user?.first_name ?? 'Користувач'} · {new Date().toLocaleDateString('uk-UA', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
         </div>
         <button
