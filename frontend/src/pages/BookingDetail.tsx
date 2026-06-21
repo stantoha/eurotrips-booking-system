@@ -1,7 +1,7 @@
 // ============================================================
 // EUROTRIPS — pages/BookingDetail.tsx
 // Маршрут: /bookings/:id
-// Ролі: admin, director, manager, ops_manager, accountant, agent (свої)
+// Ролі: admin, director, manager, ops, accountant, agent (свої)
 //
 // Блоки:
 //   1. Шапка: номер ET-YYYY-NNNNN, статус, дата, менеджер

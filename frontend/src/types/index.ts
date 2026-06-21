@@ -291,7 +291,7 @@ export type UserRole =
   | 'admin'
   | 'director'
   | 'manager'
-  | 'ops_manager'
+  | 'ops'
   | 'accountant'
   | 'agent'
   | 'tourist';

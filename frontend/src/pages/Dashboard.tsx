@@ -1,6 +1,6 @@
 // ============================================================
 // EUROTRIPS — pages/Dashboard.tsx
-// Маршрут: /dashboard   Ролі: admin, director, manager, ops_manager, accountant
+// Маршрут: /dashboard   Ролі: admin, director, manager, ops, accountant
 //
 // Секції:
 //   1. KPI-картки: всього бронювань, підтверджених, доходу, боргу

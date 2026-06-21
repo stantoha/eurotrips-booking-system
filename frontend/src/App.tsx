@@ -77,7 +77,7 @@ export const App: React.FC = () => (
           </Route>
 
           {/* ── Internal team (manager, ops, accountant, admin) */}
-          <Route element={<ProtectedRoute allowedRoles={['admin', 'director', 'manager', 'ops_manager', 'accountant']} />}>
+          <Route element={<ProtectedRoute allowedRoles={['admin', 'director', 'manager', 'ops', 'accountant']} />}>
             <Route path="/dashboard"     element={<Dashboard />} />
             <Route path="/tours"         element={<ToursPage />} />
             <Route path="/bookings"      element={<BookingsPage />} />
@@ -85,7 +85,7 @@ export const App: React.FC = () => (
           </Route>
 
           {/* ── Booking detail — всі ролі, RBAC на рівні API ── */}
-          <Route element={<ProtectedRoute allowedRoles={['admin', 'director', 'manager', 'ops_manager', 'accountant', 'agent']} />}>
+          <Route element={<ProtectedRoute allowedRoles={['admin', 'director', 'manager', 'ops', 'accountant', 'agent']} />}>
             <Route path="/bookings/:id"  element={<BookingDetailRoute />} />
           </Route>
 

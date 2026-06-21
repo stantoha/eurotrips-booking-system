@@ -34,7 +34,10 @@
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f",
 
-    "prepare": "prisma generate"
+    "prepare": "prisma generate",
+
+    "verify:zoho": "tsx src/modules/integrations/zoho/zoho-verify.ts",
+    "migrate:zoho": "tsx src/modules/integrations/zoho/zoho-migration.ts"
   },
   "dependencies": {
     "@fastify/cookie": "^9.3.1",
