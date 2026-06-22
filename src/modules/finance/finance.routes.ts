@@ -101,6 +101,83 @@ export async function financeRoutes(app: FastifyInstance) {
     }
   );
 
+  // ── GET /finance/tours/:id/summary ──────────────────────────────────────
+  // RBAC: admin, director, manager (НЕ agent — BR-04)
+  app.get<{ Params: { id: string } }>(
+    '/tours/:id/summary',
+    {
+      preHandler: [requireAuth, requireRoles('admin', 'director', 'manager')],
+      schema: {
+        summary: 'Фінансове зведення по туру',
+        description: 'Доходи, витрати, прибуток по конкретному туру. Агент → 403 (BR-04).',
+        tags: ['Finance'],
+        security: [{ bearerAuth: [] }],
+      },
+    },
+    async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const { id } = req.params;
+
+      const tour = await prisma.tour.findFirst({
+        where: { id, isArchived: false },
+        select: {
+          id: true, code: true, name: true,
+          basePrice: true, costPrice: true,
+          totalSeats: true, availableSeats: true,
+          _count: { select: { bookings: true } },
+        },
+      });
+
+      if (!tour) {
+        return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Тур не знайдено' } });
+      }
+
+      const [revenueAgg, commissionsAgg, extrasAgg] = await Promise.all([
+        prisma.booking.aggregate({
+          where: { tourId: id, status: { notIn: ['cancelled_client', 'cancelled_operator', 'refund'] } },
+          _sum: { totalAmount: true, depositPaid: true, balancePaid: true },
+          _count: { id: true },
+        }),
+        prisma.agentCommission.aggregate({
+          where: { booking: { tourId: id }, status: { in: ['to_pay', 'paid'] } },
+          _sum: { amount: true },
+        }),
+        prisma.tourExtra.aggregate({
+          where: { tourId: id },
+          _sum: { costEur: true },
+        }),
+      ]);
+
+      const revenue          = Number(revenueAgg._sum.totalAmount ?? 0);
+      const collected        = Number(revenueAgg._sum.depositPaid ?? 0) + Number(revenueAgg._sum.balancePaid ?? 0);
+      const bookingsCount    = revenueAgg._count.id;
+      const hotelCosts       = Number(tour.costPrice ?? 0) * bookingsCount;
+      const transportCosts   = 0; // TODO: transport_bookings aggregate
+      const extrasCosts      = Number(extrasAgg._sum.costEur ?? 0);
+      const commissionsPaid  = Number(commissionsAgg._sum.amount ?? 0);
+      const grossProfit      = revenue - hotelCosts - transportCosts - extrasCosts;
+      const netProfit        = grossProfit - commissionsPaid;
+      const marginPct        = revenue > 0 ? Math.round((netProfit / revenue) * 10000) / 100 : 0;
+
+      return reply.code(200).send({
+        data: {
+          tourId: tour.id, code: tour.code, name: tour.name,
+          bookingsCount,
+          revenue,
+          collected,
+          hotel_costs:       hotelCosts,
+          transport_costs:   transportCosts,
+          extras_costs:      extrasCosts,
+          commissions_paid:  commissionsPaid,
+          gross_profit:      grossProfit,
+          net_profit:        netProfit,
+          margin_pct:        marginPct,
+          currency:          'EUR',
+          generatedAt:       new Date().toISOString(),
+        },
+      });
+    }
+  );
+
   // ── GET /finance/tours/:id/pnl ───────────────────────────────────────────
   app.get<{ Params: { id: string } }>(
     '/tours/:id/pnl',

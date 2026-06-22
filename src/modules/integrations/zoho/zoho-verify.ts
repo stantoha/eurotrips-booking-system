@@ -66,10 +66,11 @@ class ZohoTokenManager {
                   client_secret: ZOHO_CLIENT_SECRET, grant_type: 'refresh_token' } },
     );
     if (!res.data.access_token) throw new Error('Zoho OAuth2: access_token відсутній');
-    this.token     = res.data.access_token;
+    const token    = res.data.access_token;
+    this.token     = token;
     this.expiresAt = Date.now() + (res.data.expires_in - 60) * 1_000;
     logger.debug('Zoho OAuth2: токен оновлено');
-    return this.token;
+    return token;
   }
 }
 
