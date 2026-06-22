@@ -329,6 +329,7 @@ model Tourist {
   bookingParticipations BookingTourist[]
   leads                 Lead[]
   payments              Payment[]
+  insurances            TouristInsurance[]
   agent                 Agent?          @relation("TouristAgent", fields: [agentId], references: [id])
 
   @@index([email])
@@ -674,6 +675,7 @@ model Booking {
   commissions    AgentCommission[]
   documents      Document[]
   communications Communication[]
+  insurances     TouristInsurance[]
 
   @@index([status])
   @@index([tourId])
@@ -1167,4 +1169,36 @@ model AuditLog {
   @@index([tableName, recordId])
   @@index([createdAt])
   @@map("audit_log")
+}
+
+// =============================================================================
+// MODEL 21: tourist_insurances
+// Страхові поліси туристів по бронюванням.
+// ADR-003: Insurance per-tourist per-booking.
+// =============================================================================
+model TouristInsurance {
+  id               String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  bookingId        String   @map("booking_id") @db.Uuid
+  touristId        String   @map("tourist_id") @db.Uuid
+  policyNumber     String?  @map("policy_number") @db.VarChar(50)
+  /// "VUSO", "AXA", etc.
+  insurer          String   @db.VarChar(100)
+  insuranceType    String   @map("insurance_type") @db.VarChar(50)
+  coverageAmount   Decimal  @map("coverage_amount") @db.Decimal(10, 2)
+  coverageCurrency String   @default("USD") @map("coverage_currency") @db.Char(3)
+  startDate        DateTime @map("start_date") @db.Date
+  endDate          DateTime @map("end_date") @db.Date
+  costEur          Decimal  @map("cost_eur") @db.Decimal(8, 2)
+  status           String   @default("active") @db.VarChar(30)
+  documentPath     String?  @map("document_path") @db.Text
+  externalId       String?  @unique @map("external_id") @db.VarChar(100)
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  // Relations
+  booking  Booking  @relation(fields: [bookingId], references: [id])
+  tourist  Tourist  @relation(fields: [touristId], references: [id])
+
+  @@index([bookingId])
+  @@index([touristId])
+  @@map("tourist_insurances")
 }
