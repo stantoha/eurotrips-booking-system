@@ -15,7 +15,6 @@
     "lint": "eslint src --ext .ts --fix",
     "format": "prettier --write \"src/**/*.ts\"",
     "type-check": "tsc --noEmit",
-
     "db:migrate": "prisma migrate dev",
     "db:migrate:prod": "prisma migrate deploy",
     "db:generate": "prisma generate",
@@ -23,19 +22,17 @@
     "db:reset": "prisma migrate reset --force",
     "db:studio": "prisma studio",
     "db:push": "prisma db push",
-
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "vitest run --config vitest.e2e.config.ts",
-
+    "test:e2e": "playwright test --config tests/e2e/playwright.config.ts",
+    "test:e2e:headed": "playwright test --config tests/e2e/playwright.config.ts --headed",
+    "test:e2e:ci": "playwright test --config tests/e2e/playwright.config.ts --reporter=github",
     "docker:up": "docker-compose up -d postgres redis",
     "docker:up:tools": "docker-compose --profile tools up -d",
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f",
-
     "prepare": "prisma generate",
-
     "verify:zoho": "tsx src/modules/integrations/zoho/zoho-verify.ts",
     "migrate:zoho": "tsx src/modules/integrations/zoho/zoho-migration.ts"
   },
@@ -64,6 +61,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@types/bcrypt": "^5.0.2",
     "@types/node": "^20.14.9",
     "@types/nodemailer": "^6.4.15",

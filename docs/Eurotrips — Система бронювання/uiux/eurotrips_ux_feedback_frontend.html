@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eurotrips · UX Feedback Session · Frontend</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
+:root {
+  --bg:#0d0f14; --bg2:#141720; --bg3:#1c2030; --bg4:#232840;
+  --border:#252a3a; --border2:#2f3650;
+  --accent:#f97316; --a2:#3b82f6; --a3:#10b981; --a4:#8b5cf6;
+  --warn:#f59e0b; --danger:#ef4444;
+  --text:#e2e8f0; --text2:#94a3b8; --text3:#64748b;
+  --white:#fff;
+  --mono:'IBM Plex Mono',monospace;
+  --sans:'IBM Plex Sans',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);font-size:13px;line-height:1.6}
+
+/* NAV */
+.topnav{position:sticky;top:0;z-index:100;background:rgba(13,15,20,.96);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);display:flex;align-items:center;height:50px;padding:0 20px;gap:16px}
+.logo{font-family:var(--mono);font-weight:700;font-size:14px;color:var(--accent);letter-spacing:2px;white-space:nowrap}
+.logo span{color:var(--text3);font-weight:400}
+.nav-pills{display:flex;gap:4px;overflow-x:auto}
+.npill{padding:4px 12px;border-radius:4px;font-size:11px;font-weight:500;cursor:pointer;border:1px solid var(--border);color:var(--text3);white-space:nowrap;transition:all .15s;background:transparent}
+.npill:hover{border-color:var(--border2);color:var(--text)}
+.npill.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.npill.c{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.3);color:#fca5a5}
+.npill.i{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.25);color:#fcd34d}
+.npill.m{background:rgba(100,116,139,.12);border-color:var(--border2);color:var(--text2)}
+.nav-stat{margin-left:auto;display:flex;gap:12px;font-size:11px;font-family:var(--mono);white-space:nowrap}
+.ns{display:flex;align-items:center;gap:5px}
+.ns-dot{width:7px;height:7px;border-radius:50%}
+
+/* SECTIONS */
+.section{display:none;max-width:1300px;margin:0 auto;padding:24px 20px}
+.section.active{display:block}
+
+/* PAGE HEADER */
+.ph{margin-bottom:24px}
+.ph-title{font-size:20px;font-weight:700;font-family:var(--mono);color:var(--white);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.ph-badge{font-size:11px;padding:3px 10px;border-radius:2px;font-family:var(--sans);font-weight:600}
+.ph-badge.crit{background:var(--danger);color:#fff}
+.ph-badge.imp{background:var(--warn);color:#000}
+.ph-badge.ok{background:var(--a3);color:#000}
+.ph-sub{font-size:12px;color:var(--text2);margin-top:5px;font-family:var(--mono)}
+
+/* ISSUE CARD */
+.issue-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;margin-bottom:12px;overflow:hidden;transition:border-color .15s}
+.issue-card:hover{border-color:var(--border2)}
+.issue-card.crit{border-left:4px solid var(--danger)}
+.issue-card.imp{border-left:4px solid var(--warn)}
+.issue-card.min{border-left:4px solid var(--text3)}
+.issue-header{padding:12px 16px;display:flex;align-items:flex-start;gap:12px;cursor:pointer}
+.ih-sev{flex-shrink:0;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:700;font-family:var(--mono);white-space:nowrap;margin-top:1px}
+.sev-c{background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.25)}
+.sev-i{background:rgba(245,158,11,.12);color:#fcd34d;border:1px solid rgba(245,158,11,.2)}
+.sev-m{background:rgba(100,116,139,.12);color:var(--text2);border:1px solid var(--border2)}
+.ih-title{flex:1;font-size:13px;font-weight:600;color:var(--white)}
+.ih-meta{font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:3px}
+.ih-file{background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:1px 6px;font-family:var(--mono);font-size:10px;color:var(--text2);white-space:nowrap}
+.ih-expand{color:var(--text3);font-size:12px;margin-left:8px;flex-shrink:0;transition:transform .2s}
+.issue-body{padding:0 16px 14px;border-top:1px solid var(--border);display:none}
+.issue-body.open{display:block}
+.ib-section{margin-top:12px}
+.ib-label{font-size:10px;font-weight:700;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+
+/* CODE BLOCK */
+pre{background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:10px 12px;font-family:var(--mono);font-size:11px;line-height:1.7;overflow-x:auto;margin:4px 0}
+.code-bad{border-left:3px solid var(--danger)}
+.code-good{border-left:3px solid var(--a3)}
+pre .c-bad{color:#fca5a5}
+pre .c-ok{color:#6ee7b7}
+pre .c-comment{color:var(--text3)}
+pre .c-key{color:#93c5fd}
+pre .c-str{color:#fcd34d}
+
+/* FIX BLOCK */
+.fix-block{background:rgba(16,185,129,.05);border:1px solid rgba(16,185,129,.15);border-radius:5px;padding:10px 12px;margin-top:6px;font-size:12px;color:#a7f3d0}
+.fix-block strong{color:#6ee7b7}
+
+/* IMPACT BLOCK */
+.impact-block{background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.12);border-radius:5px;padding:10px 12px;margin-top:6px;font-size:11px;color:#fca5a5}
+
+/* TAGS */
+.tag{display:inline-block;font-size:10px;font-weight:600;padding:1px 7px;border-radius:3px;font-family:var(--mono)}
+.tag-cat-ux{background:rgba(139,92,246,.15);color:#c4b5fd;border:1px solid rgba(139,92,246,.25)}
+.tag-cat-a11y{background:rgba(16,185,129,.12);color:#6ee7b7;border:1px solid rgba(16,185,129,.2)}
+.tag-cat-arch{background:rgba(59,130,246,.12);color:#93c5fd;border:1px solid rgba(59,130,246,.2)}
+.tag-cat-cons{background:rgba(245,158,11,.1);color:#fcd34d;border:1px solid rgba(245,158,11,.2)}
+.tag-cat-sec{background:rgba(239,68,68,.1);color:#fca5a5;border:1px solid rgba(239,68,68,.2)}
+.tag-cat-br{background:rgba(249,115,22,.12);color:#fdba74;border:1px solid rgba(249,115,22,.2)}
+
+/* SUMMARY TABLE */
+.sum-table{width:100%;border-collapse:collapse}
+.sum-table th{background:var(--bg3);padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid var(--border2)}
+.sum-table td{padding:9px 12px;border-bottom:1px solid var(--border);font-size:12px;vertical-align:middle}
+.sum-table tr:hover td{background:rgba(255,255,255,.02)}
+.sum-table tr:last-child td{border-bottom:none}
+.sev-circle{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px}
+.sc-crit{background:var(--danger)}
+.sc-imp{background:var(--warn)}
+.sc-min{background:var(--text3)}
+
+/* KPI ROW */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+.kpi-box{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:12px 14px}
+.kpi-val{font-size:26px;font-weight:700;font-family:var(--mono);color:var(--white)}
+.kpi-label{font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:2px}
+.kpi-val.crit{color:var(--danger)}
+.kpi-val.imp{color:var(--warn)}
+.kpi-val.min{color:var(--text2)}
+.kpi-val.ok{color:var(--a3)}
+
+/* GRID */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+
+/* FILE GROUP */
+.file-group{background:var(--bg3);border:1px solid var(--border2);border-radius:6px;padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px}
+.fg-icon{font-size:16px}
+.fg-name{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--white)}
+.fg-sub{font-size:10px;color:var(--text3)}
+.fg-badges{margin-left:auto;display:flex;gap:5px}
+
+/* ALERT */
+.alert{border-radius:5px;padding:10px 14px;font-size:11px;margin-bottom:10px;display:flex;gap:10px}
+.alert-crit{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#fca5a5}
+.alert-imp{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);color:#fcd34d}
+.alert-ok{background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);color:#a7f3d0}
+.alert-info{background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);color:#93c5fd}
+.alert-icon{font-size:16px;flex-shrink:0}
+.alert-body strong{font-weight:700}
+
+/* PRAISE CARD */
+.praise-card{background:rgba(16,185,129,.05);border:1px solid rgba(16,185,129,.15);border-radius:8px;padding:12px 14px;margin-bottom:10px}
+.pc-title{font-size:12px;font-weight:600;color:#6ee7b7;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.pc-text{font-size:11px;color:var(--text2)}
+
+/* CHECKLIST FOR FIXES */
+.fix-checklist{list-style:none;padding:0}
+.fix-checklist li{padding:5px 0;font-size:12px;display:flex;align-items:flex-start;gap:8px;border-bottom:1px solid rgba(255,255,255,.04)}
+.fix-checklist li:last-child{border-bottom:none}
+.fc-box{width:14px;height:14px;border:1.5px solid var(--border2);border-radius:3px;flex-shrink:0;margin-top:2px}
+.hr{border:none;border-top:1px solid var(--border);margin:14px 0}
+</style>
+</head>
+<body>
+
+<div class="topnav">
+  <div class="logo">EUROTRIPS <span>SYSTEM</span></div>
+  <div class="nav-pills">
+    <div class="npill active" onclick="goTab('overview',this)">Огляд</div>
+    <div class="npill c" onclick="goTab('critical',this)">🔴 Критичні (4)</div>
+    <div class="npill i" onclick="goTab('important',this)">🟡 Важливі (7)</div>
+    <div class="npill m" onclick="goTab('minor',this)">⚪ Мінорні (5)</div>
+    <div class="npill" onclick="goTab('praise',this)">✅ Що добре</div>
+    <div class="npill" onclick="goTab('checklist',this)">📋 План виправлень</div>
+  </div>
+  <div class="nav-stat">
+    <div class="ns"><div class="ns-dot" style="background:var(--danger)"></div>Критичних: 4</div>
+    <div class="ns"><div class="ns-dot" style="background:var(--warn)"></div>Важливих: 7</div>
+    <div class="ns"><div class="ns-dot" style="background:var(--text3)"></div>Мінорних: 5</div>
+  </div>
+</div>
+
+<!-- ░░░ OVERVIEW ░░░ -->
+<div id="overview" class="section active">
+  <div class="ph">
+    <div class="ph-title">
+      <span class="ph-badge ok">UX/UI → FRONTEND</span>
+      Фідбек-сесія #1 — Auth Layer + Status Config
+    </div>
+    <div class="ph-sub">// Переглянуто: App.tsx · LoginForm.tsx · statuses.ts · useAuth.ts · ProtectedRoute.tsx · api.ts · authStore.ts</div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-row">
+    <div class="kpi-box" style="border-top:3px solid var(--danger)">
+      <div class="kpi-val crit">4</div>
+      <div class="kpi-label">КРИТИЧНИХ ПРОБЛЕМ</div>
+    </div>
+    <div class="kpi-box" style="border-top:3px solid var(--warn)">
+      <div class="kpi-val imp">7</div>
+      <div class="kpi-label">ВАЖЛИВИХ ЗАУВАЖЕНЬ</div>
+    </div>
+    <div class="kpi-box" style="border-top:3px solid var(--text3)">
+      <div class="kpi-val min">5</div>
+      <div class="kpi-label">МІНОРНИХ ПОКРАЩЕНЬ</div>
+    </div>
+    <div class="kpi-box" style="border-top:3px solid var(--a3)">
+      <div class="kpi-val ok">12</div>
+      <div class="kpi-label">ПРАВИЛЬНИХ РІШЕНЬ</div>
+    </div>
+  </div>
+
+  <!-- Alerts -->
+  <div class="alert alert-crit"><div class="alert-icon">🚨</div><div class="alert-body"><strong>Туристський маршрут відсутній в App.tsx.</strong> OPS-03 (кабінет туриста) спроектований та зафіксований в UserStories і прототипі — але роль <code>tourist</code> не має жодного маршруту. Систему не можна показати туристу.</div></div>
+  <div class="alert alert-crit"><div class="alert-icon">🔐</div><div class="alert-body"><strong>canSeeMargin у useAuth.ts не включає менеджерів.</strong> BR-04 забороняє тільки агентам бачити собівартість — але <code>isManager</code> та <code>isOpsManager</code> відсутні в <code>canSeeMargin</code>. Менеджери не можуть бачити маржу — бізнес-правило порушено.</div></div>
+  <div class="alert alert-imp"><div class="alert-icon">⚠️</div><div class="alert-body"><strong>Login не повертає на сторінку, з якої прийшов користувач.</strong> ProtectedRoute зберігає <code>state.from</code>, але LoginPage ігнорує його і завжди редіректить на <code>/dashboard</code>.</div></div>
+  <div class="alert alert-imp"><div class="alert-icon">⚠️</div><div class="alert-body"><strong>require() в api.ts — antipattern для Vite ESM.</strong> Динамічний CommonJS <code>require()</code> всередині ESM-модуля може ламати tree-shaking і генерувати попередження при build.</div></div>
+
+  <!-- Files reviewed -->
+  <div style="margin-bottom:20px">
+    <div style="font-size:11px;font-weight:700;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">ПЕРЕГЛЯНУТІ ФАЙЛИ</div>
+    <div class="file-group">
+      <div class="fg-icon">📦</div>
+      <div><div class="fg-name">App.tsx</div><div class="fg-sub">Маршрутизація, lazy loading, auth init</div></div>
+      <div class="fg-badges">
+        <span class="sev-c tag">1 КРИТ</span>
+        <span class="sev-i tag">2 ВАЖЛ</span>
+        <span class="tag-cat-arch tag">ARCH</span>
+        <span class="tag-cat-ux tag">UX</span>
+      </div>
+    </div>
+    <div class="file-group">
+      <div class="fg-icon">🔑</div>
+      <div><div class="fg-name">LoginForm.tsx</div><div class="fg-sub">React Hook Form, Zod, авторизація</div></div>
+      <div class="fg-badges">
+        <span class="sev-i tag">2 ВАЖЛ</span>
+        <span class="sev-m tag">1 МІН</span>
+        <span class="tag-cat-ux tag">UX</span>
+        <span class="tag-cat-a11y tag">A11Y</span>
+      </div>
+    </div>
+    <div class="file-group">
+      <div class="fg-icon">🏷️</div>
+      <div><div class="fg-name">statuses.ts</div><div class="fg-sub">Конфіг статусів, кольори, іконки</div></div>
+      <div class="fg-badges">
+        <span class="sev-i tag">2 ВАЖЛ</span>
+        <span class="sev-m tag">2 МІН</span>
+        <span class="tag-cat-cons tag">CONS</span>
+        <span class="tag-cat-br tag">BR</span>
+      </div>
+    </div>
+    <div class="file-group">
+      <div class="fg-icon">🪝</div>
+      <div><div class="fg-name">useAuth.ts</div><div class="fg-sub">RBAC хук, signIn/signOut, helpers</div></div>
+      <div class="fg-badges">
+        <span class="sev-c tag">1 КРИТ</span>
+        <span class="sev-i tag">1 ВАЖЛ</span>
+        <span class="tag-cat-br tag">BR-04</span>
+      </div>
+    </div>
+    <div class="file-group">
+      <div class="fg-icon">🛡️</div>
+      <div><div class="fg-name">ProtectedRoute.tsx</div><div class="fg-sub">Route guard, RBAC, loading/403 screens</div></div>
+      <div class="fg-badges">
+        <span class="sev-c tag">1 КРИТ</span>
+        <span class="sev-m tag">1 МІН</span>
+        <span class="tag-cat-ux tag">UX</span>
+        <span class="tag-cat-a11y tag">A11Y</span>
+      </div>
+    </div>
+    <div class="file-group">
+      <div class="fg-icon">🌐</div>
+      <div><div class="fg-name">api.ts + authStore.ts</div><div class="fg-sub">Axios, refresh token, Zustand store</div></div>
+      <div class="fg-badges">
+        <span class="sev-c tag">1 КРИТ</span>
+        <span class="sev-m tag">1 МІН</span>
+        <span class="tag-cat-arch tag">ARCH</span>
+        <span class="tag-cat-sec tag">SEC</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary table -->
+  <div style="font-size:11px;font-weight:700;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">ЗВЕДЕНА ТАБЛИЦЯ</div>
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden">
+    <table class="sum-table">
+      <thead><tr>
+        <th>#</th><th>Файл</th><th>Проблема</th><th>Рівень</th><th>Категорія</th><th>BR/OPS</th>
+      </tr></thead>
+      <tbody>
+        <tr><td style="font-family:var(--mono);color:var(--accent)">C-01</td><td><code style="font-size:10px">App.tsx:75–77</code></td><td>Роль <code>tourist</code> — маршрут відсутній</td><td><span class="sev-c tag">КРИТ</span></td><td><span class="tag-cat-arch tag">ARCH</span></td><td>OPS-03</td></tr>
+        <tr><td style="font-family:var(--mono);color:var(--accent)">C-02</td><td><code style="font-size:10px">useAuth.ts:132</code></td><td><code>canSeeMargin</code> виключає менеджерів</td><td><span class="sev-c tag">КРИТ</span></td><td><span class="tag-cat-br tag">BR-04</span></td><td>BR-04</td></tr>
+        <tr><td style="font-family:var(--mono);color:var(--accent)">C-03</td><td><code style="font-size:10px">App.tsx:33</code></td><td><code>window.location.replace</code> — ігнорує <code>state.from</code></td><td><span class="sev-c tag">КРИТ</span></td><td><span class="tag-cat-ux tag">UX</span></td><td>—</td></tr>
+        <tr><td style="font-family:var(--mono);color:var(--accent)">C-04</td><td><code style="font-size:10px">api.ts:134</code></td><td><code>require()</code> у ESM — Vite antipattern</td><td><span class="sev-c tag">КРИТ</span></td><td><span class="tag-cat-arch tag">ARCH</span></td><td>—</td></tr>
+        <tr style="opacity:.85"><td style="font-family:var(--mono);color:var(--warn)">I-01</td><td><code style="font-size:10px">LoginForm.tsx</code></td><td>Немає "Забули пароль?" — UX flow відсутній</td><td><span class="sev-i tag">ВАЖЛ</span></td><td><span class="tag-cat-ux tag">UX</span></td><td>—</td></tr>
+        <tr style="opacity:.85"><td style="font-family:var(--mono);color:var(--warn)">I-02</td><td><code style="font-size:10px">LoginForm.tsx</code></td><td>Кнопка входу — не брендований колір</td><td><span class="sev-i tag">ВАЖЛ</span></td><td><span class="tag-cat-ux tag">UI</span></td><td>—</td></tr>
+        <tr style="opacity:.85"><td style="font-family:var(--mono);color:var(--warn)">I-03</td><td><code style="font-size:10px">statuses.ts</code></td><td><code>RoomingStatus</code> і <code>RoomType</code> відсутні</td><td><span class="sev-i tag">ВАЖЛ</span></td><td><span class="tag-cat-cons tag">CONS</span></td><td>OPS-01/03</td></tr>
+        <tr style="opacity:.85"><td style="font-family:var(--mono);color:var(--warn)">I-04</td><td><code style="font-size:10px">statuses.ts:193</code></td><td>Import <code>CommissionStatus</code> — в кінці файлу</td><td><span class="sev-i tag">ВАЖЛ</span></td><td><span class="tag-cat-cons tag">CONS</span></td><td>—</td></tr>
+        <tr style="opacity:.85"><td style="font-family:var(--mono);color:var(--warn)">I-05</td><td><code style="font-size:10px">App.tsx:81</code></td><td>Wildcard <code>*</code> → dashboard замість 404</td><td><span class="sev-i tag">ВАЖЛ</span></td><td><span class="tag-cat-ux tag">UX</span></td><td>—</td></tr>
+        <tr style="opacity:.85"><td style="font-family:var(--mono);color:var(--warn)">I-06</td><td><code style="font-size:10px">App.tsx:56</code></td><td>Suspense fallback — немає ErrorBoundary</td><td><span class="sev-i tag">ВАЖЛ</span></td><td><span class="tag-cat-arch tag">ARCH</span></td><td>—</td></tr>
+        <tr style="opacity:.85"><td style="font-family:var(--mono);color:var(--warn)">I-07</td><td><code style="font-size:10px">api.ts:113</code></td><td><code>window.location.href</code> при 401 — повне перезавантаження</td><td><span class="sev-i tag">ВАЖЛ</span></td><td><span class="tag-cat-ux tag">UX</span></td><td>—</td></tr>
+        <tr style="opacity:.6"><td style="font-family:var(--mono);color:var(--text3)">M-01</td><td><code style="font-size:10px">ProtectedRoute.tsx:38</code></td><td><code>Loader2</code> без <code>aria-hidden</code></td><td><span class="sev-m tag">МІН</span></td><td><span class="tag-cat-a11y tag">A11Y</span></td><td>—</td></tr>
+        <tr style="opacity:.6"><td style="font-family:var(--mono);color:var(--text3)">M-02</td><td><code style="font-size:10px">App.tsx:56</code></td><td>Глобальний Suspense — анонімний спінер без бренду</td><td><span class="sev-m tag">МІН</span></td><td><span class="tag-cat-ux tag">UI</span></td><td>—</td></tr>
+        <tr style="opacity:.6"><td style="font-family:var(--mono);color:var(--text3)">M-03</td><td><code style="font-size:10px">statuses.ts:205</code></td><td><code>AGENT_TYPE_CONFIG</code> використовує <code>Record&lt;string,...&gt;</code></td><td><span class="sev-m tag">МІН</span></td><td><span class="tag-cat-cons tag">TYPE</span></td><td>—</td></tr>
+        <tr style="opacity:.6"><td style="font-family:var(--mono);color:var(--text3)">M-04</td><td><code style="font-size:10px">App.tsx:62–64</code></td><td>Маршрут <code>/finance</code> — відсутній <code>ops_manager</code></td><td><span class="sev-m tag">МІН</span></td><td><span class="tag-cat-arch tag">RBAC</span></td><td>—</td></tr>
+        <tr style="opacity:.6"><td style="font-family:var(--mono);color:var(--text3)">M-05</td><td><code style="font-size:10px">useAuth.ts:129</code></td><td>Magic string <code>'network'</code> — не через <code>AGENT_TYPE_CONFIG</code></td><td><span class="sev-m tag">МІН</span></td><td><span class="tag-cat-cons tag">CONS</span></td><td>—</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ░░░ CRITICAL ░░░ -->
+<div id="critical" class="section">
+  <div class="ph">
+    <div class="ph-title"><span class="ph-badge crit">КРИТИЧНІ</span>4 проблеми — блокують функціональність</div>
+    <div class="ph-sub">// Ці проблеми не дозволяють реалізувати повний функціонал або порушують бізнес-правила</div>
+  </div>
+
+  <!-- C-01 -->
+  <div class="issue-card crit">
+    <div class="issue-header" onclick="toggle('c01')">
+      <span class="ih-sev sev-c">КРИТ</span>
+      <div>
+        <div class="ih-title">C-01 · Роль <code>tourist</code> не має жодного маршруту в App.tsx</div>
+        <div class="ih-meta">OPS-03 · Кабінет туриста (self-service) · <span class="ih-file">App.tsx:62–77</span> · <span class="tag tag-cat-arch">ARCH</span> <span class="tag tag-cat-ux">UX</span></div>
+      </div>
+      <span class="ih-expand" id="c01-arrow">▼</span>
+    </div>
+    <div class="issue-body" id="c01">
+      <div class="ib-section">
+        <div class="ib-label">ПРОБЛЕМА</div>
+        <p style="font-size:12px;color:var(--text2)">Роль <code>tourist</code> повністю відсутня в маршрутизації. <code>useAuth.ts:126</code> визначає <code>isTourist = hasRole('tourist')</code>, OPS-03 описує повноцінний кабінет туриста з вибором місця в автобусі та типу номеру, прототип WF5 реалізовано — але маршруту немає. Якщо турист намагається зайти — він потрапляє на <code>/dashboard</code> (wildcard redirect), де немає жодного контенту для його ролі.</p>
+        <div class="impact-block">🔴 Impact: Функціональність OPS-03 повністю недосяжна через UI. Турист не може обрати місце в автобусі та тип номеру.</div>
+      </div>
+      <div class="ib-section">
+        <div class="ib-label">ПОТОЧНИЙ КОД (App.tsx)</div>
+        <pre class="code-bad"><span class="c-comment">// ❌ Немає маршруту для туриста</span>
+<span class="c-comment">// Роль tourist при wildcard '*' отримує redirect на /dashboard</span>
+<span class="c-bad">&lt;Route path="*" element={&lt;Navigate to="/dashboard" replace /&gt;} /&gt;</span></pre>
+      </div>
+      <div class="ib-section">
+        <div class="ib-label">РЕКОМЕНДОВАНЕ ВИПРАВЛЕННЯ</div>
+        <pre class="code-good"><span class="c-comment">// ✅ Додати маршрут для туриста</span>
+<span class="c-key">&lt;Route</span> <span class="c-str">element</span>={&lt;<span class="c-key">ProtectedRoute</span> allowedRoles={[<span class="c-str">'tourist'</span>]} /&gt;}&gt;
+  <span class="c-key">&lt;Route</span> <span class="c-str">path</span>=<span class="c-str">"/my-booking"</span> <span class="c-str">element</span>={&lt;<span class="c-key">TouristCabinet</span> /&gt;} /&gt;
+  <span class="c-key">&lt;Route</span> <span class="c-str">path</span>=<span class="c-str">"/my-booking/:id/preferences"</span> <span class="c-str">element</span>={&lt;<span class="c-key">TouristPreferences</span> /&gt;} /&gt;
+&lt;/<span class="c-key">Route</span>&gt;
+
+<span class="c-comment">// ✅ Розумний wildcard залежно від ролі</span>
+<span class="c-key">&lt;Route</span> <span class="c-str">path</span>=<span class="c-str">"*"</span> <span class="c-str">element</span>={&lt;<span class="c-key">NotFoundPage</span> /&gt;} /&gt;</pre>
+        <div class="fix-block"><strong>Потребує:</strong> Сторінки <code>TouristCabinet.tsx</code> та <code>TouristPreferences.tsx</code> — реалізуються на основі WF5 прототипу (вже готовий). Роут для <code>/my-booking</code> відповідає endpoint <code>GET /bookings/:id/seat-map</code> та <code>PATCH /bookings/:id/tourist/:tId/preferences</code> з OPS-03.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- C-02 -->
+  <div class="issue-card crit">
+    <div class="issue-header" onclick="toggle('c02')">
+      <span class="ih-sev sev-c">КРИТ</span>
+      <div>
+        <div class="ih-title">C-02 · <code>canSeeMargin</code> порушує BR-04 — менеджери не можуть бачити маржу</div>
+        <div class="ih-meta">BR-04 · useAuth.ts:132 · <span class="ih-file">useAuth.ts:132</span> · <span class="tag tag-cat-br">BR-04</span></div>
+      </div>
+      <span class="ih-expand" id="c02-arrow">▼</span>
+    </div>
+    <div class="issue-body" id="c02">
+      <div class="ib-section">
+        <div class="ib-label">ПРОБЛЕМА</div>
+        <p style="font-size:12px;color:var(--text2)">Бізнес-правило BR-04: "Агенти ніколи не бачать <code>cost_price</code> та маржу". Це означає що всі внутрішні ролі — менеджери, операційники — МАЮТЬ бачити маржу. Але поточна реалізація включає тільки <code>admin</code>, <code>director</code> та <code>accountant</code>. Менеджери з продажу (роль <code>manager</code>) не можуть бачити прибутковість по бронюванню — а це ключовий інструмент для продажів.</p>
+        <div class="impact-block">🔴 Impact: Менеджер відкриває картку бронювання — поле "Маржа / Прибуток" пусте або приховане. Неможливо оцінити вигідність угоди.</div>
+      </div>
+      <div class="ib-section">
+        <div class="ib-label">ПОТОЧНИЙ КОД</div>
+        <pre class="code-bad"><span class="c-comment">// ❌ Неправильно — менеджер не бачить маржу</span>
+const canSeeMargin = <span class="c-bad">isAdmin || isDirector || isAccountant</span>;
+<span class="c-comment">// isManager та isOpsManager відсутні!</span></pre>
+      </div>
+      <div class="ib-section">
+        <div class="ib-label">ВИПРАВЛЕННЯ</div>
+        <pre class="code-good"><span class="c-comment">// ✅ BR-04: заборона тільки для агентів та туристів</span>
+const canSeeMargin = <span class="c-ok">!isAgent && !isTourist</span>;
+<span class="c-comment">// Або явно, якщо потрібна whitelist-логіка:</span>
+const canSeeMargin = <span class="c-ok">isAdmin || isDirector || isAccountant || isManager || isOpsManager</span>;</pre>
+        <div class="fix-block"><strong>Рекомендація:</strong> Використовуйте <code>!isAgent && !isTourist</code> — це точно відповідає BR-04 і автоматично включатиме нові внутрішні ролі в майбутньому. Додатково перевірити усі місця де <code>canSeeMargin</code> використовується в Tour/Booking компонентах.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- C-03 -->
+  <div class="issue-card crit">
+    <div class="issue-header" onclick="toggle('c03')">
+      <span class="ih-sev sev-c">КРИТ</span>
+      <div>
+        <div class="ih-title">C-03 · Login завжди редіректить на <code>/dashboard</code> — ігнорує <code>state.from</code></div>
+        <div class="ih-meta">UX · Redirect після логіну · <span class="ih-file">App.tsx:33</span> + <span class="ih-file">ProtectedRoute.tsx:82–86</span> · <span class="tag tag-cat-ux">UX</span></div>
+      </div>
+      <span class="ih-expand" id="c03-arrow">▼</span>
+    </div>
+    <div class="issue-body" id="c03">
+      <div class="ib-section">
+        <div class="ib-label">ПРОБЛЕМА</div>
+        <p style="font-size:12px;color:var(--text2)">ProtectedRoute зберігає шлях що запитував користувач перед редіректом на логін: <code>state={{ from: location.pathname }}</code>. Але LoginPage та LoginForm ігнорують цей state і завжди відправляють на <code>/dashboard</code>. Менеджер, якому надіслали посилання на конкретне бронювання <code>/bookings/1247</code>, після логіну потрапляє на дашборд — і губить контекст.</p>
+        <div class="impact-block">🟡 Сценарій: Операційник отримує посилання на картку туру, натискає — бачить логін. Логіниться — і опиняється на дашборді. Мусить знову шукати потрібну сторінку.</div>
+      </div>
+      <div class="ib-section">
+        <div class="ib-label">ПОТОЧНИЙ КОД</div>
+        <pre class="code-bad"><span class="c-comment">// ❌ App.tsx:33 — завжди /dashboard, ігнорує state.from</span>
+&lt;LoginForm onSuccess={() =&gt; <span class="c-bad">window.location.replace('/dashboard')</span>} /&gt;
+
+<span class="c-comment">// ❌ Додатковий antipattern — window.location замість React Router navigate</span></pre>
+      </div>
+      <div class="ib-section">
+        <div class="ib-label">ВИПРАВЛЕННЯ</div>
+        <pre class="code-good"><span class="c-comment">// ✅ LoginPage — зчитуємо state.from через useLocation</span>
+const LoginPage: React.FC = () => {
+  const { isAuthenticated } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  <span class="c-comment">// state.from прокидує ProtectedRoute</span>
+  const from = (location.state as { from?: string })?.from ?? '/dashboard';
+  
+  if (isAuthenticated) return &lt;Navigate to={from} replace /&gt;;
+  
+  return (
+    &lt;LoginForm onSuccess={<span class="c-ok">() =&gt; navigate(from, { replace: true })</span>} /&gt;
+  );
+};</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- C-04 -->
+  <div class="issue-card crit">
+    <div class="issue-header" onclick="toggle('c04')">
+      <span class="ih-sev sev-c">КРИТ</span>
+      <div>
+        <div class="ih-title">C-04 · <code>require()</code> у ESM-модулі api.ts — Vite antipattern</div>
+        <div class="ih-meta">Architecture · Circular dependencies · <span class="ih-file">api.ts:134</span> · <span class="tag tag-cat-arch">ARCH</span> <span class="tag tag-cat-sec">SEC</span></div>
+      </div>
+      <span class="ih-expand" id="c04-arrow">▼</span>
+    </div>
+    <div class="issue-body" id="c04">
+      <div class="ib-section">
+        <div class="ib-label">ПРОБЛЕМА</div>
+        <p style="font-size:12px;color:var(--text2)">В <code>api.ts:134</code> є динамічний <code>require()</code> для отримання authStore — це CommonJS синтаксис у ESM-модулі. Vite попереджатиме під час build. Крім того, <code>window.location.href = '/login'</code> у refresh interceptor (рядок 113) замінить всю React-аплікацію і скине весь стан — замість акуратного logout через React Router.</p>
+      </div>
+      <div class="ib-section">
+        <div class="ib-label">ПРОБЛЕМНИЙ КОД</div>
+        <pre class="code-bad"><span class="c-comment">// ❌ api.ts:134 — CommonJS require() у ESM</span>
+const { useAuthStore } = <span class="c-bad">require('../store/authStore')</span> as {...};
+
+<span class="c-comment">// ❌ api.ts:113 — повне перезавантаження замість React Router</span>
+<span class="c-bad">window.location.href = '/login'</span>;</pre>
+      </div>
+      <div class="ib-section">
+        <div class="ib-label">РЕКОМЕНДОВАНЕ ВИПРАВЛЕННЯ</div>
+        <pre class="code-good"><span class="c-comment">// ✅ Варіант 1: useAuthStore.getState() напряму (якщо немає circular dep)</span>
+import { useAuthStore } from <span class="c-str">'../store/authStore'</span>;
+
+function getAuthActions() {
+  const state = <span class="c-ok">useAuthStore.getState()</span>;
+  return { getAccessToken: () => state.accessToken, ... };
+}
+
+<span class="c-comment">// ✅ Варіант 2: зовнішній navigateFn — ін'єкція через setNavigator()</span>
+let navigateFn: ((path: string) => void) | null = null;
+export const setNavigator = (fn: typeof navigateFn) => { navigateFn = fn; };
+
+<span class="c-comment">// У App.tsx: api.setNavigator((path) => navigate(path));</span>
+
+<span class="c-comment">// ✅ Замість window.location.href:</span>
+<span class="c-ok">navigateFn?.('/login') ?? (window.location.replace('/login'))</span>;</pre>
+        <div class="fix-block"><strong>Коментар:</strong> Варіант 1 простіший. Zustand дозволяє <code>getState()</code> поза компонентами — це офіційний паттерн для Zustand v4+. Circular dep вирішується через реєстрацію в окремому <code>store-registry.ts</code>.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ░░░ IMPORTANT ░░░ -->
+<div id="important" class="section">
+  <div class="ph">
+    <div class="ph-title"><span class="ph-badge imp">ВАЖЛИВІ</span>7 зауважень — погіршують UX та консистентність</div>
+    <div class="ph-sub">// Не блокують роботу, але впливають на якість продукту</div>
+  </div>
+
+  <!-- I-01 -->
+  <div class="issue-card imp">
+    <div class="issue-header" onclick="toggle('i01')">
+      <span class="ih-sev sev-i">ВАЖЛ</span>
+      <div>
+        <div class="ih-title">I-01 · Немає "Забули пароль?" — відсутній UX flow відновлення доступу</div>
+        <div class="ih-meta">UX · LoginForm.tsx · <span class="tag tag-cat-ux">UX</span></div>
+      </div>
+      <span class="ih-expand" id="i01-arrow">▼</span>
+    </div>
+    <div class="issue-body" id="i01">
+      <div class="ib-section">
+        <div class="ib-label">ПРОБЛЕМА</div>
+        <p style="font-size:12px;color:var(--text2)">Форма логіну не містить посилання на відновлення пароля. Для B2B системи з кількома десятками агентів та менеджерів — це обов'язковий елемент. Особливо критично для агентів, які заходять рідко (між турами). Зараз єдиний варіант — писати адміну.</p>
+      </div>
+      <div class="ib-section">
+        <div class="ib-label">РЕКОМЕНДОВАНЕ ВИПРАВЛЕННЯ</div>
+        <pre class="code-good"><span class="c-comment">// ✅ Додати під кнопкою "Увійти"</span>
+&lt;div className=<span class="c-str">"text-center mt-4"</span>&gt;
+  &lt;button
+    type=<span class="c-str">"button"</span>
+    onClick={() =&gt; navigate(<span class="c-str">'/forgot-password'</span>)}
+    className=<span class="c-str">"text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 underline-offset-2 hover:underline"</span>
+  &gt;
+    Забули пароль?
+  &lt;/button&gt;
+&lt;/div&gt;</pre>
+        <div class="fix-block"><strong>Потребує:</strong> Маршрут <code>/forgot-password</code> + endpoint <code>POST /auth/forgot-password</code>. Навіть базовий варіант "надішліть листа адміну" — краще ніж нічого на MVP.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- I-02 -->
+  <div class="issue-card imp">
+    <div class="issue-header" onclick="toggle('i02')">
+      <span class="ih-sev sev-i">ВАЖЛ</span>
+      <div>
+        <div class="ih-title">I-02 · Кнопка входу — <code>bg-slate-900</code> замість бренд-кольору Eurotrips</div>
+        <div class="ih-meta">UI · Brand · LoginForm.tsx:204–213 · <span class="tag tag-cat-ux">UI</span></div>
+      </div>
+      <span class="ih-expand" id="i02-arrow">▼</span>
+    </div>
+    <div class="issue-body" id="i02">
+      <div class="ib-section">
+        <div class="ib-label">ПРОБЛЕМА</div>
+        <p style="font-size:12px;color:var(--text2)">Кнопка "Увійти в систему" використовує <code>bg-slate-900</code> — анонімний темний колір. Eurotrips має фірмові кольори: синій <code>#1B4F9C</code> та золотий <code>#F5A623</code>. Сторінка входу — перше, що бачить будь-який користувач системи. Відсутність бренду знижує довіру. Лого також використовує <code>MapPin</code> іконку без фірмового кольору.</p>
+        <div class="impact-block">Сторінка логіну виглядає як дефолтний Next.js шаблон, не як продукт Eurotrips.</div>
+      </div>
+      <div class="ib-section">
+        <div class="ib-label">ВИПРАВЛЕННЯ</div>
+        <pre class="code-good"><span class="c-comment">// ✅ Tailwind кастомні кольори в tailwind.config.ts</span>
+theme: {
+  extend: {
+    colors: {
+      brand: {
+        blue:   <span class="c-str">'#1B4F9C'</span>,
+        gold:   <span class="c-str">'#F5A623'</span>,
+        'blue-hover': <span class="c-str">'#163f7d'</span>,
+      }
+    }
+  }
+}
+
+<span class="c-comment">// ✅ Кнопка входу</span>
+className=<span class="c-str">"... bg-brand-blue hover:bg-brand-blue-hover ..."</span>
+
+<span class="c-comment">// ✅ Лого — підтримка кольору бренду</span>
+&lt;div className=<span class="c-str">"w-8 h-8 bg-brand-blue rounded-lg ..."</span>&gt;
+  &lt;MapPin size={16} className=<span class="c-str">"text-brand-gold"</span> /&gt;
+&lt;/div&gt;</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- I-03 -->
+  <div class="issue-card imp">
+    <div class="issue-header" onclick="toggle('i03')">
+      <span class="ih-sev sev-i">ВАЖЛ</span>
+      <div>
+        <div class="ih-title">I-03 · <code>RoomingStatus</code> і <code>RoomType</code> відсутні в <code>statuses.ts</code></div>
+        <div class="ih-meta">Consistency · OPS-01/03 · statuses.ts · <span class="tag tag-cat-cons">CONS</span> <span class="tag tag-cat-br">OPS</span></div>
+      </div>
+      <span class="ih-expand" id="i03-arrow">▼</span>
+    </div>
+    <div class="issue-body" id="i03">
+      <div class="ib-section">
+        <div class="ib-label">ПРОБЛЕМА</div>
+        <p style="font-size:12px;color:var(--text2)">OPS-01/02/03 додали два нові enum: <code>RoomingStatus</code> (DRAFT/APPROVED/FINAL) та <code>RoomType</code> (TWIN/DOUBLE/TRIPLE/SINGLE/NO_PREFERENCE) у schema.prisma. Але <code>statuses.ts</code> не містить їх конфігурації. Майбутні OPS-компоненти не матимуть стандартизованих лейблів, іконок та кольорів.</p>
+      </div>
+      <div class="ib-section">
+        <div class="ib-label">РЕКОМЕНДОВАНЕ ДОПОВНЕННЯ</div>
+        <pre class="code-good"><span class="c-comment">// ✅ Додати в statuses.ts</span>
+import { RoomingStatus, RoomType } from <span class="c-str">'../types'</span>;
+
+export const ROOMING_STATUS_CONFIG: Record&lt;RoomingStatus, StatusConfig&gt; = {
+  DRAFT:    { label: <span class="c-str">'Структура вноситься'</span>, icon: <span class="c-str">'FileEdit'</span>,     colorVariant: <span class="c-str">'secondary'</span> },
+  APPROVED: { label: <span class="c-str">'Затверджено'</span>,        icon: <span class="c-str">'CheckCircle2'</span>,  colorVariant: <span class="c-str">'success'</span> },
+  FINAL:    { label: <span class="c-str">'Румінг закрито'</span>,     icon: <span class="c-str">'Lock'</span>,          colorVariant: <span class="c-str">'warning'</span>, isPulsing: false },
+};
+
+export const ROOM_TYPE_CONFIG: Record&lt;RoomType, {
+  label: string; icon: string; maxOccupants: number;
+}&gt; = {
+  TWIN:          { label: <span class="c-str">'Twin (2 ліжка)'</span>,  icon: <span class="c-str">'BedDouble'</span>, maxOccupants: 2 },
+  DOUBLE:        { label: <span class="c-str">'Double (2-спальне)'</span>,icon: <span class="c-str">'Bed'</span>,       maxOccupants: 2 },
+  TRIPLE:        { label: <span class="c-str">'Triple (3-місний)'</span>, icon: <span class="c-str">'BedDouble'</span>, maxOccupants: 3 },
+  SINGLE:        { label: <span class="c-str">'Single (1-місний)'</span>, icon: <span class="c-str">'Bed'</span>,       maxOccupants: 1 },
+  NO_PREFERENCE: { label: <span class="c-str">'Без переваги'</span>,      icon: <span class="c-str">'HelpCircle'</span>,maxOccupants: 0 },
+};</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- I-04 -->
+  <div class="issue-card imp">
+    <div class="issue-header" onclick="toggle('i04')">
+      <span class="ih-sev sev-i">ВАЖЛ</span>
+      <div>
+        <div class="ih-title">I-04 · Import <code>CommissionStatus</code> у кінці файлу — порушує порядок imports</div>
+        <div class="ih-meta">Code Style · Consistency · statuses.ts:193 · <span class="tag tag-cat-cons">CONS</span></div>
+      </div>
+      <span class="ih-expand" id="i04-arrow">▼</span>
+    </div>
+    <div class="issue-body" id="i04">
+      <div class="ib-section">
+        <div class="ib-label">ПРОБЛЕМА</div>
+        <p style="font-size:12px;color:var(--text2)">Всі типи: <code>BookingStatus</code>, <code>TourStatus</code>, <code>LeadStatus</code>, <code>PaymentStatus</code> імпортуються на рядку 6. Але <code>CommissionStatus</code> імпортується на рядку 193 — між кодом. ESLint <code>import/order</code> правило буде видавати помилку. Це також ускладнює пошук залежностей файлу.</p>
+      </div>
+      <div class="ib-section">
+        <div class="ib-label">ВИПРАВЛЕННЯ — 1 рядок</div>
+        <pre class="code-good"><span class="c-comment">// ✅ statuses.ts:6 — всі типи разом</span>
+import {
+  BookingStatus, TourStatus, LeadStatus,
+  PaymentStatus, <span class="c-ok">CommissionStatus</span>,
+} from <span class="c-str">'../types'</span>;
+
+<span class="c-comment">// ❌ Видалити окремий import на рядку 193</span></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- I-05 -->
+  <div class="issue-card imp">
+    <div class="issue-header" onclick="toggle('i05')">
+      <span class="ih-sev sev-i">ВАЖЛ</span>
+      <div>
+        <div class="ih-title">I-05 · Wildcard <code>*</code> → <code>/dashboard</code> — відсутня сторінка 404</div>
+        <div class="ih-meta">UX · Routing · App.tsx:81 · <span class="tag tag-cat-ux">UX</span> <span class="tag tag-cat-arch">ARCH</span></div>
+      </div>
+      <span class="ih-expand" id="i05-arrow">▼</span>
+    </div>
+    <div class="issue-body" id="i05">
+      <div class="ib-section">
+        <div class="ib-label">ПРОБЛЕМА</div>
+        <p style="font-size:12px;color:var(--text2)">Будь-який неіснуючий URL — хибна адреса, помилка в посиланні, рядок пошуку — мовчки редіректить на дашборд. Користувач не розуміє що "щось пішло не так". Крім того, <code>ProtectedRoute</code> має <code>forbiddenPath</code> пропс який за замовченням вказує на <code>/403</code> — але такого маршруту немає.</p>
+      </div>
+      <div class="ib-section">
+        <div class="ib-label">ВИПРАВЛЕННЯ</div>
+        <pre class="code-good"><span class="c-comment">// ✅ Додати компоненти та маршрути</span>
+const NotFoundPage  = lazy(() =&gt; import(<span class="c-str">'./pages/errors/NotFound'</span>));
+const ForbiddenPage = lazy(() =&gt; import(<span class="c-str">'./pages/errors/Forbidden'</span>));
+
+<span class="c-comment">// В Routes:</span>
+&lt;Route path=<span class="c-str">"/403"</span> element={&lt;<span class="c-ok">ForbiddenPage</span> /&gt;} /&gt;
+&lt;Route path=<span class="c-str">"*"</span>    element={&lt;<span class="c-ok">NotFoundPage</span>  /&gt;} /&gt;
+
+<span class="c-comment">// NotFound.tsx — мінімально:</span>
+<span class="c-comment">// "Сторінку не знайдено · 404 · Повернутися на дашборд"</span></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- I-06 -->
+  <div class="issue-card imp">
+    <div class="issue-header" onclick="toggle('i06')">
+      <span class="ih-sev sev-i">ВАЖЛ</span>
+      <div>
+        <div class="ih-title">I-06 · Відсутній <code>ErrorBoundary</code> — lazy-сторінки можуть крашитись без UI</div>
+        <div class="ih-meta">Architecture · Resilience · App.tsx:56 · <span class="tag tag-cat-arch">ARCH</span> <span class="tag tag-cat-ux">UX</span></div>
+      </div>
+      <span class="ih-expand" id="i06-arrow">▼</span>
+    </div>
+    <div class="issue-body" id="i06">
+      <div class="ib-section">
+        <div class="ib-label">ПРОБЛЕМА</div>
+        <p style="font-size:12px;color:var(--text2)">Всі сторінки завантажуються ліниво через <code>React.lazy()</code>. Якщо чанк не завантажиться (мережа, 404 на CDN) або компонент кине виняток — React Suspense покаже порожній екран або крашне все дерево. Немає <code>ErrorBoundary</code> що перехопить помилку і покаже user-friendly повідомлення.</p>
+      </div>
+      <div class="ib-section">
+        <div class="ib-label">ВИПРАВЛЕННЯ</div>
+        <pre class="code-good"><span class="c-comment">// ✅ Обгортаємо Suspense в ErrorBoundary</span>
+import { ErrorBoundary } from <span class="c-str">'react-error-boundary'</span>; <span class="c-comment">// npm i react-error-boundary</span>
+
+&lt;<span class="c-ok">ErrorBoundary</span>
+  fallback={&lt;AppErrorFallback /&gt;}
+  onError={(error) =&gt; console.error(<span class="c-str">'[App] render error:'</span>, error)}
+&gt;
+  &lt;React.Suspense fallback={&lt;AppLoadingScreen /&gt;}&gt;
+    &lt;Routes&gt; ... &lt;/Routes&gt;
+  &lt;/React.Suspense&gt;
+&lt;/ErrorBoundary&gt;
+
+<span class="c-comment">// AppErrorFallback — мінімально:</span>
+<span class="c-comment">// "Сталася помилка завантаження · Спробуйте оновити сторінку"</span></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- I-07 -->
+  <div class="issue-card imp">
+    <div class="issue-header" onclick="toggle('i07')">
+      <span class="ih-sev sev-i">ВАЖЛ</span>
+      <div>
+        <div class="ih-title">I-07 · <code>window.location.href</code> при 401 — повне перезавантаження React</div>
+        <div class="ih-meta">UX · SPA · api.ts:113 · <span class="tag tag-cat-ux">UX</span> <span class="tag tag-cat-arch">ARCH</span></div>
+      </div>
+      <span class="ih-expand" id="i07-arrow">▼</span>
+    </div>
+    <div class="issue-body" id="i07">
+      <div class="ib-section">
+        <div class="ib-label">ПРОБЛЕМА</div>
+        <p style="font-size:12px;color:var(--text2)">Коли refresh token протух і новий токен не вдалося отримати — <code>window.location.href = '/login'</code> виконує повне HTTP-перезавантаження сторінки. Весь React state, TanStack Query cache, Zustand store — знищуються. Поточна URL-адреса губиться. Правильніше — програмна навігація через React Router або хоча б <code>window.location.replace</code> (без запису в history).</p>
+      </div>
+      <div class="ib-section">
+        <div class="ib-label">КОРОТКОСТРОКОВЕ ВИПРАВЛЕННЯ</div>
+        <pre class="code-good"><span class="c-comment">// ✅ Мінімально — replace замість href (не записує в history)</span>
+<span class="c-ok">window.location.replace('/login')</span>;
+
+<span class="c-comment">// ✅ Довгострокове — navigator ін'єкція (дивись C-04)</span>
+navigateFn?.(<span class="c-str">'/login'</span>) ?? window.location.replace(<span class="c-str">'/login'</span>);</pre>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ░░░ MINOR ░░░ -->
+<div id="minor" class="section">
+  <div class="ph">
+    <div class="ph-title"><span class="ph-badge" style="background:var(--text3);color:#fff">МІНОРНІ</span>5 покращень — якість коду та detalі</div>
+    <div class="ph-sub">// Не блокують, але покращують консистентність та maintainability</div>
+  </div>
+
+  <div class="issue-card min">
+    <div class="issue-header" onclick="toggle('m01')"><span class="ih-sev sev-m">МІН</span><div><div class="ih-title">M-01 · <code>Loader2</code> в InitializingScreen без <code>aria-hidden</code></div><div class="ih-meta">A11Y · ProtectedRoute.tsx:38 · <span class="tag tag-cat-a11y">A11Y</span></div></div><span class="ih-expand" id="m01-arrow">▼</span></div>
+    <div class="issue-body" id="m01">
+      <div class="ib-section"><div class="ib-label">ПРОБЛЕМА</div><p style="font-size:12px;color:var(--text2)">В <code>LoginForm.tsx</code> всі декоративні іконки мають <code>aria-hidden="true"</code> — правильно. Але в <code>InitializingScreen</code> (ProtectedRoute.tsx:38) <code>Loader2</code> не має <code>aria-hidden</code>. Screen reader зачитуватиме невидимий SVG. Батьківський <code>div</code> має <code>aria-label="Завантаження системи"</code> — іконка має бути прихована.</p></div>
+      <div class="ib-section"><div class="ib-label">ВИПРАВЛЕННЯ — 1 атрибут</div>
+        <pre class="code-good">&lt;Loader2 size={20} className=<span class="c-str">"animate-spin text-slate-400"</span> <span class="c-ok">aria-hidden="true"</span> /&gt;</pre>
+      </div>
+    </div>
+  </div>
+
+  <div class="issue-card min">
+    <div class="issue-header" onclick="toggle('m02')"><span class="ih-sev sev-m">МІН</span><div><div class="ih-title">M-02 · Глобальний Suspense fallback — анонімний спінер без бренду ET</div><div class="ih-meta">UI · App.tsx:56 · <span class="tag tag-cat-ux">UI</span></div></div><span class="ih-expand" id="m02-arrow">▼</span></div>
+    <div class="issue-body" id="m02">
+      <div class="ib-section"><div class="ib-label">ПРОБЛЕМА</div><p style="font-size:12px;color:var(--text2)">Глобальний fallback — просто anonymous <code>div</code> зі спінером. При завантаженні будь-якого lazy chunk — мигає цей спінер. <code>ProtectedRoute</code> вже має <code>InitializingScreen</code> з лого ET — чому б не використати його і для Suspense?</p></div>
+      <div class="ib-section"><div class="ib-label">ВИПРАВЛЕННЯ</div>
+        <pre class="code-good"><span class="c-comment">// ✅ Замість анонімного div — використовуємо InitializingScreen</span>
+import { InitializingScreen } from <span class="c-str">'./components/auth/ProtectedRoute'</span>;
+
+&lt;React.Suspense fallback={&lt;<span class="c-ok">InitializingScreen</span> /&gt;}&gt;</pre>
+      </div>
+    </div>
+  </div>
+
+  <div class="issue-card min">
+    <div class="issue-header" onclick="toggle('m03')"><span class="ih-sev sev-m">МІН</span><div><div class="ih-title">M-03 · <code>AGENT_TYPE_CONFIG</code> використовує <code>Record&lt;string,...&gt;</code> замість <code>AgentType</code></div><div class="ih-meta">TypeScript · statuses.ts:205 · <span class="tag tag-cat-cons">TYPE</span></div></div><span class="ih-expand" id="m03-arrow">▼</span></div>
+    <div class="issue-body" id="m03">
+      <div class="ib-section"><div class="ib-label">ПРОБЛЕМА</div><p style="font-size:12px;color:var(--text2)">Всі інші конфіги використовують строго типізований Record: <code>Record&lt;BookingStatus,...&gt;</code>. Але <code>AGENT_TYPE_CONFIG</code> — <code>Record&lt;string,...&gt;</code>. Якщо тип агента зміниться або додасться нове значення — TypeScript не попередить.</p></div>
+      <div class="ib-section"><div class="ib-label">ВИПРАВЛЕННЯ</div>
+        <pre class="code-good"><span class="c-comment">// ✅ types.ts — додати тип</span>
+export type AgentType = <span class="c-str">'standard'</span> | <span class="c-str">'network'</span>;
+
+<span class="c-comment">// ✅ statuses.ts</span>
+import type { AgentType } from <span class="c-str">'../types'</span>;
+export const AGENT_TYPE_CONFIG: Record&lt;<span class="c-ok">AgentType</span>, {...}&gt; = { ... };</pre>
+      </div>
+    </div>
+  </div>
+
+  <div class="issue-card min">
+    <div class="issue-header" onclick="toggle('m04')"><span class="ih-sev sev-m">МІН</span><div><div class="ih-title">M-04 · <code>/finance</code> — відсутній <code>ops_manager</code> і <code>manager</code> в allowedRoles</div><div class="ih-meta">RBAC · App.tsx:62–64 · <span class="tag tag-cat-arch">RBAC</span></div></div><span class="ih-expand" id="m04-arrow">▼</span></div>
+    <div class="issue-body" id="m04">
+      <div class="ib-section"><div class="ib-label">ПРОБЛЕМА</div><p style="font-size:12px;color:var(--text2)">Маршрут <code>/finance</code> відкритий тільки для <code>admin</code> та <code>director</code>. За ТЗ, менеджер бачить "базові фінансові статуси" (розділ 6.3), а операційний менеджер перевіряє оплати по туру (розділ 4.5). Потрібно уточнити у Product Owner — мінімально менеджер має бачити статуси оплат своїх бронювань.</p></div>
+      <div class="ib-section"><div class="ib-label">РЕКОМЕНДАЦІЯ</div>
+        <pre class="code-good"><span class="c-comment">// ⚠ Узгодити з PO — варіанти:</span>
+
+<span class="c-comment">// Варіант A: Окремі рівні доступу через sub-routes</span>
+&lt;Route element={&lt;<span class="c-ok">ProtectedRoute allowedRoles={['admin','director','accountant','manager']}</span> /&gt;}&gt;
+  &lt;Route path=<span class="c-str">"/finance"</span> element={&lt;FinancePage /&gt;} /&gt;
+&lt;/Route&gt;
+
+<span class="c-comment">// Варіант B: useAuth().canSeeMargin в компоненті для умовного рендерингу деталей</span></pre>
+      </div>
+    </div>
+  </div>
+
+  <div class="issue-card min">
+    <div class="issue-header" onclick="toggle('m05')"><span class="ih-sev sev-m">МІН</span><div><div class="ih-title">M-05 · Magic string <code>'network'</code> в useAuth — не через <code>AGENT_TYPE_CONFIG</code></div><div class="ih-meta">Consistency · useAuth.ts:129 · <span class="tag tag-cat-cons">CONS</span></div></div><span class="ih-expand" id="m05-arrow">▼</span></div>
+    <div class="issue-body" id="m05">
+      <div class="ib-section"><div class="ib-label">ПРОБЛЕМА</div><p style="font-size:12px;color:var(--text2)">Перевірка типу агента: <code>user?.agent_type === 'network'</code> — magic string. Якщо назва типу зміниться, або переміниться на enum — треба шукати по всьому коду. Треба використовувати той самий <code>AgentType</code> тип.</p></div>
+      <div class="ib-section"><div class="ib-label">ВИПРАВЛЕННЯ</div>
+        <pre class="code-good"><span class="c-comment">// ✅ Використовуємо AgentType константу</span>
+const NETWORK_AGENT_TYPE: AgentType = <span class="c-str">'network'</span>;
+const isNetworkAgent = isAgent && user?.agent_type === <span class="c-ok">NETWORK_AGENT_TYPE</span>;
+
+<span class="c-comment">// Або ще краще — через хелпер:</span>
+const isNetworkAgent = isAgent && <span class="c-ok">hasAgentType('network')</span>;</pre>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ░░░ PRAISE ░░░ -->
+<div id="praise" class="section">
+  <div class="ph">
+    <div class="ph-title"><span class="ph-badge ok">✅ ЩО ДОБРЕ</span>12 правильних рішень</div>
+    <div class="ph-sub">// Фіксуємо що вже зроблено правильно — зберігаємо ці підходи</div>
+  </div>
+
+  <div class="grid2">
+    <div>
+      <div class="praise-card">
+        <div class="pc-title">🔐 Безпека токенів — in-memory + HttpOnly Cookie</div>
+        <div class="pc-text"><code>authStore.ts</code>: access token зберігається тільки в пам'яті (Zustand), refresh token — HttpOnly Cookie. Не використовується localStorage. Це правильна реалізація ADR-001 §3.1 — захищає від XSS-атак на токени.</div>
+      </div>
+      <div class="praise-card">
+        <div class="pc-title">⚡ Queue pattern для concurrent refresh</div>
+        <div class="pc-text"><code>api.ts</code>: Коли кілька запитів отримують 401 одночасно — тільки один refresh-запит відправляється, решта очікують у <code>pendingQueue</code>. Це запобігає race condition і множинним refresh-запитам.</div>
+      </div>
+      <div class="praise-card">
+        <div class="pc-title">♿ Accessibility у LoginForm</div>
+        <div class="pc-text">Всі інтерактивні елементи мають <code>aria-label</code>, <code>aria-invalid</code>, <code>aria-describedby</code>, <code>role="alert"</code> для помилок, <code>aria-hidden</code> на декоративних іконках, <code>aria-busy</code> на кнопці. Зразковий рівень a11y для форми входу.</div>
+      </div>
+      <div class="praise-card">
+        <div class="pc-title">🎯 Config-driven statuses pattern</div>
+        <div class="pc-text"><code>statuses.ts</code>: всі статуси описуються через єдиний конфіг-об'єкт з label/icon/colorVariant/description. Компоненти не hard-code кольори — читають з конфігу. Легко масштабується на нові статуси.</div>
+      </div>
+      <div class="praise-card">
+        <div class="pc-title">🏷️ isPulsing для активних статусів</div>
+        <div class="pc-text">Ідея з <code>isPulsing: true</code> для статусів "нова заявка", "у поїздці", "overdue" — відмінне UX-рішення. Дає системі візуальне сигналювання без зайвого коду в компонентах.</div>
+      </div>
+      <div class="praise-card">
+        <div class="pc-title">📝 Zod-валідація форми входу</div>
+        <div class="pc-text">Схема з <code>mode: 'onTouched'</code> — помилки показуються після blur, не при введенні. Правильний UX для форм. Zod-схема чітко відділена від компоненту.</div>
+      </div>
+    </div>
+    <div>
+      <div class="praise-card">
+        <div class="pc-title">🔄 Lazy loading для всіх сторінок</div>
+        <div class="pc-text"><code>App.tsx</code>: всі pages завантажуються через <code>React.lazy()</code> — початковий бандл мінімальний. Менеджер завантажує тільки свої сторінки, агент — свої.</div>
+      </div>
+      <div class="praise-card">
+        <div class="pc-title">🔑 RBAC helpers у useAuth</div>
+        <div class="pc-text">Зручні boolean helpers: <code>isAdmin</code>, <code>isManager</code>, <code>canSeeMargin</code>, <code>canSeeAllAgents</code>, <code>isNetworkAgent</code> — компоненти не пишуть <code>user.role === 'manager'</code> напряму. Централізована RBAC логіка.</div>
+      </div>
+      <div class="praise-card">
+        <div class="pc-title">🛡️ state.from у ProtectedRoute</div>
+        <div class="pc-text">Збереження поточного URL перед redirect на логін через <code>state={{ from: location.pathname }}</code> — правильний паттерн. (Але: LoginPage його не читає — C-03 вище.)</div>
+      </div>
+      <div class="praise-card">
+        <div class="pc-title">🧪 DEV-only тестові акаунти у LoginForm</div>
+        <div class="pc-text">Блок тестових акаунтів захищений через <code>import.meta.env.DEV</code> — не потрапить у production build. Зручно для розробки і QA, не несе ризиків у проді.</div>
+      </div>
+      <div class="praise-card">
+        <div class="pc-title">📦 Zustand selectors для re-render оптимізації</div>
+        <div class="pc-text"><code>authStore.ts</code>: окремо експортовані selectors <code>selectUser</code>, <code>selectIsAuthenticated</code> тощо. Компоненти підписуються тільки на потрібний шматок стору — мінімум зайвих re-renders.</div>
+      </div>
+      <div class="praise-card">
+        <div class="pc-title">👁️ Show/hide password у LoginForm</div>
+        <div class="pc-text">Кнопка toggle пароля з <code>tabIndex={-1}</code> — не ламає Tab-навігацію. <code>aria-label</code> правильно описує дію в обох станах.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ░░░ CHECKLIST ░░░ -->
+<div id="checklist" class="section">
+  <div class="ph">
+    <div class="ph-title"><span class="ph-badge ok">📋 ПЛАН ВИПРАВЛЕНЬ</span>Пріоритизований список задач</div>
+    <div class="ph-sub">// Sprint 1 · Сортування: критичні → важливі → мінорні</div>
+  </div>
+
+  <div class="alert alert-info"><div class="alert-icon">ℹ</div><div class="alert-body">Критичні (C-01–C-04) рекомендуємо закрити до першого show-and-tell з командою. Важливі (I-01–I-07) — до першого релізу для реальних користувачів.</div></div>
+
+  <div class="grid2">
+    <div>
+      <div style="font-size:11px;font-weight:700;color:var(--danger);font-family:var(--mono);text-transform:uppercase;margin-bottom:10px">🔴 КРИТИЧНІ — Sprint 1</div>
+      <ul class="fix-checklist">
+        <li><div class="fc-box"></div><div><strong style="color:var(--white)">C-01</strong> · Додати маршрут <code>/my-booking</code> для ролі <code>tourist</code> в <code>App.tsx</code>. Lazy-import <code>TouristCabinet.tsx</code> (реалізація по WF5). <em style="color:var(--text3)">~2h</em></div></li>
+        <li><div class="fc-box"></div><div><strong style="color:var(--white)">C-02</strong> · Виправити <code>canSeeMargin</code> в <code>useAuth.ts:132</code> — змінити на <code>!isAgent && !isTourist</code>. Перевірити всі місця використання. <em style="color:var(--text3)">~30m</em></div></li>
+        <li><div class="fc-box"></div><div><strong style="color:var(--white)">C-03</strong> · LoginPage: зчитати <code>state.from</code> через <code>useLocation()</code>, передати в <code>onSuccess</code>. Замінити <code>window.location.replace</code> на <code>navigate(from, replace)</code>. <em style="color:var(--text3)">~1h</em></div></li>
+        <li><div class="fc-box"></div><div><strong style="color:var(--white)">C-04</strong> · Замінити <code>require()</code> на <code>useAuthStore.getState()</code> або navigator-injection. Замінити <code>window.location.href</code> на <code>window.location.replace</code>. <em style="color:var(--text3)">~2h</em></div></li>
+      </ul>
+
+      <div style="font-size:11px;font-weight:700;color:var(--warn);font-family:var(--mono);text-transform:uppercase;margin:16px 0 10px">🟡 ВАЖЛИВІ — До Release 1</div>
+      <ul class="fix-checklist">
+        <li><div class="fc-box"></div><div><strong style="color:var(--white)">I-01</strong> · Додати "Забули пароль?" у <code>LoginForm.tsx</code> + маршрут <code>/forgot-password</code>. <em style="color:var(--text3)">~3h</em></div></li>
+        <li><div class="fc-box"></div><div><strong style="color:var(--white)">I-02</strong> · Налаштувати <code>tailwind.config.ts</code> з кольорами бренду. Оновити кнопку логіну та лого в <code>LoginForm</code>. <em style="color:var(--text3)">~1h</em></div></li>
+        <li><div class="fc-box"></div><div><strong style="color:var(--white)">I-03</strong> · Додати <code>ROOMING_STATUS_CONFIG</code> та <code>ROOM_TYPE_CONFIG</code> у <code>statuses.ts</code>. <em style="color:var(--text3)">~1h</em></div></li>
+        <li><div class="fc-box"></div><div><strong style="color:var(--white)">I-04</strong> · Перенести import <code>CommissionStatus</code> на рядок 6 в <code>statuses.ts</code>. <em style="color:var(--text3)">~5m</em></div></li>
+        <li><div class="fc-box"></div><div><strong style="color:var(--white)">I-05</strong> · Створити <code>NotFound.tsx</code> та <code>Forbidden.tsx</code>, додати маршрути <code>/403</code> та <code>*</code>. <em style="color:var(--text3)">~2h</em></div></li>
+        <li><div class="fc-box"></div><div><strong style="color:var(--white)">I-06</strong> · Встановити <code>react-error-boundary</code>, обгорнути Suspense в App.tsx. <em style="color:var(--text3)">~1h</em></div></li>
+        <li><div class="fc-box"></div><div><strong style="color:var(--white)">I-07</strong> · Замінити <code>window.location.href</code> на <code>window.location.replace</code> в <code>api.ts:113</code>. <em style="color:var(--text3)">~15m</em></div></li>
+      </ul>
+    </div>
+
+    <div>
+      <div style="font-size:11px;font-weight:700;color:var(--text3);font-family:var(--mono);text-transform:uppercase;margin-bottom:10px">⚪ МІНОРНІ — Backlog</div>
+      <ul class="fix-checklist">
+        <li><div class="fc-box"></div><div><strong style="color:var(--white)">M-01</strong> · Додати <code>aria-hidden="true"</code> до <code>Loader2</code> в <code>ProtectedRoute.tsx:38</code>. <em style="color:var(--text3)">~5m</em></div></li>
+        <li><div class="fc-box"></div><div><strong style="color:var(--white)">M-02</strong> · Замінити анонімний спінер у Suspense fallback на <code>InitializingScreen</code>. <em style="color:var(--text3)">~15m</em></div></li>
+        <li><div class="fc-box"></div><div><strong style="color:var(--white)">M-03</strong> · Додати <code>type AgentType</code> у <code>types.ts</code>, оновити <code>AGENT_TYPE_CONFIG</code>. <em style="color:var(--text3)">~30m</em></div></li>
+        <li><div class="fc-box"></div><div><strong style="color:var(--white)">M-04</strong> · Узгодити з PO доступ менеджера до <code>/finance</code> — оновити allowedRoles. <em style="color:var(--text3)">~30m після рішення PO</em></div></li>
+        <li><div class="fc-box"></div><div><strong style="color:var(--white)">M-05</strong> · Замінити magic string <code>'network'</code> на константу <code>AgentType</code> в <code>useAuth.ts:129</code>. <em style="color:var(--text3)">~15m</em></div></li>
+      </ul>
+
+      <div style="margin-top:20px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);font-family:var(--mono);text-transform:uppercase;margin-bottom:10px">ORІЄНТОВНИЙ ОБСЯГ</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="display:flex;justify-content:space-between;font-size:12px"><span>Критичні (C-01–C-04):</span><span style="font-family:var(--mono);color:var(--danger)">~5.5 год</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:12px"><span>Важливі (I-01–I-07):</span><span style="font-family:var(--mono);color:var(--warn)">~8.5 год</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:12px"><span>Мінорні (M-01–M-05):</span><span style="font-family:var(--mono);color:var(--text3)">~1.5 год</span></div>
+          <div style="height:1px;background:var(--border);margin:4px 0"></div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700"><span>ВСЬОГО:</span><span style="font-family:var(--mono);color:var(--a3)">~15.5 год</span></div>
+        </div>
+      </div>
+
+      <div style="margin-top:12px;background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.15);border-radius:8px;padding:14px">
+        <div style="font-size:11px;font-weight:700;color:#93c5fd;font-family:var(--mono);text-transform:uppercase;margin-bottom:8px">ФАЙЛИ ДЛЯ СТВОРЕННЯ</div>
+        <div style="font-family:var(--mono);font-size:11px;line-height:2;color:var(--text2)">
+          📄 <code>pages/tourist/TouristCabinet.tsx</code><br>
+          📄 <code>pages/tourist/TouristPreferences.tsx</code><br>
+          📄 <code>pages/errors/NotFound.tsx</code><br>
+          📄 <code>pages/errors/Forbidden.tsx</code><br>
+          📄 <code>pages/auth/ForgotPassword.tsx</code><br>
+          📄 <code>components/ui/AppErrorFallback.tsx</code>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function goTab(id, el) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.npill').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  el.classList.add('active');
+  window.scrollTo(0,0);
+}
+function toggle(id) {
+  const body = document.getElementById(id);
+  const arrow = document.getElementById(id+'-arrow');
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  if (arrow) arrow.textContent = isOpen ? '▼' : '▲';
+}
+</script>
+</body>
+</html>

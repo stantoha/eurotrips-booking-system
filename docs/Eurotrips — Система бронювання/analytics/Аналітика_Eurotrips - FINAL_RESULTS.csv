@@ -1,0 +1,10 @@
+metric,value
+Current position,Eurotrips is a niche player: 39 tours vs 411 competitor tours (8.7% of the portfolio).
+Pricing position,Average price is 325.54; median 313.75; average price_vs_median +4.34%; cheap tours (<-10%) 36.9%; expensive tours (>+10%) 36.0%.
+Top opportunity direction,Італія (opportunity score 729.9).
+Top hard gaps,"Франція, Нідерланди, Швейцарія, Іспанія, Німеччина, Чорногорія"
+Most promising expansion set,"Італія, Франція, Нідерланди, Австрія, Швейцарія, Іспанія, Німеччина, Чехія"
+Eurotrips tours to trim,"EUR-25, EUR-16"
+Eurotrips tours to add,"EUR-38, EUR-33, EUR-34, EUR-7, EUR-35"
+Route cleaning,Route stop UNKNOWNs reduced to 0 in the cleaned layer; connector fragments were dropped and composite stops were normalized.
+Recommended next move,"Launch direction-specific route optimization, prioritize hard gaps, and redesign overloaded low-value Eurotrips tours."

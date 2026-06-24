@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eurotrips · Brand Guide v2 · Frontend</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700;900&display=swap');
+:root{
+  --et-blue:#2d70b9; --et-blue-dark:#245d9c; --et-blue-light:#3d80c9;
+  --et-cyan:#53c7d6; --et-cyan-dark:#3fb4c3; --et-cyan-light:#7dd9e5;
+  --et-red:#f0366d;  --et-red-dark:#d42b5f;
+  --et-gold:#f9c01d; --et-gold-dark:#e0aa10;
+  --et-pink:#f7c5d0; --et-white:#fff;
+  --et-dark:#1a1a2e; --et-gray:#6b7280;
+  --bg:#0d0f14; --bg2:#141720; --bg3:#1c2030;
+  --border:#252a3a; --border2:#2f3650;
+  --text:#e2e8f0; --text2:#94a3b8; --text3:#64748b;
+  --mono:'IBM Plex Mono',monospace;
+  --sans:'IBM Plex Sans',sans-serif;
+  --heading:'Montserrat','Impact',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);font-size:13px;line-height:1.6}
+
+/* ── NAV ── */
+.topnav{position:sticky;top:0;z-index:200;background:rgba(13,15,20,.96);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);display:flex;align-items:center;height:50px;padding:0 20px;gap:0;overflow-x:auto}
+.logo-wrap{font-family:var(--mono);font-weight:700;font-size:14px;color:var(--et-cyan);letter-spacing:2px;margin-right:20px;white-space:nowrap;display:flex;align-items:center;gap:8px}
+.logo-badge{background:var(--et-cyan);border-radius:5px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:14px}
+.ntabs{display:flex;gap:0;overflow-x:auto}
+.ntab{padding:0 14px;height:50px;display:flex;align-items:center;font-size:11px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;color:var(--text3);white-space:nowrap;transition:all .15s}
+.ntab:hover{color:var(--text)}
+.ntab.active{color:var(--et-cyan);border-bottom-color:var(--et-cyan)}
+.nav-badge{margin-left:auto;background:rgba(83,199,214,.1);border:1px solid rgba(83,199,214,.3);border-radius:4px;padding:4px 10px;font-size:10px;color:var(--et-cyan);font-family:var(--mono);white-space:nowrap}
+
+/* ── LAYOUT ── */
+.section{display:none;max-width:1320px;margin:0 auto;padding:24px 20px}
+.section.active{display:block}
+.ph{margin-bottom:24px}
+.ph-title{font-size:20px;font-weight:700;font-family:var(--mono);color:#fff;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.ph-sub{font-size:12px;color:var(--text2);margin-top:5px;font-family:var(--mono)}
+.badge{font-size:11px;padding:3px 10px;border-radius:2px;font-family:var(--sans);font-weight:700;background:var(--et-cyan);color:var(--et-dark)}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+
+/* ── CARDS ── */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.card-hd{background:var(--bg3);border-bottom:1px solid var(--border);padding:10px 16px;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:space-between}
+.card-bd{padding:14px}
+
+/* ── CODE ── */
+pre{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:12px 14px;font-family:var(--mono);font-size:11px;line-height:1.8;overflow-x:auto;margin:6px 0}
+.ck{color:#93c5fd}.cs{color:#fcd34d}.cc{color:var(--text3)}.cv{color:#6ee7b7}.co{color:#f9c01d}.cr{color:#fca5a5}
+
+/* ── ALERTS ── */
+.alert{border-radius:6px;padding:10px 14px;font-size:11px;margin-bottom:12px;display:flex;gap:10px;align-items:flex-start}
+.alert-new{background:rgba(83,199,214,.08);border:1px solid rgba(83,199,214,.2);color:#7dd9e5}
+.alert-ok{background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);color:#a7f3d0}
+.alert-fix{background:rgba(249,192,29,.08);border:1px solid rgba(249,192,29,.2);color:#fcd34d}
+
+.sect-label{font-size:10px;font-weight:700;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.7px;margin:18px 0 8px;padding-bottom:4px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+
+/* ══════════════════════════════════════════
+   РЕАЛЬНІ UI КОМПОНЕНТИ З САЙТУ eurotrips.ua
+   ══════════════════════════════════════════ */
+
+/* ── REAL NAV BAR ── */
+.real-nav{background:#fff;display:flex;align-items:center;height:54px;padding:0 24px;gap:24px;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,.15);margin-bottom:8px}
+.real-logo{display:flex;align-items:center;gap:8px;text-decoration:none}
+.real-logo-icon{background:var(--et-cyan);border-radius:6px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.real-logo-text{font-family:var(--heading);font-weight:700;font-size:11px;color:var(--et-dark);letter-spacing:1px}
+.real-nav-links{display:flex;gap:20px;flex:1;justify-content:center}
+.rnl{font-size:13px;font-weight:500;color:#374151;text-decoration:none;cursor:pointer;white-space:nowrap}
+.rnl.active{color:var(--et-cyan);font-weight:600}
+.rnl:hover{color:var(--et-cyan)}
+.real-phone-btn{background:transparent;border:1.5px solid var(--et-cyan);color:var(--et-cyan);border-radius:20px;padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
+
+/* ── HERO ── */
+.hero-mock{background:linear-gradient(rgba(0,0,0,.5),rgba(0,0,0,.4)),url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="340"><rect fill="%23334155" width="800" height="340"/><rect fill="%23475569" x="0" y="100" width="800" height="240" rx="0"/></svg>');background-size:cover;background-position:center;border-radius:10px;padding:60px 48px;min-height:280px;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden}
+.hero-h1{font-family:var(--heading);font-size:clamp(28px,4vw,52px);font-weight:900;color:var(--et-cyan);line-height:1.1;text-transform:uppercase;margin-bottom:14px;max-width:700px}
+.hero-sub{font-size:14px;color:#fff;margin-bottom:24px;opacity:.9}
+.hero-cta{display:inline-block;background:var(--et-cyan);color:#fff;border:none;border-radius:24px;padding:10px 28px;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--sans);transition:background .15s}
+.hero-cta:hover{background:var(--et-cyan-dark)}
+
+/* ── BOTTOM BAR ── */
+.bottom-bar{background:#fff;display:flex;justify-content:space-between;align-items:center;padding:10px 24px;border-radius:0 0 8px 8px;border-top:1px solid #e5e7eb;font-size:13px;font-weight:600}
+.bb-hours{color:var(--et-cyan)}
+.bb-login{color:var(--et-red)}
+
+/* ── TOUR CARD (overlay pattern) ── */
+.tour-card-wrap{border-radius:10px;overflow:hidden;position:relative;min-height:280px;background:#334155}
+.tour-card-photo{width:100%;height:280px;object-fit:cover;display:block;background:linear-gradient(135deg,#334155,#475569)}
+.tour-card-overlay{position:absolute;bottom:0;left:0;padding:16px;width:55%;min-height:60%}
+.tour-overlay-cyan{background:var(--et-cyan)}
+.tour-overlay-red{background:var(--et-red)}
+.tour-overlay-blue{background:var(--et-blue)}
+.tour-overlay-gold{background:var(--et-gold)}
+.to-title{font-family:var(--heading);font-size:clamp(13px,1.5vw,18px);font-weight:900;color:#fff;text-transform:uppercase;margin-bottom:10px;line-height:1.2}
+.to-dates-label{font-size:10px;color:rgba(255,255,255,.8);margin-bottom:6px;font-weight:500}
+.date-pills{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
+.date-pill{background:#fff;color:var(--et-dark);border-radius:14px;padding:3px 10px;font-size:11px;font-weight:600}
+.to-price{font-size:18px;font-weight:900;color:#fff;font-family:var(--heading);margin-bottom:8px}
+.to-btn-cyan{background:var(--et-red);color:#fff;border:none;border-radius:16px;padding:5px 14px;font-size:11px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:.5px}
+.to-btn-red{background:var(--et-cyan);color:#fff;border:none;border-radius:16px;padding:5px 14px;font-size:11px;font-weight:700;cursor:pointer;text-transform:uppercase}
+.to-route{font-size:10px;color:rgba(255,255,255,.85);margin-bottom:8px;line-height:1.4}
+
+/* ── CATEGORY TILES ── */
+.cat-grid{display:grid;grid-template-columns:1fr 0.6fr 0.6fr;gap:6px;margin-bottom:6px}
+.cat-grid-2{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.cat-tile{border-radius:8px;padding:16px;min-height:120px;display:flex;flex-direction:column;justify-content:flex-start;position:relative;overflow:hidden}
+.ct-bg-red{background:var(--et-red)}
+.ct-bg-blue{background:var(--et-blue)}
+.ct-bg-cyan{background:var(--et-cyan)}
+.ct-bg-dark{background:#1e293b}
+.ct-bg-photo{background:linear-gradient(rgba(0,0,0,.45),rgba(0,0,0,.45)),linear-gradient(135deg,#334155,#64748b)}
+.ct-title{font-family:var(--heading);font-size:14px;font-weight:900;color:#fff;text-transform:uppercase;line-height:1.2}
+.ct-emoji{font-size:40px;position:absolute;bottom:8px;right:8px;opacity:.8}
+
+/* ── SECTION TITLE ── */
+.section-title-real{font-family:var(--heading);font-size:clamp(24px,3.5vw,42px);font-weight:900;color:var(--et-dark);text-transform:uppercase;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between}
+.section-title-real.light{color:#fff}
+.all-btn{background:var(--et-red);color:#fff;border:none;border-radius:20px;padding:8px 20px;font-size:13px;font-weight:700;cursor:pointer;text-transform:uppercase;white-space:nowrap}
+
+/* ── SLIDER NAV ── */
+.slider-mock{border-radius:10px;overflow:hidden;position:relative;background:var(--bg3)}
+.slider-cards{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0}
+.slider-card{position:relative;min-height:180px;overflow:hidden}
+.sc-photo{width:100%;height:180px;background:linear-gradient(135deg,#334155,#475569);display:block}
+.sc-title{position:absolute;top:12px;left:12px;font-family:var(--heading);font-size:13px;font-weight:900;color:#fff;text-transform:uppercase}
+.slider-btn{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.9);border:none;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;font-weight:700;color:var(--et-dark);z-index:10}
+.slider-prev{left:8px}
+.slider-next{right:8px}
+
+/* ── LOGO ── */
+.logo-on-cyan{background:var(--et-cyan);border-radius:12px;width:100px;height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.logo-shoe{font-size:36px}
+.logo-text-real{font-family:var(--heading);font-size:10px;font-weight:900;color:#fff;letter-spacing:2px}
+
+/* ── SWATCH TABLE ── */
+.sw-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.sw{border-radius:8px;overflow:hidden;width:150px;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.sw-color{height:64px;position:relative}
+.sw-role{position:absolute;top:6px;left:6px;font-size:9px;font-family:var(--mono);font-weight:700;text-transform:uppercase;padding:2px 5px;border-radius:3px;background:rgba(0,0,0,.35);color:#fff}
+.sw-info{background:var(--bg2);border:1px solid var(--border);border-top:none;padding:8px 10px}
+.sw-hex{font-family:var(--mono);font-size:12px;font-weight:700;color:#fff}
+.sw-name{font-size:10px;color:var(--text3);margin-top:2px}
+.sw-usage{font-size:9px;color:var(--et-cyan);font-family:var(--mono);margin-top:3px;line-height:1.4}
+
+/* ── USAGE TABLE ── */
+.usage-table{width:100%;border-collapse:collapse}
+.usage-table th{background:var(--bg3);padding:7px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-family:var(--mono);border-bottom:2px solid var(--border2)}
+.usage-table td{padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;vertical-align:top}
+.usage-table tr:hover td{background:rgba(255,255,255,.02)}
+.usage-table tr:last-child td{border-bottom:none}
+
+/* ── SPACING ── */
+.hr{border:none;border-top:1px solid var(--border);margin:16px 0}
+</style>
+</head>
+<body>
+
+<div class="topnav">
+  <div class="logo-wrap">
+    <div class="logo-badge">👟</div>
+    EUROTRIPS <span style="color:var(--text3);font-weight:400">BRAND v2</span>
+  </div>
+  <div class="ntabs">
+    <div class="ntab active" onclick="goTab('overview',this)">👁 Огляд сайту</div>
+    <div class="ntab" onclick="goTab('colors',this)">🎨 Кольори</div>
+    <div class="ntab" onclick="goTab('typo',this)">🖋 Типографіка</div>
+    <div class="ntab" onclick="goTab('components',this)">🧩 Компоненти</div>
+    <div class="ntab" onclick="goTab('grid',this)">⊞ Сітка та картки</div>
+    <div class="ntab" onclick="goTab('code',this)">⚙ Code Tokens</div>
+  </div>
+  <div class="nav-badge">v2 · на основі скріншотів eurotrips.ua</div>
+</div>
+
+<!-- ░░░ OVERVIEW ░░░ -->
+<div id="overview" class="section active">
+  <div class="ph">
+    <div class="ph-title"><span class="badge">OVERVIEW</span>Аналіз реального сайту eurotrips.ua</div>
+    <div class="ph-sub">// Зафіксовані паттерни, компоненти та колірні рішення з 4 скріншотів</div>
+  </div>
+
+  <div class="alert alert-new">
+    <span>🆕</span>
+    <div><strong>Brand Guide v2</strong> — оновлено на основі реальних скріншотів сайту. Виявлено ключовий overlay-паттерн карток, реальне використання кольорів по контексту, pill-кнопки, типографіку заголовків.</div>
+  </div>
+
+  <!-- REAL SITE PREVIEW -->
+  <div class="sect-label">ХЕДЕР + НАВІГАЦІЯ (реальний компонент)</div>
+  <div class="real-nav">
+    <div class="real-logo">
+      <div class="real-logo-icon">👟</div>
+      <div class="real-logo-text">EUROTRIPS</div>
+    </div>
+    <div class="real-nav-links">
+      <a class="rnl active">Обрати тур ▾</a>
+      <a class="rnl">Календар турів</a>
+      <a class="rnl">Типи турів ▾</a>
+      <a class="rnl">Країни ▾</a>
+      <a class="rnl">Групові запити</a>
+      <a class="rnl">Корпоративні тури</a>
+      <a class="rnl">Агентам ▾</a>
+      <a class="rnl">Контакти ▾</a>
+    </div>
+    <button class="real-phone-btn">+38 (097) 713-96-96 ▾</button>
+  </div>
+
+  <div class="sect-label">HERO СЕКЦІЯ</div>
+  <div class="hero-mock">
+    <div class="hero-h1">EUROTRIPS — ПОДОРОЖІ ДЛЯ ТИХ,<br>ХТО НЕ ВІДКЛАДАЄ ЖИТТЯ НА ПОТІМ.</div>
+    <div class="hero-sub">Тури від 4999 грн · Готелі 3-4★ · Автобуси європейського рівня · Турлідер 24/7 · Оплата частинами · Гіди-локали у кожному місті</div>
+    <button class="hero-cta">Календар турів</button>
+  </div>
+  <div class="bottom-bar">
+    <span class="bb-hours">10:00 – 19:00</span>
+    <span class="bb-login">ВХІД</span>
+  </div>
+
+  <div class="sect-label">КЛЮЧОВІ ПАТТЕРНИ — що виявлено</div>
+  <div class="grid3" style="margin-bottom:20px">
+    <div class="card">
+      <div class="card-hd" style="border-left:3px solid var(--et-cyan)">🔑 Overlay-паттерн карток</div>
+      <div class="card-bd" style="font-size:11px;color:var(--text2)">Картки турів = фото на весь блок + кольоровий блок overlay в нижній частині (cyan/red/blue/gold). Текст і кнопки — у цьому overlay. Це головний UI-паттерн сайту.</div>
+    </div>
+    <div class="card">
+      <div class="card-hd" style="border-left:3px solid var(--et-red)">💊 Pill-кнопки скрізь</div>
+      <div class="card-bd" style="font-size:11px;color:var(--text2)">Всі кнопки — border-radius: 9999px (pill). Немає квадратних кнопок взагалі. Розміри різні але форма завжди capsule. Дати на картках — теж pill chips (білі).</div>
+    </div>
+    <div class="card">
+      <div class="card-hd" style="border-left:3px solid var(--et-gold)">📐 Кольори по контексту</div>
+      <div class="card-bd" style="font-size:11px;color:var(--text2)">Cyan = первинна дія (nav active, hero CTA). Red = вторинна CTA ("Докладніше", "Всі тури", "ВХІД"). Gold + Blue = контентні категорії. Розподіл чіткий.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ░░░ COLORS ░░░ -->
+<div id="colors" class="section">
+  <div class="ph">
+    <div class="ph-title"><span class="badge">КОЛЬОРИ</span>Де і як кожен колір використовується на сайті</div>
+    <div class="ph-sub">// Базовий брендбук + реальне використання на eurotrips.ua</div>
+  </div>
+
+  <div class="sect-label">CYAN #53c7d6 — Головний колір бренду</div>
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-bd">
+      <div style="display:flex;gap:16px;align-items:stretch;flex-wrap:wrap">
+        <div style="background:var(--et-cyan);border-radius:8px;width:90px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;font-weight:700;color:#fff;min-height:70px">#53c7d6</div>
+        <div style="flex:1;min-width:200px">
+          <div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:8px">Використовується для:</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+            <span style="background:rgba(83,199,214,.15);color:var(--et-cyan);border:1px solid rgba(83,199,214,.3);border-radius:4px;padding:3px 8px;font-size:10px;font-family:var(--mono)">Logo background</span>
+            <span style="background:rgba(83,199,214,.15);color:var(--et-cyan);border:1px solid rgba(83,199,214,.3);border-radius:4px;padding:3px 8px;font-size:10px;font-family:var(--mono)">Nav active link</span>
+            <span style="background:rgba(83,199,214,.15);color:var(--et-cyan);border:1px solid rgba(83,199,214,.3);border-radius:4px;padding:3px 8px;font-size:10px;font-family:var(--mono)">Hero H1 text color</span>
+            <span style="background:rgba(83,199,214,.15);color:var(--et-cyan);border:1px solid rgba(83,199,214,.3);border-radius:4px;padding:3px 8px;font-size:10px;font-family:var(--mono)">Hero CTA button</span>
+            <span style="background:rgba(83,199,214,.15);color:var(--et-cyan);border:1px solid rgba(83,199,214,.3);border-radius:4px;padding:3px 8px;font-size:10px;font-family:var(--mono)">Phone button outline</span>
+            <span style="background:rgba(83,199,214,.15);color:var(--et-cyan);border:1px solid rgba(83,199,214,.3);border-radius:4px;padding:3px 8px;font-size:10px;font-family:var(--mono)">Tour card overlay</span>
+            <span style="background:rgba(83,199,214,.15);color:var(--et-cyan);border:1px solid rgba(83,199,214,.3);border-radius:4px;padding:3px 8px;font-size:10px;font-family:var(--mono)">Bottom bar hours</span>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button style="background:var(--et-cyan);color:#fff;border:none;border-radius:20px;padding:6px 16px;font-size:12px;font-weight:600;cursor:pointer">Календар турів</button>
+            <button style="background:transparent;color:var(--et-cyan);border:1.5px solid var(--et-cyan);border-radius:20px;padding:6px 16px;font-size:12px;font-weight:600;cursor:pointer">+38 097 713-96-96</button>
+            <span style="color:var(--et-cyan);font-weight:600;font-size:13px;line-height:2.4">Обрати тур</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sect-label">RED #f0366d — Акцентний / Secondary CTA</div>
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-bd">
+      <div style="display:flex;gap:16px;align-items:stretch;flex-wrap:wrap">
+        <div style="background:var(--et-red);border-radius:8px;width:90px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;font-weight:700;color:#fff;min-height:70px">#f0366d</div>
+        <div style="flex:1;min-width:200px">
+          <div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:8px">Використовується для:</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+            <span style="background:rgba(240,54,109,.15);color:var(--et-red);border:1px solid rgba(240,54,109,.3);border-radius:4px;padding:3px 8px;font-size:10px;font-family:var(--mono)">Кнопка "Докладніше"</span>
+            <span style="background:rgba(240,54,109,.15);color:var(--et-red);border:1px solid rgba(240,54,109,.3);border-radius:4px;padding:3px 8px;font-size:10px;font-family:var(--mono)">Кнопка "Всі тури"</span>
+            <span style="background:rgba(240,54,109,.15);color:var(--et-red);border:1px solid rgba(240,54,109,.3);border-radius:4px;padding:3px 8px;font-size:10px;font-family:var(--mono)">"ВХІД" у bottom bar</span>
+            <span style="background:rgba(240,54,109,.15);color:var(--et-red);border:1px solid rgba(240,54,109,.3);border-radius:4px;padding:3px 8px;font-size:10px;font-family:var(--mono)">Category tile bg</span>
+            <span style="background:rgba(240,54,109,.15);color:var(--et-red);border:1px solid rgba(240,54,109,.3);border-radius:4px;padding:3px 8px;font-size:10px;font-family:var(--mono)">Tour card overlay</span>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button style="background:var(--et-red);color:#fff;border:none;border-radius:20px;padding:6px 16px;font-size:12px;font-weight:700;cursor:pointer;text-transform:uppercase">ДОКЛАДНІШЕ</button>
+            <button style="background:var(--et-red);color:#fff;border:none;border-radius:20px;padding:6px 16px;font-size:12px;font-weight:700;cursor:pointer;text-transform:uppercase">ВСІ ТУРИ</button>
+            <span style="color:var(--et-red);font-weight:700;font-size:13px;line-height:2.4">ВХІД</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sect-label">GOLD + BLUE — Контентні категорії та варіативні overlay</div>
+  <div class="grid2" style="margin-bottom:14px">
+    <div class="card">
+      <div class="card-bd">
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:10px">
+          <div style="background:var(--et-gold);border-radius:6px;width:60px;height:60px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;font-weight:700;color:#1a1a2e">#f9c01d</div>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:#fff">GOLD — Стамбул, категорії</div>
+            <div style="font-size:10px;color:var(--text3)">Tour card overlay · Category tile · Highlights</div>
+          </div>
+        </div>
+        <div style="font-family:var(--heading);font-size:22px;font-weight:900;color:var(--et-gold);text-transform:uppercase">СТАМБУЛ</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-bd">
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:10px">
+          <div style="background:var(--et-blue);border-radius:6px;width:60px;height:60px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;font-weight:700;color:#fff">#2d70b9</div>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:#fff">BLUE — Мілан-Комо-Альпи</div>
+            <div style="font-size:10px;color:var(--text3)">Tour card overlay · Category tile</div>
+          </div>
+        </div>
+        <div style="font-family:var(--heading);font-size:18px;font-weight:900;color:var(--et-blue);text-transform:uppercase">МІЛАН — КОМО — АЛЬПИ</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sect-label">ПОВНА ПАЛІТРА — матриця використання</div>
+  <div class="card">
+    <div class="card-bd">
+      <table class="usage-table">
+        <thead><tr>
+          <th>Колір</th><th>HEX</th><th>Tailwind Token</th><th>CSS Var</th><th>Де на сайті</th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td><span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#53c7d6;margin-right:6px;vertical-align:middle"></span>Cyan</td>
+            <td style="font-family:var(--mono)">#53c7d6</td>
+            <td style="font-family:var(--mono);color:var(--et-cyan)">brand-cyan</td>
+            <td style="font-family:var(--mono);color:var(--et-cyan)">--et-cyan</td>
+            <td style="color:var(--text2)">Лого, Hero H1, nav active, hero CTA, phone outline, tour overlay</td>
+          </tr>
+          <tr>
+            <td><span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#f0366d;margin-right:6px;vertical-align:middle"></span>Red</td>
+            <td style="font-family:var(--mono)">#f0366d</td>
+            <td style="font-family:var(--mono);color:var(--et-red)">brand-red</td>
+            <td style="font-family:var(--mono);color:var(--et-red)">--et-red</td>
+            <td style="color:var(--text2)">"Докладніше", "Всі тури", "ВХІД", category tile, card overlay</td>
+          </tr>
+          <tr>
+            <td><span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#f9c01d;margin-right:6px;vertical-align:middle"></span>Gold</td>
+            <td style="font-family:var(--mono)">#f9c01d</td>
+            <td style="font-family:var(--mono);color:var(--et-gold)">brand-gold</td>
+            <td style="font-family:var(--mono);color:var(--et-gold)">--et-gold</td>
+            <td style="color:var(--text2)">Стамбул overlay, категорія, highlights, рейтинг</td>
+          </tr>
+          <tr>
+            <td><span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#2d70b9;margin-right:6px;vertical-align:middle"></span>Blue</td>
+            <td style="font-family:var(--mono)">#2d70b9</td>
+            <td style="font-family:var(--mono);color:var(--et-blue)">brand-blue</td>
+            <td style="font-family:var(--mono);color:var(--et-blue)">--et-blue</td>
+            <td style="color:var(--text2)">Мілан-Комо overlay, category tile, системний UI кнопок (LOGIN)</td>
+          </tr>
+          <tr>
+            <td><span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#ffffff;border:1px solid #555;margin-right:6px;vertical-align:middle"></span>White</td>
+            <td style="font-family:var(--mono)">#ffffff</td>
+            <td style="font-family:var(--mono)">white</td>
+            <td style="font-family:var(--mono)">--et-white</td>
+            <td style="color:var(--text2)">Всі тексти на кольорових overlay, date chips, nav bg</td>
+          </tr>
+          <tr>
+            <td><span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#1a1a2e;margin-right:6px;vertical-align:middle"></span>Dark</td>
+            <td style="font-family:var(--mono)">#1a1a2e</td>
+            <td style="font-family:var(--mono)">brand-dark</td>
+            <td style="font-family:var(--mono)">--et-dark</td>
+            <td style="color:var(--text2)">Section titles ("НАЙБЛИЖЧІ ТУРИ"), nav links, body text</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ░░░ TYPOGRAPHY ░░░ -->
+<div id="typo" class="section">
+  <div class="ph">
+    <div class="ph-title"><span class="badge">ТИПОГРАФІКА</span>Реальна типографіка з сайту</div>
+    <div class="ph-sub">// Druk Text Heavy → Proxima Nova → Body text</div>
+  </div>
+
+  <div class="alert alert-fix">
+    <span>⚠</span>
+    <div><strong>Важливо для системи:</strong> Druk Text — комерційний шрифт. На сайті він активно використовується для H1 та заголовків секцій. Для внутрішньої системи бронювання можна використовувати Montserrat 900 як web-safe замінник. Proxima Nova → Montserrat або Inter.</div>
+  </div>
+
+  <div class="sect-label">H1 HERO — Druk Text Heavy, uppercase, CYAN</div>
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-bd" style="background:linear-gradient(rgba(0,0,0,.6),rgba(0,0,0,.6)),#334155;padding:24px;border-radius:6px">
+      <div style="font-family:var(--heading);font-size:42px;font-weight:900;color:var(--et-cyan);text-transform:uppercase;line-height:1.1">
+        EUROTRIPS — ПОДОРОЖІ ДЛЯ ТИХ,<br>ХТО НЕ ВІДКЛАДАЄ ЖИТТЯ НА ПОТІМ.
+      </div>
+      <div style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-top:10px">font-family: 'Druk Text Heavy' · font-size: clamp(28px,4.5vw,56px) · text-transform: uppercase · color: #53c7d6 · line-height: 1.1</div>
+    </div>
+  </div>
+
+  <div class="sect-label">H2 SECTION — Druk Text Bold, uppercase, DARK</div>
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-bd" style="background:#f8fafc;padding:20px;border-radius:6px">
+      <div style="font-family:var(--heading);font-size:38px;font-weight:900;color:var(--et-dark);text-transform:uppercase">НАЙБЛИЖЧІ ТУРИ</div>
+      <div style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-top:8px">font-family: 'Druk Text Bold' · font-size: clamp(24px,3.5vw,48px) · text-transform: uppercase · color: #1a1a2e</div>
+    </div>
+  </div>
+
+  <div class="sect-label">CARD TITLE — Druk Text Bold, uppercase, WHITE на overlay</div>
+  <div class="grid2" style="margin-bottom:14px">
+    <div class="card">
+      <div class="card-bd" style="background:var(--et-cyan);padding:16px;border-radius:6px">
+        <div style="font-family:var(--heading);font-size:22px;font-weight:900;color:#fff;text-transform:uppercase;line-height:1.2">ПАРИЖ + НОРМАНДІЯ</div>
+        <div style="font-size:10px;color:rgba(255,255,255,.7);font-family:var(--mono);margin-top:6px">font-size: clamp(14px,1.8vw,22px) · uppercase · white · line-height: 1.2</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-bd" style="background:var(--et-red);padding:16px;border-radius:6px">
+        <div style="font-family:var(--heading);font-size:22px;font-weight:900;color:#fff;text-transform:uppercase;line-height:1.2">ВІКЕНД У БУДАПЕШТІ + ВІДЕНЬ</div>
+        <div style="font-size:10px;color:rgba(255,255,255,.7);font-family:var(--mono);margin-top:6px">те саме правило — всі заголовки карток</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sect-label">ШРИФТОВА ТАБЛИЦЯ — для Frontend</div>
+  <div class="card">
+    <div class="card-bd">
+      <table class="usage-table">
+        <thead><tr><th>Елемент</th><th>Font</th><th>Size</th><th>Weight</th><th>Color</th><th>Transform</th></tr></thead>
+        <tbody>
+          <tr><td>Hero H1</td><td style="font-family:var(--mono)">Druk Text Heavy</td><td style="font-family:var(--mono)">clamp(28px,4.5vw,56px)</td><td style="font-family:var(--mono)">900</td><td><span style="color:var(--et-cyan)">■</span> #53c7d6</td><td style="font-family:var(--mono)">uppercase</td></tr>
+          <tr><td>Section title</td><td style="font-family:var(--mono)">Druk Text Bold</td><td style="font-family:var(--mono)">clamp(24px,3.5vw,48px)</td><td style="font-family:var(--mono)">900</td><td><span style="color:var(--et-dark)">■</span> #1a1a2e</td><td style="font-family:var(--mono)">uppercase</td></tr>
+          <tr><td>Card title</td><td style="font-family:var(--mono)">Druk Text Bold</td><td style="font-family:var(--mono)">clamp(14px,1.8vw,22px)</td><td style="font-family:var(--mono)">900</td><td><span style="color:#fff">■</span> #ffffff</td><td style="font-family:var(--mono)">uppercase</td></tr>
+          <tr><td>Category tile</td><td style="font-family:var(--mono)">Druk Text Bold</td><td style="font-family:var(--mono)">14–16px</td><td style="font-family:var(--mono)">900</td><td><span style="color:#fff">■</span> #ffffff</td><td style="font-family:var(--mono)">uppercase</td></tr>
+          <tr><td>Nav links</td><td style="font-family:var(--mono)">Proxima Nova</td><td style="font-family:var(--mono)">13–14px</td><td style="font-family:var(--mono)">500–600</td><td><span style="color:#374151">■</span> #374151</td><td style="font-family:var(--mono)">none</td></tr>
+          <tr><td>Body / описи</td><td style="font-family:var(--mono)">Proxima Nova</td><td style="font-family:var(--mono)">13–14px</td><td style="font-family:var(--mono)">400</td><td><span style="color:var(--et-white)">■</span> rgba(fff,.9)</td><td style="font-family:var(--mono)">none</td></tr>
+          <tr><td>Date chips</td><td style="font-family:var(--mono)">Proxima Nova</td><td style="font-family:var(--mono)">11–12px</td><td style="font-family:var(--mono)">600</td><td><span style="color:var(--et-dark)">■</span> #1a1a2e</td><td style="font-family:var(--mono)">none</td></tr>
+          <tr><td>Price</td><td style="font-family:var(--mono)">Druk/Proxima</td><td style="font-family:var(--mono)">18–22px</td><td style="font-family:var(--mono)">900</td><td><span style="color:#fff">■</span> #ffffff</td><td style="font-family:var(--mono)">none</td></tr>
+          <tr><td>System UI (ID, статуси)</td><td style="font-family:var(--mono)">IBM Plex Mono</td><td style="font-family:var(--mono)">11–12px</td><td style="font-family:var(--mono)">500–600</td><td><span style="color:var(--et-cyan)">■</span> brand-cyan</td><td style="font-family:var(--mono)">none</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ░░░ COMPONENTS ░░░ -->
+<div id="components" class="section">
+  <div class="ph">
+    <div class="ph-title"><span class="badge">КОМПОНЕНТИ</span>Реальні UI-компоненти з eurotrips.ua</div>
+    <div class="ph-sub">// Кнопки · Date chips · Category tiles · Tour card pattern</div>
+  </div>
+
+  <div class="sect-label">КНОПКИ — ТІЛЬКИ PILL ФОРМА (border-radius: 9999px)</div>
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-bd">
+      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px;align-items:center">
+        <button style="background:var(--et-cyan);color:#fff;border:none;border-radius:9999px;padding:10px 28px;font-size:14px;font-weight:600;cursor:pointer">Календар турів</button>
+        <button style="background:var(--et-red);color:#fff;border:none;border-radius:9999px;padding:8px 20px;font-size:13px;font-weight:700;cursor:pointer;text-transform:uppercase">ДОКЛАДНІШЕ →</button>
+        <button style="background:var(--et-red);color:#fff;border:none;border-radius:9999px;padding:8px 20px;font-size:13px;font-weight:700;cursor:pointer;text-transform:uppercase">ВСІ ТУРИ</button>
+        <button style="background:transparent;color:var(--et-cyan);border:1.5px solid var(--et-cyan);border-radius:9999px;padding:8px 18px;font-size:12px;font-weight:600;cursor:pointer">+38 097 713-96-96 ▾</button>
+        <button style="background:var(--et-blue);color:#fff;border:none;border-radius:9999px;padding:8px 18px;font-size:13px;font-weight:700;cursor:pointer">Увійти в систему</button>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:10px 14px;flex:1;min-width:200px">
+          <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:4px">PRIMARY CTA (Hero)</div>
+          <div style="font-size:11px;font-family:var(--mono);color:var(--et-cyan)">bg: #53c7d6 · text: white · radius: 9999px · px-7 py-2.5</div>
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:10px 14px;flex:1;min-width:200px">
+          <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:4px">SECONDARY CTA (Cards)</div>
+          <div style="font-size:11px;font-family:var(--mono);color:var(--et-red)">bg: #f0366d · text: white · uppercase · radius: 9999px</div>
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:10px 14px;flex:1;min-width:200px">
+          <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:4px">PHONE OUTLINE (Nav)</div>
+          <div style="font-size:11px;font-family:var(--mono);color:var(--et-cyan)">bg: transparent · border: 1.5px #53c7d6 · text: #53c7d6</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sect-label">DATE CHIPS — pill, білий фон, на кольорових overlay</div>
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-bd" style="background:var(--et-cyan);border-radius:6px;padding:16px">
+      <div style="font-size:11px;color:rgba(255,255,255,.7);margin-bottom:8px">Доступні дати</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+        <div style="background:#fff;border-radius:9999px;padding:5px 14px;font-size:12px;font-weight:600;color:var(--et-dark)">20.06 – 26.06</div>
+        <div style="background:#fff;border-radius:9999px;padding:5px 14px;font-size:12px;font-weight:600;color:var(--et-dark)">11.07 – 17.07</div>
+        <div style="background:#fff;border-radius:9999px;padding:5px 14px;font-size:12px;font-weight:600;color:var(--et-dark)">25.07 – 31.07</div>
+      </div>
+      <div style="font-size:11px;color:rgba(255,255,255,.8);font-family:var(--mono)">bg: #ffffff · text: #1a1a2e · border-radius: 9999px · font-weight: 600 · px-4 py-1.5</div>
+    </div>
+  </div>
+
+  <div class="sect-label">CATEGORY TILES — сітка плиток</div>
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-bd">
+      <div class="cat-grid" style="margin-bottom:6px">
+        <div class="cat-tile ct-bg-red">
+          <div class="ct-title">КАЛЕНДАР ТУРІВ</div>
+          <div class="ct-emoji">📅</div>
+        </div>
+        <div class="cat-tile ct-bg-photo">
+          <div class="ct-title">ПАЛАЮЧІ ТУРИ</div>
+        </div>
+        <div class="cat-tile ct-bg-photo">
+          <div class="ct-title">МОРЕ 2026</div>
+        </div>
+      </div>
+      <div class="cat-grid-2">
+        <div class="cat-tile ct-bg-photo" style="min-height:80px">
+          <div class="ct-title">ПОПУЛЯРНІ ТУРИ</div>
+        </div>
+        <div class="cat-tile ct-bg-photo" style="min-height:80px">
+          <div class="ct-title">ТУРИ-НОВИНКИ</div>
+        </div>
+        <div class="cat-tile ct-bg-photo" style="min-height:80px">
+          <div class="ct-title">СТАТИ ТУРЛІДЕРОМ</div>
+        </div>
+      </div>
+      <div style="margin-top:10px;font-size:11px;color:var(--text3);font-family:var(--mono)">Grid: 1fr 0.6fr 0.6fr (top row) · 1fr 1fr 1fr (bottom) · gap: 6px · border-radius: 8px</div>
+    </div>
+  </div>
+
+  <div class="sect-label">ЛОГО — winged shoe на cyan</div>
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-bd" style="display:flex;gap:20px;align-items:center;flex-wrap:wrap">
+      <div style="background:var(--et-cyan);border-radius:12px;width:110px;height:110px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px">
+        <div style="font-size:42px">👟</div>
+        <div style="font-family:var(--heading);font-size:11px;font-weight:900;color:#fff;letter-spacing:2px">EUROTRIPS</div>
+      </div>
+      <div style="background:#fff;border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px">
+        <div style="background:var(--et-cyan);border-radius:6px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:14px">👟</div>
+        <span style="font-family:var(--heading);font-size:11px;font-weight:900;color:var(--et-dark);letter-spacing:1px">EUROTRIPS</span>
+      </div>
+      <div style="font-size:11px;color:var(--text2)">
+        <div>Повне лого: winged shoe іконка + текст EUROTRIPS</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:4px">Фон: #53c7d6 · Іконка: white SVG · Текст: white Druk/Heading 900</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:2px">В nav: іконка + текст поруч на білому фоні</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ░░░ GRID ░░░ -->
+<div id="grid" class="section">
+  <div class="ph">
+    <div class="ph-title"><span class="badge">СІТКА + КАРТКИ</span>Tour card overlay pattern + grid system</div>
+    <div class="ph-sub">// Головний паттерн карток турів та сіткова система</div>
+  </div>
+
+  <div class="alert alert-new">
+    <span>🔑</span>
+    <div><strong>Ключовий паттерн:</strong> Картки турів = <strong>фото на весь блок</strong> + <strong>кольоровий overlay-блок</strong> (position:absolute, bottom-left) з назвою, датами, ціною і CTA. Колір overlay чергується: cyan → red → blue → gold.</div>
+  </div>
+
+  <div class="sect-label">TOUR CARD — overlay pattern (реальний компонент)</div>
+  <div class="grid2" style="margin-bottom:16px">
+    <!-- Card 1: cyan overlay -->
+    <div class="tour-card-wrap">
+      <div style="width:100%;height:300px;background:linear-gradient(135deg,#1e3a5f 0%,#334155 100%)"></div>
+      <div class="tour-card-overlay tour-overlay-cyan">
+        <div class="to-title">ПАРИЖ + НОРМАНДІЯ</div>
+        <div class="to-dates-label">Доступні дати</div>
+        <div class="date-pills">
+          <div class="date-pill">20.06 – 26.06</div>
+          <div class="date-pill">11.07 – 17.07</div>
+          <div class="date-pill">25.07 – 31.07</div>
+        </div>
+        <div class="to-route">Львів → Прага → Париж → Нормандія → Відень → Польща/Львів →</div>
+        <div class="to-price">19 315 ₴</div>
+        <button class="to-btn-cyan">ДОКЛАДНІШЕ →</button>
+      </div>
+    </div>
+
+    <!-- Card 2: red overlay -->
+    <div class="tour-card-wrap">
+      <div style="width:100%;height:300px;background:linear-gradient(135deg,#1a1a2e 0%,#374151 100%)"></div>
+      <div class="tour-card-overlay tour-overlay-red">
+        <div class="to-title">ВІКЕНД У БУДАПЕШТІ + ВІДЕНЬ</div>
+        <div class="to-dates-label">Доступні дати</div>
+        <div class="date-pills">
+          <div class="date-pill">13.06 – 16.06</div>
+          <div class="date-pill">20.06 – 23.06</div>
+          <div class="date-pill">04.07 – 07.07</div>
+        </div>
+        <div class="to-route">Львів → Стрий → Мукачево/Ужгород → Будапешт → Сентендре → Відень → Львів →</div>
+        <div class="to-price">5 865 ₴</div>
+        <button class="to-btn-red">ДОКЛАДНІШЕ →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom row: blue + gold previews -->
+  <div class="grid2" style="margin-bottom:16px">
+    <div class="tour-card-wrap" style="min-height:120px">
+      <div style="width:100%;height:120px;background:linear-gradient(135deg,#1e3a5f,#334155)"></div>
+      <div style="position:absolute;bottom:0;left:0;background:var(--et-blue);padding:12px 16px;width:55%">
+        <div class="to-title">МІЛАН — КОМО — АЛЬПИ</div>
+      </div>
+    </div>
+    <div class="tour-card-wrap" style="min-height:120px">
+      <div style="width:100%;height:120px;background:linear-gradient(135deg,#1a1a2e,#374151)"></div>
+      <div style="position:absolute;bottom:0;left:0;background:var(--et-gold);padding:12px 16px;width:55%">
+        <div class="to-title" style="color:var(--et-dark)">СТАМБУЛ</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sect-label">TOUR CARD — CSS код</div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-bd">
+<pre><span class="cc">/* Tour Card — overlay pattern */</span>
+<span class="ck">.tour-card</span> {
+  <span class="ck">position</span>: <span class="cs">relative</span>;
+  <span class="ck">border-radius</span>: <span class="cv">10px</span>;
+  <span class="ck">overflow</span>: <span class="cs">hidden</span>;
+  <span class="ck">min-height</span>: <span class="cv">300px</span>;
+}
+
+<span class="ck">.tour-card__photo</span> {
+  <span class="ck">width</span>: <span class="cv">100%</span>;
+  <span class="ck">height</span>: <span class="cv">300px</span>;
+  <span class="ck">object-fit</span>: <span class="cs">cover</span>;
+}
+
+<span class="ck">.tour-card__overlay</span> {
+  <span class="ck">position</span>: <span class="cs">absolute</span>;
+  <span class="ck">bottom</span>: <span class="cv">0</span>;
+  <span class="ck">left</span>: <span class="cv">0</span>;
+  <span class="ck">width</span>: <span class="cv">55%</span>;         <span class="cc">/* ~55% ширини картки */</span>
+  <span class="ck">min-height</span>: <span class="cv">60%</span>;
+  <span class="ck">padding</span>: <span class="cv">16px</span>;
+}
+
+<span class="cc">/* Варіанти кольорів overlay */</span>
+<span class="ck">.overlay--cyan</span>  { <span class="ck">background</span>: <span class="cv">#53c7d6</span>; }
+<span class="ck">.overlay--red</span>   { <span class="ck">background</span>: <span class="cv">#f0366d</span>; }
+<span class="ck">.overlay--blue</span>  { <span class="ck">background</span>: <span class="cv">#2d70b9</span>; }
+<span class="ck">.overlay--gold</span>  { <span class="ck">background</span>: <span class="cv">#f9c01d</span>; }</pre>
+    </div>
+  </div>
+
+  <div class="sect-label">GRID SYSTEM — сітки з сайту</div>
+  <div class="card">
+    <div class="card-bd">
+      <table class="usage-table">
+        <thead><tr><th>Секція</th><th>Grid</th><th>Gap</th><th>Breakpoint</th></tr></thead>
+        <tbody>
+          <tr><td>Tour cards (головні)</td><td style="font-family:var(--mono)">grid-cols-2</td><td style="font-family:var(--mono)">gap-4 (16px)</td><td style="font-family:var(--mono)">md: 1col</td></tr>
+          <tr><td>Category tiles (верхній ряд)</td><td style="font-family:var(--mono)">1fr 0.6fr 0.6fr</td><td style="font-family:var(--mono)">gap-1.5 (6px)</td><td style="font-family:var(--mono)">sm: 1col</td></tr>
+          <tr><td>Category tiles (нижній ряд)</td><td style="font-family:var(--mono)">grid-cols-3</td><td style="font-family:var(--mono)">gap-1.5 (6px)</td><td style="font-family:var(--mono)">sm: 1col</td></tr>
+          <tr><td>Image slider</td><td style="font-family:var(--mono)">3 cards visible</td><td style="font-family:var(--mono)">gap-0</td><td style="font-family:var(--mono)">md: 1col</td></tr>
+          <tr><td>Nav</td><td style="font-family:var(--mono)">logo + flex-1 + actions</td><td style="font-family:var(--mono)">gap-6</td><td style="font-family:var(--mono)">sticky top-0</td></tr>
+          <tr><td>Контент (max-width)</td><td style="font-family:var(--mono)">max-w-screen-xl</td><td style="font-family:var(--mono)">mx-auto px-6</td><td style="font-family:var(--mono)">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ░░░ CODE TOKENS ░░░ -->
+<div id="code" class="section">
+  <div class="ph">
+    <div class="ph-title"><span class="badge">CODE TOKENS</span>Готовий код — tailwind + CSS + TypeScript</div>
+    <div class="ph-sub">// Скопіюй і додай у проект</div>
+  </div>
+
+  <div class="grid2">
+    <div>
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-hd">tailwind.config.ts</div>
+        <div class="card-bd">
+<pre><span class="ck">import</span> <span class="ck">type</span> { Config } <span class="ck">from</span> <span class="cs">'tailwindcss'</span>
+
+<span class="ck">const</span> config: Config = {
+  content: [<span class="cs">'./src/**/*.{ts,tsx}'</span>],
+  theme: {
+    extend: {
+      colors: {
+        brand: {
+          <span class="cc">/* Основні */</span>
+          cyan:        <span class="cs">'#53c7d6'</span>,
+          <span class="cs">'cyan-dark'</span>: <span class="cs">'#3fb4c3'</span>,
+          <span class="cc">/* Акцентні */</span>
+          red:         <span class="cs">'#f0366d'</span>,
+          <span class="cs">'red-dark'</span>:  <span class="cs">'#d42b5f'</span>,
+          gold:        <span class="cs">'#f9c01d'</span>,
+          <span class="cs">'gold-dark'</span>: <span class="cs">'#e0aa10'</span>,
+          <span class="cc">/* System */</span>
+          blue:        <span class="cs">'#2d70b9'</span>,
+          <span class="cs">'blue-dark'</span>: <span class="cs">'#245d9c'</span>,
+          dark:        <span class="cs">'#1a1a2e'</span>,
+        },
+      },
+      fontFamily: {
+        heading: [<span class="cs">'Druk Text'</span>, <span class="cs">'Montserrat'</span>, <span class="cs">'Impact'</span>, <span class="cs">'sans-serif'</span>],
+        body:    [<span class="cs">'Proxima Nova'</span>, <span class="cs">'Montserrat'</span>, <span class="cs">'Inter'</span>, <span class="cs">'sans-serif'</span>],
+        mono:    [<span class="cs">'IBM Plex Mono'</span>, <span class="cs">'monospace'</span>],
+      },
+      borderRadius: {
+        <span class="cs">'pill'</span>: <span class="cs">'9999px'</span>, <span class="cc">// всі кнопки!</span>
+      },
+    },
+  },
+}
+<span class="ck">export default</span> config</pre>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-hd">src/constants/brand.ts</div>
+        <div class="card-bd">
+<pre><span class="cc">// ✅ Верифіковано: PDF брендбук + eurotrips.ua</span>
+<span class="ck">export const</span> BRAND = {
+  colors: {
+    cyan:      <span class="cs">'#53c7d6'</span>, <span class="cc">// PRIMARY: logo, hero, nav</span>
+    cyanDark:  <span class="cs">'#3fb4c3'</span>,
+    red:       <span class="cs">'#f0366d'</span>, <span class="cc">// CTA: "Докладніше", "Вхід"</span>
+    redDark:   <span class="cs">'#d42b5f'</span>,
+    gold:      <span class="cs">'#f9c01d'</span>, <span class="cc">// Стамбул, highlights</span>
+    goldDark:  <span class="cs">'#e0aa10'</span>,
+    blue:      <span class="cs">'#2d70b9'</span>, <span class="cc">// Мілан, system buttons</span>
+    blueDark:  <span class="cs">'#245d9c'</span>,
+    dark:      <span class="cs">'#1a1a2e'</span>, <span class="cc">// section titles, body</span>
+    white:     <span class="cs">'#ffffff'</span>,
+    pink:      <span class="cs">'#f7c5d0'</span>, <span class="cc">// soft backgrounds</span>
+  },
+  fonts: {
+    heading: <span class="cs">'Druk Text'</span>,   <span class="cc">// H1, card titles</span>
+    body:    <span class="cs">'Proxima Nova'</span>, <span class="cc">// nav, body, chips</span>
+    mono:    <span class="cs">'IBM Plex Mono'</span>,<span class="cc">// IDs, codes</span>
+  },
+  radius: {
+    button: <span class="cs">'9999px'</span>, <span class="cc">// ВСІ кнопки — pill!</span>
+    card:   <span class="cs">'10px'</span>,
+    tile:   <span class="cs">'8px'</span>,
+    chip:   <span class="cs">'9999px'</span>,  <span class="cc">// date pills</span>
+  },
+  overlay: {
+    widthPct: <span class="cs">'55%'</span>,    <span class="cc">// ширина overlay на картці</span>
+    minHeightPct: <span class="cs">'60%'</span>,<span class="cc">// мін висота overlay</span>
+  },
+} <span class="ck">as const</span></pre>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-hd">globals.css · CSS Variables</div>
+        <div class="card-bd">
+<pre><span class="cc">/* src/styles/globals.css */</span>
+<span class="ck">:root</span> {
+  <span class="cc">/* ── Brand ── */</span>
+  <span class="cv">--et-cyan</span>:      <span class="cs">#53c7d6</span>;
+  <span class="cv">--et-cyan-dark</span>: <span class="cs">#3fb4c3</span>;
+  <span class="cv">--et-red</span>:       <span class="cs">#f0366d</span>;
+  <span class="cv">--et-red-dark</span>:  <span class="cs">#d42b5f</span>;
+  <span class="cv">--et-gold</span>:      <span class="cs">#f9c01d</span>;
+  <span class="cv">--et-gold-dark</span>: <span class="cs">#e0aa10</span>;
+  <span class="cv">--et-blue</span>:      <span class="cs">#2d70b9</span>;
+  <span class="cv">--et-blue-dark</span>: <span class="cs">#245d9c</span>;
+  <span class="cv">--et-dark</span>:      <span class="cs">#1a1a2e</span>;
+  <span class="cv">--et-white</span>:     <span class="cs">#ffffff</span>;
+  <span class="cv">--et-pink</span>:      <span class="cs">#f7c5d0</span>;
+
+  <span class="cc">/* ── Fonts ── */</span>
+  <span class="cv">--font-heading</span>: <span class="cs">'Druk Text'</span>, Montserrat, Impact, sans-serif;
+  <span class="cv">--font-body</span>:    <span class="cs">'Proxima Nova'</span>, Montserrat, Inter, sans-serif;
+  <span class="cv">--font-mono</span>:    <span class="cs">'IBM Plex Mono'</span>, monospace;
+
+  <span class="cc">/* ── Radii ── */</span>
+  <span class="cv">--radius-pill</span>: <span class="cs">9999px</span>; <span class="cc">/* кнопки */</span>
+  <span class="cv">--radius-card</span>: <span class="cs">10px</span>;
+  <span class="cv">--radius-tile</span>: <span class="cs">8px</span>;
+}
+
+<span class="cc">/* ── Tour card overlay utility ── */</span>
+<span class="ck">.tour-overlay</span> {
+  position: absolute; bottom: 0; left: 0;
+  width: 55%; min-height: 60%; padding: 16px;
+}
+<span class="ck">.tour-overlay--cyan</span>  { background: var(--et-cyan);  }
+<span class="ck">.tour-overlay--red</span>   { background: var(--et-red);   }
+<span class="ck">.tour-overlay--blue</span>  { background: var(--et-blue);  }
+<span class="ck">.tour-overlay--gold</span>  { background: var(--et-gold);  }</pre>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-hd">TourCard.tsx · React компонент</div>
+        <div class="card-bd">
+<pre><span class="ck">type</span> OverlayColor = <span class="cs">'cyan'</span> | <span class="cs">'red'</span> | <span class="cs">'blue'</span> | <span class="cs">'gold'</span>
+
+<span class="ck">const</span> overlayClasses: Record&lt;OverlayColor, <span class="ck">string</span>&gt; = {
+  cyan:  <span class="cs">'bg-brand-cyan'</span>,
+  red:   <span class="cs">'bg-brand-red'</span>,
+  blue:  <span class="cs">'bg-brand-blue'</span>,
+  gold:  <span class="cs">'bg-brand-gold'</span>,
+}
+
+<span class="ck">export const</span> TourCard = ({ tour, color }: {
+  tour: Tour; color: OverlayColor
+}) => (
+  <span class="cs">&lt;div</span> className=<span class="cs">"relative rounded-[10px] overflow-hidden"</span><span class="cs">&gt;</span>
+    <span class="cs">&lt;img</span>
+      src={tour.image}
+      className=<span class="cs">"w-full h-[300px] object-cover"</span>
+      alt={tour.title}
+    /<span class="cs">&gt;</span>
+    <span class="cs">&lt;div</span> className={`
+      absolute bottom-0 left-0 w-[55%] min-h-[60%] p-4
+      ${overlayClasses[color]}
+    `}<span class="cs">&gt;</span>
+      <span class="cs">&lt;h3</span> className=<span class="cs">"font-heading font-black text-white uppercase"</span><span class="cs">&gt;</span>
+        {tour.title}
+      <span class="cs">&lt;/h3&gt;</span>
+      <span class="cc">/* дати, ціна, CTA */</span>
+    <span class="cs">&lt;/div&gt;</span>
+  <span class="cs">&lt;/div&gt;</span>
+)</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function goTab(id,el){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.ntab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  el.classList.add('active');
+  window.scrollTo(0,0);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eurotrips · BookingDetail · Wireframe v1</title>
+<style>
+/* ── DESIGN TOKENS (eurotrips.ua brand) ── */
+:root{
+  --et-cyan:#53c7d6; --et-cyan-dark:#3fb4c3;
+  --et-red:#f0366d;  --et-red-dark:#d42b5f;
+  --et-gold:#f9c01d; --et-blue:#2d70b9;
+  --et-dark:#1a1a2e; --et-white:#fff;
+  /* System dark UI */
+  --bg:#0f1117; --bg2:#161b27; --bg3:#1e2538; --bg4:#242d42;
+  --border:#2a3349; --border2:#364059;
+  --text:#e2e8f0; --text2:#94a3b8; --text3:#64748b;
+  --success:#10b981; --warn:#f59e0b; --danger:#ef4444;
+  --mono:'IBM Plex Mono',monospace;
+  --sans:'Segoe UI',system-ui,sans-serif;
+  --heading:'Montserrat','Impact',sans-serif;
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);font-size:13px;line-height:1.5;min-height:100vh}
+
+/* ── TOPNAV ── */
+.topbar{position:sticky;top:0;z-index:100;background:rgba(15,17,23,.97);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);height:48px;display:flex;align-items:center;padding:0 16px;gap:12px}
+.tb-logo{font-family:var(--mono);font-weight:700;font-size:13px;color:var(--et-cyan);letter-spacing:2px;margin-right:8px}
+.tb-pills{display:flex;gap:4px;overflow-x:auto}
+.tb-pill{padding:4px 12px;border-radius:4px;font-size:11px;font-weight:500;cursor:pointer;border:1px solid var(--border);color:var(--text3);white-space:nowrap;transition:all .15s;background:transparent}
+.tb-pill:hover{border-color:var(--border2);color:var(--text)}
+.tb-pill.on{background:var(--et-cyan);border-color:var(--et-cyan);color:#fff}
+.tb-pill.red.on{background:var(--et-red);border-color:var(--et-red)}
+.tb-right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.tb-tag{font-size:10px;font-family:var(--mono);color:var(--text3);background:var(--bg3);border:1px solid var(--border);padding:3px 8px;border-radius:3px}
+
+/* ── VIEWPORT WRAPPER ── */
+.viewport{display:none}
+.viewport.on{display:block}
+
+/* ── DESKTOP LAYOUT ── */
+.desktop-wrap{max-width:1280px;margin:0 auto;padding:20px}
+
+/* ── HEADER STRIP ── */
+.hdr{display:flex;align-items:flex-start;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.back-btn{display:flex;align-items:center;gap:4px;padding:6px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text2);font-size:12px;cursor:pointer;white-space:nowrap;transition:all .15s}
+.back-btn:hover{border-color:var(--et-cyan);color:var(--et-cyan)}
+.hdr-id{font-family:var(--mono);font-size:18px;font-weight:700;color:var(--et-cyan)}
+.hdr-sub{font-size:11px;color:var(--text3);margin-top:2px;font-family:var(--mono)}
+.hdr-actions{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+
+/* ── STATUS BADGE ── */
+.sbadge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;font-family:var(--mono)}
+.sb-new{background:rgba(59,130,246,.15);color:#93c5fd;border:1px solid rgba(59,130,246,.25)}
+.sb-wait{background:rgba(139,92,246,.15);color:#c4b5fd;border:1px solid rgba(139,92,246,.25)}
+.sb-part{background:rgba(245,158,11,.15);color:#fcd34d;border:1px solid rgba(245,158,11,.25)}
+.sb-conf{background:rgba(16,185,129,.12);color:#6ee7b7;border:1px solid rgba(16,185,129,.25)}
+.sb-canc{background:rgba(239,68,68,.12);color:#fca5a5;border:1px solid rgba(239,68,68,.25)}
+.sb-dep{background:rgba(249,192,29,.12);color:#fcd34d;border:1px solid rgba(249,192,29,.25)}
+
+/* ── STATUS DROPDOWN ── */
+.status-dd-wrap{position:relative}
+.status-dd-btn{display:flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text);font-size:12px;cursor:pointer}
+.status-dd-btn:hover{border-color:var(--et-cyan)}
+.status-dd-menu{position:absolute;right:0;top:calc(100% + 4px);background:var(--bg2);border:1px solid var(--border2);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:50;min-width:200px;padding:6px;display:none}
+.status-dd-menu.open{display:block}
+.status-dd-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;cursor:pointer;font-size:11px}
+.status-dd-item:hover{background:var(--bg3)}
+
+/* ── DOC BUTTONS ── */
+.doc-btn{display:flex;align-items:center;gap:5px;padding:6px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text2);font-size:11px;font-weight:500;cursor:pointer;transition:all .15s;white-space:nowrap}
+.doc-btn:hover{border-color:var(--et-cyan);color:var(--et-cyan)}
+.doc-btn.disabled{opacity:.4;cursor:not-allowed}
+.doc-btn.primary{background:var(--et-blue);border-color:var(--et-blue);color:#fff}
+.doc-btn.primary:hover{background:var(--et-blue);}
+
+/* ── UNPAID ALERT ── */
+.unpaid-alert{background:rgba(239,68,68,.1);border:2px solid var(--danger);border-radius:10px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:flex-start;gap:12px}
+.ua-icon{font-size:22px;flex-shrink:0;margin-top:1px}
+.ua-body{flex:1}
+.ua-title{font-size:14px;font-weight:700;color:#fca5a5;margin-bottom:4px}
+.ua-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:6px}
+.deadline-chip{background:var(--danger);color:#fff;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:700;font-family:var(--mono);animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.7}}
+.pay-now-btn{background:var(--danger);color:#fff;border:none;border-radius:20px;padding:6px 16px;font-size:12px;font-weight:700;cursor:pointer}
+
+/* ── MAIN GRID ── */
+.main-grid{display:grid;grid-template-columns:7fr 5fr;gap:16px}
+
+/* ── SECTION CARD ── */
+.sec{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:14px}
+.sec-hd{background:var(--bg3);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600}
+.sec-icon{font-size:14px;flex-shrink:0}
+.sec-title{flex:1;color:var(--text)}
+.sec-badge{font-size:10px;font-family:var(--mono);padding:2px 7px;border-radius:3px;background:var(--bg4);color:var(--text3)}
+.sec-action{font-size:11px;color:var(--et-cyan);cursor:pointer;margin-left:auto}
+
+/* ── DATA ROW ── */
+.drow{display:flex;align-items:baseline;padding:6px 16px;border-bottom:1px solid rgba(255,255,255,.04)}
+.drow:last-child{border-bottom:none}
+.drow.hl{background:rgba(255,255,255,.02)}
+.drow-l{font-size:10px;color:var(--text3);width:120px;flex-shrink:0;font-family:var(--mono);text-transform:uppercase;letter-spacing:.4px}
+.drow-v{font-size:12px;color:var(--text);font-weight:500;flex:1}
+
+/* ── PAYMENT BLOCK ── */
+.pay-total{padding:14px 16px;border-bottom:1px solid var(--border)}
+.pay-sum{font-size:22px;font-weight:700;font-family:var(--mono);color:var(--et-white)}
+.pay-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.pay-prog{padding:0 16px 12px}
+.prog-bar{height:6px;background:var(--bg4);border-radius:3px;overflow:hidden;margin:8px 0 4px}
+.prog-fill{height:100%;border-radius:3px;background:var(--success)}
+.prog-fill.low{background:var(--warn)}
+.prog-fill.zero{background:var(--danger)}
+.prog-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--text3);font-family:var(--mono)}
+.pay-rows{padding:0 16px 12px}
+.pay-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.pay-row:last-child{border-bottom:none}
+.pr-label{font-size:11px;color:var(--text2)}
+.pr-val{font-size:12px;font-weight:600;font-family:var(--mono)}
+.pr-val.ok{color:var(--success)}
+.pr-val.warn{color:var(--warn)}
+.pr-val.danger{color:var(--danger)}
+.pr-val.muted{color:var(--text3)}
+.pr-tag{font-size:9px;font-family:var(--mono);padding:2px 5px;border-radius:3px;margin-left:5px}
+.pr-tag.ok{background:rgba(16,185,129,.15);color:#6ee7b7}
+.pr-tag.warn{background:rgba(245,158,11,.15);color:#fcd34d}
+.pr-tag.danger{background:rgba(239,68,68,.15);color:#fca5a5}
+.pay-actions{padding:10px 16px;border-top:1px solid var(--border)}
+.pay-action-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:8px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:none}
+.pab-primary{background:var(--success);color:#fff}
+.pab-primary:hover{background:#0ea472}
+.pab-warn{background:var(--warn);color:#fff;margin-top:6px}
+
+/* ── TOURISTS TABLE ── */
+.tourist-table{width:100%;border-collapse:collapse;font-size:11px}
+.tt-head tr{background:var(--bg3)}
+.tt-head th{padding:7px 12px;text-align:left;color:var(--text3);font-weight:600;font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border2)}
+.tt-body tr{border-bottom:1px solid rgba(255,255,255,.04);transition:background .1s}
+.tt-body tr:hover{background:rgba(255,255,255,.02)}
+.tt-body td{padding:8px 12px;vertical-align:middle}
+.tt-body tr:last-child{border-bottom:none}
+.tt-name{font-weight:500;color:var(--text)}
+.tt-role{font-size:9px;font-family:var(--mono);padding:1px 5px;border-radius:3px;background:rgba(83,199,214,.12);color:var(--et-cyan);margin-left:4px}
+.tt-seat{font-family:var(--mono);font-weight:700;color:var(--et-cyan);font-size:12px}
+.tt-room{font-size:10px;padding:2px 6px;border-radius:3px;background:var(--bg3);font-family:var(--mono);color:var(--text2)}
+
+/* ── BUS SEAT MAP ── */
+.bus-wrap{padding:14px 16px}
+.bus-body{background:var(--bg3);border:1px solid var(--border2);border-radius:12px;padding:12px;max-width:300px;margin:0 auto}
+.bus-front{background:var(--bg4);border-radius:6px 6px 0 0;height:14px;display:flex;align-items:center;justify-content:center;margin-bottom:10px}
+.bus-front span{font-size:9px;color:var(--text3);font-family:var(--mono);letter-spacing:2px}
+.driver-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:0 2px}
+.driver-seat{width:30px;height:28px;background:var(--bg);border:1.5px solid var(--border2);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:12px}
+.driver-label{font-size:10px;color:var(--text3);font-family:var(--mono)}
+.door-label{margin-left:auto;font-size:9px;color:var(--text3);font-family:var(--mono);border-right:2px dashed var(--border2);padding-right:6px}
+.bus-rows{display:flex;flex-direction:column;gap:3px}
+.bus-row{display:grid;grid-template-columns:28px 28px 12px 28px 28px;gap:3px;align-items:center}
+.bus-aisle{display:flex;align-items:center;justify-content:center;font-size:8px;color:var(--border2);font-family:var(--mono)}
+.seat{width:28px;height:26px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;font-family:var(--mono);cursor:pointer;transition:all .12s;border:1.5px solid transparent}
+.seat.free{background:rgba(16,185,129,.15);border-color:rgba(16,185,129,.4);color:#6ee7b7}
+.seat.free:hover{background:rgba(16,185,129,.3);transform:scale(1.08)}
+.seat.taken{background:rgba(100,116,139,.1);border-color:var(--border);color:var(--text3);cursor:default}
+.seat.mine{background:rgba(83,199,214,.2);border-color:var(--et-cyan);color:var(--et-cyan);box-shadow:0 0 0 2px rgba(83,199,214,.3)}
+.seat.mine::after{content:'★';font-size:6px;position:absolute;top:1px;right:1px}
+.seat{position:relative}
+.bus-legend{display:flex;gap:10px;margin-top:10px;padding-top:8px;border-top:1px solid var(--border)}
+.bl-item{display:flex;align-items:center;gap:4px;font-size:9px;color:var(--text3);font-family:var(--mono)}
+.bl-dot{width:10px;height:10px;border-radius:2px}
+
+/* ── AVAIL BLOCK ── */
+.avail-row{display:flex;align-items:center;gap:8px;padding:12px 16px}
+.avail-num{font-size:24px;font-weight:700;font-family:var(--mono);color:var(--et-white)}
+.avail-label{font-size:11px;color:var(--text3)}
+.avail-bar-wrap{flex:1}
+.avail-bar{height:6px;background:var(--bg4);border-radius:3px;overflow:hidden}
+.avail-fill{height:100%;border-radius:3px;background:var(--et-cyan)}
+
+/* ── COMMISSION ── */
+.comm-body{padding:12px 16px}
+.comm-note{font-size:10px;color:var(--text3);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-family:var(--mono)}
+
+/* ── COMMENTS ── */
+.comment-list{padding:10px 16px}
+.cmt{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px}
+.cmt.system{border-color:rgba(245,158,11,.2);background:rgba(245,158,11,.05)}
+.cmt-meta{font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:4px}
+.cmt-text{font-size:12px;color:var(--text)}
+.cmt-input{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--text);font-family:var(--sans);resize:none;margin:0 16px 12px;width:calc(100% - 32px);display:block}
+.cmt-input:focus{outline:none;border-color:var(--et-cyan)}
+.cmt-send{margin:0 16px 12px;display:flex;justify-content:flex-end}
+.cmt-btn{background:var(--et-cyan);color:#fff;border:none;border-radius:8px;padding:6px 16px;font-size:11px;font-weight:600;cursor:pointer}
+
+/* ── MOBILE LAYOUT ── */
+.mobile-frame{max-width:390px;margin:0 auto;border:2px solid var(--border2);border-radius:20px;overflow:hidden;background:var(--bg2)}
+.mob-status-bar{background:var(--bg3);height:28px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;font-size:10px;color:var(--text3);font-family:var(--mono)}
+.mob-nav{background:var(--bg2);padding:12px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)}
+.mob-back{width:32px;height:32px;border:1px solid var(--border2);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--text2);cursor:pointer;font-size:14px}
+.mob-title{font-size:14px;font-weight:600;font-family:var(--mono);color:var(--et-cyan)}
+.mob-sub{font-size:10px;color:var(--text3);font-family:var(--mono)}
+.mob-body{padding:12px;overflow-y:auto;max-height:calc(100vh - 220px)}
+.mob-sec{background:var(--bg3);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden}
+.mob-sec-hd{padding:10px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600}
+.mob-sec-bd{padding:12px}
+.mob-unpaid{background:rgba(239,68,68,.12);border:2px solid var(--danger);border-radius:10px;padding:12px;margin-bottom:10px}
+.mob-u-title{font-size:13px;font-weight:700;color:#fca5a5;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.mob-deadline{background:var(--danger);color:#fff;border-radius:6px;padding:5px 12px;font-family:var(--mono);font-size:13px;font-weight:700;text-align:center;margin-bottom:8px;animation:pulse 1.5s infinite}
+.mob-paybtn{width:100%;background:var(--danger);color:#fff;border:none;border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer}
+.mob-drow{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.mob-drow:last-child{border-bottom:none}
+.mob-dl{font-size:10px;color:var(--text3);font-family:var(--mono)}
+.mob-dv{font-size:12px;font-weight:500;color:var(--text);text-align:right}
+.mob-prog{margin:8px 0}
+.mob-doc-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.mob-doc-btn{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;border:1px solid var(--border2);border-radius:8px;background:var(--bg);color:var(--text2);font-size:10px;cursor:pointer;text-align:center}
+.mob-doc-btn:hover{border-color:var(--et-cyan);color:var(--et-cyan)}
+.mob-doc-btn .icon{font-size:18px}
+.mob-tab-bar{display:flex;border-top:1px solid var(--border);background:var(--bg3)}
+.mob-tab{flex:1;display:flex;flex-direction:column;align-items:center;padding:8px 4px;font-size:9px;color:var(--text3);cursor:pointer;font-family:var(--mono)}
+.mob-tab.on{color:var(--et-cyan)}
+.mob-tab .mt-icon{font-size:16px;margin-bottom:2px}
+
+/* ── MINI BUS MAP (mobile) ── */
+.mob-bus{background:var(--bg);border:1px solid var(--border2);border-radius:10px;padding:10px}
+.mob-bus-rows{display:flex;flex-direction:column;gap:2px}
+.mob-bus-row{display:grid;grid-template-columns:24px 24px 10px 24px 24px;gap:2px;align-items:center}
+.ms{width:24px;height:22px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:600;font-family:var(--mono);border:1px solid transparent}
+.ms.free{background:rgba(16,185,129,.15);border-color:rgba(16,185,129,.35);color:#6ee7b7}
+.ms.taken{background:rgba(100,116,139,.1);border-color:var(--border);color:var(--text3)}
+.ms.mine{background:rgba(83,199,214,.2);border-color:var(--et-cyan);color:var(--et-cyan)}
+.ms-aisle{font-size:7px;color:var(--border2);text-align:center;font-family:var(--mono)}
+
+/* ── UTILITIES ── */
+.hr{border:none;border-top:1px solid var(--border);margin:0}
+.flex{display:flex} .items-center{align-items:center} .gap-2{gap:8px} .gap-3{gap:12px}
+.ml-auto{margin-left:auto} .text-xs{font-size:11px} .font-mono{font-family:var(--mono)}
+.text-cyan{color:var(--et-cyan)} .text-red{color:var(--danger)} .text-ok{color:var(--success)} .text-warn{color:var(--warn)}
+.mb-1{margin-bottom:4px} .mb-2{margin-bottom:8px} .mt-2{margin-top:8px}
+.w-full{width:100%} .p-4{padding:16px} .px-4{padding:0 16px} .py-2{padding:8px 0}
+.rounded{border-radius:8px} .font-bold{font-weight:700}
+</style>
+</head>
+<body>
+
+<!-- ░░░ TOPBAR ░░░ -->
+<div class="topbar">
+  <div class="tb-logo">ET</div>
+  <div class="tb-pills">
+    <div class="tb-pill on" onclick="goView('desktop',this)">🖥 Desktop</div>
+    <div class="tb-pill" onclick="goView('mobile',this)">📱 Mobile (турист)</div>
+    <div class="tb-pill red on" id="btn-unpaid" onclick="toggleUnpaid(this)">🔴 Неоплачено</div>
+  </div>
+  <div class="tb-right">
+    <div class="tb-tag">BookingDetail v1</div>
+    <div class="tb-tag" id="role-tag">Роль: manager</div>
+    <select onchange="setRole(this.value)" style="background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-size:11px;padding:3px 7px;border-radius:4px;font-family:var(--mono)">
+      <option value="manager">manager</option>
+      <option value="agent">agent</option>
+      <option value="tourist">tourist</option>
+      <option value="ops_manager">ops_manager</option>
+    </select>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     DESKTOP VIEW
+══════════════════════════════════════════════════ -->
+<div id="v-desktop" class="viewport on">
+<div class="desktop-wrap">
+
+  <!-- UNPAID ALERT (shown when unpaid=true) -->
+  <div class="unpaid-alert" id="unpaid-banner">
+    <div class="ua-icon">🚨</div>
+    <div class="ua-body">
+      <div class="ua-title">Бронювання не оплачено — залишок € 340 EUR</div>
+      <div style="font-size:12px;color:var(--text2)">Клієнт не вніс доплату в термін. Зверніться до клієнта або скасуйте бронювання.</div>
+      <div class="ua-row">
+        <span style="font-size:11px;color:var(--text3)">Дедлайн доплати:</span>
+        <div class="deadline-chip">⏰ 01.06.2025 — ПРОСТРОЧЕНО!</div>
+        <button class="pay-now-btn">💳 Внести оплату</button>
+        <button style="background:transparent;color:var(--text3);border:1px solid var(--border2);border-radius:20px;padding:5px 12px;font-size:11px;cursor:pointer">Нагадати клієнту</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HEADER -->
+  <div class="hdr">
+    <button class="back-btn">← До списку</button>
+    <div>
+      <div class="flex items-center gap-2">
+        <span class="hdr-id">ET-2025-01247</span>
+        <span class="sbadge sb-wait" id="hdr-status">💳 Очікує оплату</span>
+      </div>
+      <div class="hdr-sub">Створено 12.05.2025 · Оновлено 01.06.2025 · Олена Ш.</div>
+    </div>
+
+    <div class="hdr-actions">
+      <!-- Status changer -->
+      <div class="status-dd-wrap" id="status-dd-wrap">
+        <button class="status-dd-btn" onclick="toggleStatusDD()">✏ Змінити статус ▾</button>
+        <div class="status-dd-menu" id="status-dd-menu">
+          <div class="status-dd-item" onclick="setStatus('new')"><span class="sbadge sb-new">Нова заявка</span></div>
+          <div class="status-dd-item" onclick="setStatus('wait')"><span class="sbadge sb-wait">Очікує оплату</span></div>
+          <div class="status-dd-item" onclick="setStatus('part')"><span class="sbadge sb-part">Частково оплачено</span></div>
+          <div class="status-dd-item" onclick="setStatus('conf')"><span class="sbadge sb-conf">Підтверджено</span></div>
+          <div class="status-dd-item" onclick="setStatus('dep')"><span class="sbadge sb-dep">Готово до виїзду</span></div>
+          <div class="status-dd-item" onclick="setStatus('canc')"><span class="sbadge sb-canc">Скасовано</span></div>
+        </div>
+      </div>
+      <!-- Docs -->
+      <button class="doc-btn" title="Завантажити договір">📃 Договір</button>
+      <button class="doc-btn" title="Підтвердження бронювання">✅ Підтвердження</button>
+      <button class="doc-btn" title="Страховий поліс ч.1">🛡 Страховка ч.1</button>
+      <button class="doc-btn" title="Страховий поліс ч.2">🛡 Страховка ч.2</button>
+      <button class="doc-btn primary" title="Всі документи ZIP">⬇ Всі PDF</button>
+    </div>
+  </div>
+
+  <!-- MAIN GRID -->
+  <div class="main-grid">
+
+    <!-- ── LEFT 7/12 ── -->
+    <div>
+
+      <!-- 1. ТУР -->
+      <div class="sec">
+        <div class="sec-hd"><span class="sec-icon">🗺</span><span class="sec-title">Тур</span></div>
+        <div class="drow hl"><span class="drow-l">Назва туру</span><span class="drow-v"><strong>Париж — Нормандія</strong></span></div>
+        <div class="drow"><span class="drow-l">Код туру</span><span class="drow-v font-mono text-cyan">PN25102505</span></div>
+        <div class="drow"><span class="drow-l">Дата виїзду</span><span class="drow-v font-mono">25.10.2025</span></div>
+        <div class="drow"><span class="drow-l">Місто виїзду</span><span class="drow-v">Львів</span></div>
+        <div class="drow"><span class="drow-l">Тривалість</span><span class="drow-v">10 днів</span></div>
+        <div class="drow"><span class="drow-l">Тип</span><span class="drow-v">Прямий клієнт</span></div>
+        <div class="drow"><span class="drow-l">Туристів</span><span class="drow-v">4 ос.</span></div>
+        <div class="drow"><span class="drow-l">Контакт</span><span class="drow-v">Коваль Марія</span></div>
+        <div class="drow"><span class="drow-l">Телефон</span><span class="drow-v font-mono">+38 098 123 4567</span></div>
+        <div class="drow"><span class="drow-l">Email</span><span class="drow-v">kowal@gmail.com</span></div>
+        <div class="drow"><span class="drow-l">Канал</span><span class="drow-v">Instagram → сайт</span></div>
+        <div class="drow"><span class="drow-l">Примітки</span><span class="drow-v" style="color:var(--text3)">Хочуть номери поруч. Алергія на горіхи у Василя.</span></div>
+      </div>
+
+      <!-- 2. ТУРИСТИ -->
+      <div class="sec">
+        <div class="sec-hd">
+          <span class="sec-icon">👥</span>
+          <span class="sec-title">Туристи</span>
+          <span class="sec-badge">4 учасники</span>
+          <span class="sec-action">+ Додати</span>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="tourist-table">
+            <thead class="tt-head">
+              <tr>
+                <th>ПІБ</th>
+                <th>Місце 🚌</th>
+                <th>Тип номеру</th>
+                <th id="th-passport" style="display:none">Паспорт</th>
+                <th>Особл. потреби</th>
+                <th>Статус</th>
+              </tr>
+            </thead>
+            <tbody class="tt-body">
+              <tr>
+                <td><span class="tt-name">Коваль Марія</span><span class="tt-role">контакт</span></td>
+                <td><span class="tt-seat">14</span></td>
+                <td><span class="tt-room">TWIN</span></td>
+                <td id="td-passport-1" style="display:none"><span style="font-family:var(--mono);font-size:10px;color:var(--text3)">AA 123456</span></td>
+                <td style="color:var(--text3);font-size:11px">—</td>
+                <td><span class="sbadge sb-conf" style="font-size:9px">✓ OK</span></td>
+              </tr>
+              <tr>
+                <td><span class="tt-name">Коваль Василь</span><span class="tt-role">учасник</span></td>
+                <td><span class="tt-seat">15</span></td>
+                <td><span class="tt-room">TWIN</span></td>
+                <td id="td-passport-2" style="display:none"><span style="font-family:var(--mono);font-size:10px;color:var(--text3)">AA 234567</span></td>
+                <td style="color:var(--warn);font-size:11px">⚠ Алергія: горіхи</td>
+                <td><span class="sbadge sb-conf" style="font-size:9px">✓ OK</span></td>
+              </tr>
+              <tr style="border-left:2px solid var(--danger)">
+                <td><span class="tt-name" style="color:var(--danger)">Учасник 3</span></td>
+                <td><span class="tt-seat" style="color:var(--text3)">—</span></td>
+                <td><span class="tt-room">SGL</span></td>
+                <td id="td-passport-3" style="display:none"><span style="font-size:10px;color:var(--danger)">✗ Не надано</span></td>
+                <td style="color:var(--text3);font-size:11px">—</td>
+                <td><span class="sbadge sb-wait" style="font-size:9px">⚠ Дані</span></td>
+              </tr>
+              <tr style="border-left:2px solid var(--danger)">
+                <td><span class="tt-name" style="color:var(--danger)">Учасник 4</span></td>
+                <td><span class="tt-seat" style="color:var(--text3)">—</span></td>
+                <td><span class="tt-room">SGL</span></td>
+                <td id="td-passport-4" style="display:none"><span style="font-size:10px;color:var(--danger)">✗ Не надано</span></td>
+                <td style="color:var(--text3);font-size:11px">—</td>
+                <td><span class="sbadge sb-wait" style="font-size:9px">⚠ Дані</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 3. КОМЕНТАРІ -->
+      <div class="sec">
+        <div class="sec-hd"><span class="sec-icon">💬</span><span class="sec-title">Коментарі</span><span class="sec-badge">3</span></div>
+        <div class="comment-list">
+          <div class="cmt">
+            <div class="cmt-meta">Олена Ш. · 12.05.2025 14:32</div>
+            <div class="cmt-text">Клієнт хоче номери поруч. Уточнила в готелі — підтверджено ✓</div>
+          </div>
+          <div class="cmt">
+            <div class="cmt-meta">Олена Ш. · 28.05.2025 10:15</div>
+            <div class="cmt-text">Доплата € 1 400 надійшла. Статус змінено на "частково оплачено".</div>
+          </div>
+          <div class="cmt system">
+            <div class="cmt-meta" style="color:var(--warn)">⚙ Система · 01.06.2025 09:00</div>
+            <div class="cmt-text" style="color:var(--warn)">ДЕДЛАЙН: Залишок € 340 прострочено. Надіслано нагадування клієнту автоматично.</div>
+          </div>
+        </div>
+        <textarea class="cmt-input" rows="2" placeholder="Додати коментар..."></textarea>
+        <div class="cmt-send"><button class="cmt-btn">→ Надіслати</button></div>
+      </div>
+
+    </div><!-- /left -->
+
+    <!-- ── RIGHT 5/12 ── -->
+    <div>
+
+      <!-- 4. ФІНАНСИ -->
+      <div class="sec">
+        <div class="sec-hd"><span class="sec-icon">💰</span><span class="sec-title">Фінанси</span></div>
+        <div class="pay-total">
+          <div class="pay-sum" id="pay-total-sum">€ 2 400</div>
+          <div class="pay-sub">Загальна сума бронювання</div>
+        </div>
+        <div class="pay-prog">
+          <div class="prog-labels">
+            <span>Оплачено: <strong class="text-ok" id="paid-amt">€ 2 060</strong></span>
+            <span id="balance-label">Залишок: <strong class="text-red">€ 340</strong></span>
+          </div>
+          <div class="prog-bar"><div class="prog-fill low" id="prog-fill" style="width:85.8%"></div></div>
+          <div class="prog-labels">
+            <span style="color:var(--text3)">85.8% оплачено</span>
+            <span id="deadline-label" style="color:var(--danger);font-weight:600;animation:pulse 1.5s infinite">⏰ Дедлайн: 01.06</span>
+          </div>
+        </div>
+        <div class="pay-rows">
+          <div class="pay-row">
+            <span class="pr-label">Передоплата</span>
+            <span><span class="pr-val ok">€ 800</span><span class="pr-tag ok">✓ сплачено</span></span>
+          </div>
+          <div class="pay-row">
+            <span class="pr-label">Дедлайн передоплати</span>
+            <span class="pr-val muted font-mono">25.05.2025</span>
+          </div>
+          <div class="pay-row">
+            <span class="pr-label">Доплата</span>
+            <span><span class="pr-val warn" id="balance-pay">€ 1 600</span><span class="pr-tag warn" id="balance-tag">частково</span></span>
+          </div>
+          <div class="pay-row">
+            <span class="pr-label">Дедлайн доплати</span>
+            <span class="pr-val danger font-mono" id="balance-deadline">01.06.2025 !</span>
+          </div>
+          <div class="pay-row">
+            <span class="pr-label">Способи оплати</span>
+            <span class="pr-val muted" style="font-size:11px">LiqPay, WayForPay</span>
+          </div>
+        </div>
+        <div class="pay-actions">
+          <button class="pay-action-btn pab-primary">💳 Внести оплату</button>
+          <button class="pay-action-btn pab-warn" style="margin-top:6px">📧 Нагадати клієнту</button>
+        </div>
+      </div>
+
+      <!-- 5. КОМІСІЯ (BR-04) -->
+      <div class="sec" id="commission-sec">
+        <div class="sec-hd"><span class="sec-icon">🏆</span><span class="sec-title">Комісія агента</span></div>
+        <div class="comm-body">
+          <div class="drow"><span class="drow-l">Агент</span><span class="drow-v">Тетяна М. · TravelPro</span></div>
+          <div class="drow hl"><span class="drow-l">Комісія</span><span class="drow-v"><strong class="text-ok">€ 240 (10%)</strong></span></div>
+          <div class="drow"><span class="drow-l">Статус</span><span class="drow-v"><span class="sbadge sb-wait" style="font-size:9px">pending</span></span></div>
+          <div class="comm-note">BR-02: від базової ціни. BR-03: виплата після завершення туру.</div>
+        </div>
+      </div>
+
+      <!-- 6. МІСЦЯ У ТУРІ -->
+      <div class="sec">
+        <div class="sec-hd"><span class="sec-icon">🪑</span><span class="sec-title">Місця у турі</span><span class="sec-badge" id="avail-badge">16 вільних / 48</span></div>
+        <div class="avail-row">
+          <div>
+            <div class="avail-num" id="avail-num">16</div>
+            <div class="avail-label">вільних місць</div>
+          </div>
+          <div class="avail-bar-wrap">
+            <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-bottom:4px">
+              <span>Зайнято: 32</span><span>Всього: 48</span>
+            </div>
+            <div class="avail-bar"><div class="avail-fill" style="width:66.7%"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 7. СХЕМА АВТОБУСА -->
+      <div class="sec">
+        <div class="sec-hd"><span class="sec-icon">🚌</span><span class="sec-title">Розсадка в автобусі</span><span class="sec-badge">SETRA S516 · 48 місць</span></div>
+        <div class="bus-wrap">
+          <div class="bus-body">
+            <div class="bus-front"><span>═══ WINDSHIELD ═══</span></div>
+            <div class="driver-row">
+              <div class="driver-seat">🧑</div>
+              <span class="driver-label">Водій</span>
+              <span class="door-label">ВХІД →</span>
+            </div>
+            <div class="bus-rows" id="bus-grid-desk"></div>
+            <div class="bus-legend">
+              <div class="bl-item"><div class="bl-dot" style="background:rgba(16,185,129,.3);border:1px solid rgba(16,185,129,.5)"></div>Вільне</div>
+              <div class="bl-item"><div class="bl-dot" style="background:rgba(100,116,139,.15);border:1px solid var(--border)"></div>Зайняте</div>
+              <div class="bl-item"><div class="bl-dot" style="background:rgba(83,199,214,.25);border:1px solid var(--et-cyan)"></div>★ Туристи заявки</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /right -->
+  </div><!-- /main-grid -->
+
+</div>
+</div><!-- /desktop -->
+
+<!-- ══════════════════════════════════════════════════
+     MOBILE VIEW (турист)
+══════════════════════════════════════════════════ -->
+<div id="v-mobile" class="viewport" style="padding:20px 0">
+<div class="mobile-frame">
+  <!-- Status bar -->
+  <div class="mob-status-bar">
+    <span>9:41</span><span>📶 📶 🔋</span>
+  </div>
+
+  <!-- Nav -->
+  <div class="mob-nav">
+    <div class="mob-back">←</div>
+    <div>
+      <div class="mob-title">ET-2025-01247</div>
+      <div class="mob-sub">Париж — Нормандія · 25.10.2025</div>
+    </div>
+    <span class="sbadge sb-wait" style="margin-left:auto;font-size:10px" id="mob-status">Оплата</span>
+  </div>
+
+  <!-- Body -->
+  <div class="mob-body">
+
+    <!-- UNPAID BLOCK (mobile) -->
+    <div class="mob-unpaid" id="mob-unpaid-block">
+      <div class="mob-u-title">🚨 Не оплачено</div>
+      <div class="mob-deadline">⏰ Дедлайн: 01.06.2025 — ПРОСТРОЧЕНО!</div>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:8px">Залишок до сплати: <strong class="text-red">€ 340</strong></div>
+      <button class="mob-paybtn">💳 Оплатити зараз</button>
+    </div>
+
+    <!-- 1. ДЕТАЛІ ТУРУ -->
+    <div class="mob-sec">
+      <div class="mob-sec-hd">🗺 Мій тур</div>
+      <div class="mob-sec-bd">
+        <div class="mob-drow"><span class="mob-dl">Тур</span><span class="mob-dv"><strong>Париж — Нормандія</strong></span></div>
+        <div class="mob-drow"><span class="mob-dl">Дата виїзду</span><span class="mob-dv font-mono">25.10.2025</span></div>
+        <div class="mob-drow"><span class="mob-dl">Тривалість</span><span class="mob-dv">10 днів</span></div>
+        <div class="mob-drow"><span class="mob-dl">Туристів</span><span class="mob-dv">4 ос.</span></div>
+        <div class="mob-drow"><span class="mob-dl">Місто виїзду</span><span class="mob-dv">Львів</span></div>
+      </div>
+    </div>
+
+    <!-- 2. ОПЛАТА (mobile) -->
+    <div class="mob-sec">
+      <div class="mob-sec-hd">💰 Оплата</div>
+      <div class="mob-sec-bd">
+        <div style="text-align:center;padding:6px 0 12px">
+          <div style="font-size:26px;font-weight:700;font-family:var(--mono);color:var(--et-white)">€ 2 400</div>
+          <div style="font-size:10px;color:var(--text3)">загальна сума</div>
+        </div>
+        <div class="mob-prog">
+          <div class="prog-bar"><div class="prog-fill low" style="width:85.8%"></div></div>
+          <div style="display:flex;justify-content:space-between;font-size:10px;margin-top:3px;font-family:var(--mono)">
+            <span class="text-ok">€ 2 060 оплачено</span>
+            <span class="text-red">€ 340 залишок</span>
+          </div>
+        </div>
+        <div class="mob-drow"><span class="mob-dl">Передоплата</span><span class="mob-dv text-ok">€ 800 ✓</span></div>
+        <div class="mob-drow"><span class="mob-dl">Доплата</span><span class="mob-dv text-warn">€ 1 260 / € 1 600</span></div>
+        <div class="mob-drow"><span class="mob-dl">Дедлайн</span><span class="mob-dv text-red font-mono" style="animation:pulse 1.5s infinite">01.06.2025 !</span></div>
+        <div style="margin-top:10px">
+          <button class="mob-paybtn">💳 Внести оплату</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. МОЄ МІСЦЕ (mobile bus) -->
+    <div class="mob-sec">
+      <div class="mob-sec-hd">🚌 Моє місце в автобусі</div>
+      <div class="mob-sec-bd">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+          <div style="background:rgba(83,199,214,.2);border:2px solid var(--et-cyan);border-radius:8px;width:48px;height:44px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:20px;font-weight:700;color:var(--et-cyan)">14</div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--et-white)">Місце № 14 ★</div>
+            <div style="font-size:11px;color:var(--text3)">Ряд 4 · Лівий бік · Вікно</div>
+          </div>
+        </div>
+        <div class="mob-bus" id="mob-bus-body">
+          <div style="font-size:9px;color:var(--text3);text-align:center;margin-bottom:6px;font-family:var(--mono)">WINDSHIELD · Водій 🧑</div>
+          <div class="mob-bus-rows" id="mob-bus-grid"></div>
+          <div style="display:flex;gap:8px;margin-top:8px;justify-content:center">
+            <div class="bl-item" style="font-size:9px;color:var(--text3)"><div class="bl-dot ms free" style="width:12px;height:12px"></div> вільне</div>
+            <div class="bl-item" style="font-size:9px;color:var(--text3)"><div class="bl-dot ms taken" style="width:12px;height:12px"></div> зайняте</div>
+            <div class="bl-item" style="font-size:9px;color:var(--text3)"><div class="bl-dot ms mine" style="width:12px;height:12px"></div> ваше</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. ДОКУМЕНТИ (mobile) -->
+    <div class="mob-sec">
+      <div class="mob-sec-hd">📄 Документи</div>
+      <div class="mob-sec-bd">
+        <div class="mob-doc-grid">
+          <div class="mob-doc-btn"><div class="icon">📃</div>Договір</div>
+          <div class="mob-doc-btn"><div class="icon">✅</div>Підтвердження</div>
+          <div class="mob-doc-btn"><div class="icon">🛡</div>Страховка ч.1</div>
+          <div class="mob-doc-btn"><div class="icon">🛡</div>Страховка ч.2</div>
+        </div>
+        <div style="margin-top:8px">
+          <div class="mob-doc-btn" style="flex-direction:row;justify-content:center;gap:8px;padding:10px">
+            <div class="icon">⬇</div><strong>Завантажити всі PDF</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. УЧАСНИКИ (mobile) -->
+    <div class="mob-sec">
+      <div class="mob-sec-hd">👥 Учасники (4)</div>
+      <div class="mob-sec-bd" style="padding:8px 12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div><div style="font-weight:600;font-size:12px">Коваль Марія</div><div style="font-size:10px;color:var(--text3)">Місце 14 · TWIN</div></div>
+          <span class="sbadge sb-conf" style="font-size:9px">✓</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div><div style="font-weight:600;font-size:12px">Коваль Василь</div><div style="font-size:10px;color:var(--warn)">Місце 15 · TWIN · ⚠ алергія</div></div>
+          <span class="sbadge sb-conf" style="font-size:9px">✓</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div><div style="font-weight:600;font-size:12px;color:var(--danger)">Учасник 3</div><div style="font-size:10px;color:var(--danger)">Дані не заповнено</div></div>
+          <span class="sbadge sb-wait" style="font-size:9px">⚠</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0">
+          <div><div style="font-weight:600;font-size:12px;color:var(--danger)">Учасник 4</div><div style="font-size:10px;color:var(--danger)">Дані не заповнено</div></div>
+          <span class="sbadge sb-wait" style="font-size:9px">⚠</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /mob-body -->
+
+  <!-- Bottom nav -->
+  <div class="mob-tab-bar">
+    <div class="mob-tab on"><div class="mt-icon">📋</div>Деталі</div>
+    <div class="mob-tab"><div class="mt-icon">💰</div>Оплата</div>
+    <div class="mob-tab"><div class="mt-icon">🚌</div>Місце</div>
+    <div class="mob-tab"><div class="mt-icon">📄</div>Документи</div>
+  </div>
+</div>
+</div><!-- /mobile -->
+
+<script>
+/* ── TAB SWITCH ── */
+function goView(id, el) {
+  document.querySelectorAll('.viewport').forEach(v => v.classList.remove('on'));
+  document.getElementById('v-' + id).classList.add('on');
+  document.querySelectorAll('.tb-pill:not(.red)').forEach(p => p.classList.remove('on'));
+  el.classList.add('on');
+}
+
+/* ── STATUS DROPDOWN ── */
+function toggleStatusDD() {
+  document.getElementById('status-dd-menu').classList.toggle('open');
+}
+document.addEventListener('click', e => {
+  if (!document.getElementById('status-dd-wrap').contains(e.target)) {
+    document.getElementById('status-dd-menu').classList.remove('open');
+  }
+});
+const STATUS_LABELS = {
+  new: ['Нова заявка','sb-new'], wait: ['Очікує оплату','sb-wait'],
+  part: ['Частково оплачено','sb-part'], conf: ['Підтверджено','sb-conf'],
+  dep: ['Готово до виїзду','sb-dep'], canc: ['Скасовано','sb-canc']
+};
+function setStatus(s) {
+  const [label, cls] = STATUS_LABELS[s];
+  const badge = document.getElementById('hdr-status');
+  badge.textContent = label;
+  badge.className = 'sbadge ' + cls;
+  document.getElementById('mob-status').textContent = label.slice(0,8);
+  document.getElementById('mob-status').className = 'sbadge ' + cls;
+  document.getElementById('status-dd-menu').classList.remove('open');
+}
+
+/* ── UNPAID TOGGLE ── */
+let unpaidOn = true;
+function toggleUnpaid(btn) {
+  unpaidOn = !unpaidOn;
+  const banner = document.getElementById('unpaid-banner');
+  const mobBlock = document.getElementById('mob-unpaid-block');
+  const dl = document.getElementById('deadline-label');
+  const bt = document.getElementById('balance-tag');
+  const bv = document.getElementById('balance-pay');
+  const bd = document.getElementById('balance-deadline');
+  const bf = document.getElementById('prog-fill');
+  const bl = document.getElementById('balance-label');
+
+  if (unpaidOn) {
+    banner.style.display = 'flex';
+    mobBlock.style.display = 'block';
+    btn.classList.add('on');
+    dl.style.display = ''; bv.textContent = '€ 1 260'; bt.textContent = 'не сплачено';
+    bt.className = 'pr-tag danger'; bv.className = 'pr-val danger';
+    bd.style.color = 'var(--danger)'; bd.textContent = '01.06.2025 !';
+    bf.style.width = '85.8%'; bf.className = 'prog-fill low';
+    bl.innerHTML = 'Залишок: <strong class="text-red">€ 340</strong>';
+  } else {
+    banner.style.display = 'none';
+    mobBlock.style.display = 'none';
+    btn.classList.remove('on');
+    dl.style.display = 'none'; bv.textContent = '€ 1 600'; bt.textContent = 'сплачено';
+    bt.className = 'pr-tag ok'; bv.className = 'pr-val ok';
+    bd.style.color = 'var(--success)'; bd.textContent = '28.05.2025 ✓';
+    bf.style.width = '100%'; bf.className = 'prog-fill';
+    bl.innerHTML = 'Залишок: <strong class="text-ok">€ 0</strong>';
+    setStatus('conf');
+  }
+}
+
+/* ── ROLE SWITCH ── */
+function setRole(role) {
+  document.getElementById('role-tag').textContent = 'Роль: ' + role;
+  const commSec = document.getElementById('commission-sec');
+  const passportCols = document.querySelectorAll('[id^="th-passport"],[id^="td-passport"]');
+  passportCols.forEach(el => el.style.display = (role === 'ops_manager' || role === 'admin') ? '' : 'none');
+  commSec.style.display = (role === 'tourist') ? 'none' : '';
+  const statusBtn = document.querySelector('.status-dd-btn');
+  statusBtn.disabled = (role === 'tourist' || role === 'agent');
+  statusBtn.style.opacity = (role === 'tourist' || role === 'agent') ? '.4' : '';
+}
+
+/* ── BUS SEAT GRID ── */
+const takenSeats = [1,2,3,5,6,8,9,10,11,12,13,16,17,18,20,21,24,25,26,27,28,29,30,32,33,34,36,37,40,41];
+const mySeats = [14,15];
+
+function buildBus(containerId, SeatClass, aisleClass, rows) {
+  const g = document.getElementById(containerId);
+  if (!g || g.children.length > 0) return;
+  for (let r = 1; r <= rows; r++) {
+    const row = document.createElement('div');
+    row.className = r <= 12 ? 'bus-row' : 'mob-bus-row';
+    [1,2,'aisle',3,4].forEach((pos,i) => {
+      if (pos === 'aisle') {
+        const aisle = document.createElement('div');
+        aisle.className = r <= 12 ? 'bus-aisle' : 'ms-aisle';
+        aisle.textContent = r;
+        row.appendChild(aisle);
+      } else {
+        const n = (r-1)*4 + (pos <= 2 ? pos : pos - 1 + 1);
+        const seat = document.createElement('div');
+        seat.className = SeatClass;
+        if (mySeats.includes(n)) seat.classList.add('mine');
+        else if (takenSeats.includes(n)) seat.classList.add('taken');
+        else seat.classList.add('free');
+        seat.textContent = n;
+        if (!takenSeats.includes(n) && !mySeats.includes(n)) {
+          seat.onclick = () => alert('Місце ' + n + ' — вільне');
+        }
+        row.appendChild(seat);
+      }
+    });
+    g.appendChild(row);
+  }
+}
+
+window.addEventListener('load', () => {
+  buildBus('bus-grid-desk', 'seat', 'bus-aisle', 12);
+  buildBus('mob-bus-grid', 'ms', 'ms-aisle', 12);
+});
+</script>
+</body>
+</html>

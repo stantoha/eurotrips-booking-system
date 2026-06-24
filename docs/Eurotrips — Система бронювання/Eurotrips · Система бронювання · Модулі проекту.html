@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<!-- saved from url=(0211)file:///C:/EUROTRIPS/eurotrips-booking-system/docs/Eurotrips%20%E2%80%94%20%D0%A1%D0%B8%D1%81%D1%82%D0%B5%D0%BC%D0%B0%20%D0%B1%D1%80%D0%BE%D0%BD%D1%8E%D0%B2%D0%B0%D0%BD%D0%BD%D1%8F/ET_booking_system_modules.html -->
+<html lang="uk"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eurotrips · Система бронювання · Модулі проекту</title>
+<link href="./Eurotrips · Система бронювання · Модулі проекту_files/css2" rel="stylesheet">
+<style>
+/* ── BRAND TOKENS ── */
+:root{
+  --cyan:#53c7d6; --cyan-bg:rgba(83,199,214,.1); --cyan-bd:rgba(83,199,214,.25);
+  --red:#f0366d;  --red-bg:rgba(240,54,109,.08);  --red-bd:rgba(240,54,109,.2);
+  --blue:#2d70b9; --blue-bg:rgba(45,112,185,.1);  --blue-bd:rgba(45,112,185,.22);
+  --gold:#f9c01d; --gold-bg:rgba(249,192,29,.1);  --gold-bd:rgba(249,192,29,.25);
+  --dark:#1a1a2e; --dark-soft:#232946;
+  --bg:#f7f8fc; --bg-card:#ffffff; --bg-section:#f0f3f8;
+  --border:#e2e8f0; --border2:#d0d7e6;
+  --text:#1a1a2e; --text2:#4a5568; --text3:#8493a8;
+  --mono:'IBM Plex Mono',monospace;
+  --sans:'Montserrat',sans-serif;
+  --shadow: 0 1px 4px rgba(26,26,46,.06), 0 4px 16px rgba(26,26,46,.04);
+  --shadow-hover: 0 4px 16px rgba(26,26,46,.1), 0 8px 32px rgba(26,26,46,.06);
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);font-size:13px;line-height:1.6;min-height:100vh}
+
+/* ── TOP HEADER ── */
+.site-header{background:var(--dark);padding:0 40px;height:56px;display:flex;align-items:center;gap:20px;position:sticky;top:0;z-index:100}
+.sh-logo{display:flex;align-items:center;gap:10px}
+.sh-logo-icon{background:var(--cyan);border-radius:6px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:14px}
+.sh-logo-text{font-weight:900;font-size:14px;color:#fff;letter-spacing:1.5px;font-family:var(--sans)}
+.sh-divider{width:1px;height:24px;background:rgba(255,255,255,.12)}
+.sh-title{font-size:13px;font-weight:500;color:rgba(255,255,255,.7);letter-spacing:.3px}
+.sh-version{margin-left:auto;font-size:11px;font-family:var(--mono);color:rgba(255,255,255,.4);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);padding:3px 10px;border-radius:4px}
+
+/* ── NAV TABS ── */
+.nav-bar{background:#fff;border-bottom:2px solid var(--border);padding:0 40px;display:flex;gap:0}
+.nav-tab{padding:14px 24px;font-size:13px;font-weight:500;cursor:pointer;color:var(--text3);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s;white-space:nowrap;letter-spacing:.2px}
+.nav-tab:hover{color:var(--text)}
+.nav-tab.on{color:var(--cyan);border-bottom-color:var(--cyan);font-weight:600}
+
+/* ── SECTIONS ── */
+.section{display:none;padding:40px;max-width:1440px;margin:0 auto}
+.section.on{display:block}
+
+/* ── COVER ── */
+.cover{background:linear-gradient(135deg, var(--dark) 0%, #242d52 60%, #1a2a4a 100%);border-radius:16px;padding:56px 64px;margin-bottom:32px;position:relative;overflow:hidden}
+.cover::before{content:'';position:absolute;right:-60px;top:-60px;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(83,199,214,.15) 0%,transparent 70%)}
+.cover::after{content:'';position:absolute;left:-30px;bottom:-40px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(45,112,185,.12) 0%,transparent 70%)}
+.cover-eyebrow{font-size:11px;font-weight:600;color:var(--cyan);letter-spacing:2px;text-transform:uppercase;font-family:var(--mono);margin-bottom:12px;opacity:.8}
+.cover-title{font-size:40px;font-weight:900;color:#fff;line-height:1.15;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
+.cover-subtitle{font-size:16px;color:rgba(255,255,255,.55);font-weight:400;margin-bottom:32px}
+.cover-pills{display:flex;gap:10px;flex-wrap:wrap}
+.cover-pill{padding:6px 16px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid;display:flex;align-items:center;gap:6px}
+.cp-cyan{background:rgba(83,199,214,.12);border-color:rgba(83,199,214,.3);color:var(--cyan)}
+.cp-red{background:rgba(240,54,109,.1);border-color:rgba(240,54,109,.25);color:var(--red)}
+.cp-blue{background:rgba(45,112,185,.12);border-color:rgba(45,112,185,.3);color:#5899d9}
+.cp-gold{background:rgba(249,192,29,.1);border-color:rgba(249,192,29,.25);color:var(--gold)}
+.cover-mvp{position:absolute;right:64px;top:50%;transform:translateY(-50%);text-align:center}
+.mvp-ring{width:120px;height:120px;border-radius:50%;background:rgba(83,199,214,.08);border:2px solid rgba(83,199,214,.3);display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto 8px}
+.mvp-val{font-size:36px;font-weight:900;color:var(--cyan);font-family:var(--mono);line-height:1}
+.mvp-sub{font-size:10px;color:rgba(255,255,255,.4);font-family:var(--mono);letter-spacing:.5px;margin-top:2px}
+.mvp-label{font-size:11px;color:rgba(255,255,255,.5);font-family:var(--mono)}
+
+/* ── SECTION HEADER ── */
+.sh{margin-bottom:24px}
+.sh-eyebrow{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;font-family:var(--mono);margin-bottom:6px}
+.sh-h2{font-size:22px;font-weight:700;color:var(--text);margin-bottom:4px}
+.sh-desc{font-size:13px;color:var(--text2)}
+
+/* ── LEGEND ── */
+.legend{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:24px;padding:12px 16px;background:#fff;border:1px solid var(--border);border-radius:8px}
+.leg{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text2)}
+.leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+
+/* ── MODULE GROUPS ── */
+.group-label{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);font-family:var(--mono);margin:28px 0 14px;padding-left:4px;display:flex;align-items:center;gap:8px}
+.group-label::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ── MODULE CARD GRID ── */
+.mod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(296px,1fr));gap:14px;margin-bottom:8px}
+
+/* ── MODULE CARD ── */
+.mod-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:18px 20px;cursor:pointer;transition:all .2s;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.mod-card:hover{box-shadow:var(--shadow-hover);transform:translateY(-2px)}
+.mod-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:12px 12px 0 0}
+.mc-cyan::before{background:var(--cyan)}
+.mc-blue::before{background:var(--blue)}
+.mc-gold::before{background:var(--gold)}
+.mc-red::before{background:var(--red)}
+
+.mod-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:10px}
+.mod-num{font-size:11px;font-weight:700;font-family:var(--mono);padding:3px 8px;border-radius:4px;white-space:nowrap;flex-shrink:0;margin-top:1px}
+.mn-cyan{background:var(--cyan-bg);color:var(--cyan);border:1px solid var(--cyan-bd)}
+.mn-blue{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd)}
+.mn-gold{background:var(--gold-bg);color:var(--gold);border:1px solid var(--gold-bd)}
+.mn-red{background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)}
+
+.mod-title{font-size:14px;font-weight:600;color:var(--text);line-height:1.3;flex:1}
+.mod-desc{font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:12px}
+.mod-tags{display:flex;flex-wrap:wrap;gap:5px}
+.mod-tag{font-size:10px;font-weight:500;padding:2px 8px;border-radius:10px;background:var(--bg-section);color:var(--text3);border:1px solid var(--border);font-family:var(--mono)}
+
+/* ── PROGRESS DASHBOARD ── */
+.prog-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.prog-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:20px 24px;box-shadow:var(--shadow)}
+.prog-card-title{font-size:11px;font-weight:700;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;font-family:var(--mono);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.prog-item{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.prog-item:last-child{margin-bottom:0}
+.prog-label{font-size:12px;color:var(--text2);width:180px;flex-shrink:0}
+.prog-bar-bg{flex:1;height:5px;background:var(--bg-section);border-radius:3px;overflow:hidden}
+.prog-bar{height:100%;border-radius:3px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+.pb-cyan{background:var(--cyan)}
+.pb-gold{background:var(--gold)}
+.pb-blue{background:var(--blue)}
+.prog-pct{font-size:11px;font-weight:700;width:36px;text-align:right;font-family:var(--mono);flex-shrink:0}
+
+/* ── MVP SUMMARY BANNER ── */
+.mvp-banner{background:linear-gradient(135deg,var(--dark) 0%,#243050 100%);border-radius:12px;padding:20px 28px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.mvp-banner-left{flex:1}
+.mvb-title{font-size:15px;font-weight:700;color:#fff;margin-bottom:4px}
+.mvb-sub{font-size:12px;color:rgba(255,255,255,.5)}
+.mvp-banner-right{text-align:right}
+.mvb-pct{font-size:40px;font-weight:900;color:var(--cyan);font-family:var(--mono);line-height:1}
+.mvb-eta{font-size:11px;color:rgba(255,255,255,.4);font-family:var(--mono)}
+
+/* ── ARCHITECTURE SVG wrapper ── */
+.arch-wrap{background:#fff;border:1px solid var(--border);border-radius:12px;padding:24px;box-shadow:var(--shadow)}
+.arch-svg-style text{font-family:var(--sans)}
+.arch-svg-style .th{font-size:11px;font-weight:600;fill:var(--text)}
+.arch-svg-style .ts{font-size:10px;fill:var(--text3)}
+.arch-svg-style .c-teal rect{fill:var(--cyan-bg);stroke:var(--cyan)}
+.arch-svg-style .c-blue rect{fill:var(--blue-bg);stroke:var(--blue)}
+.arch-svg-style .c-coral rect{fill:var(--red-bg);stroke:var(--red)}
+.arch-svg-style .c-purple rect{fill:rgba(139,92,246,.08);stroke:rgba(139,92,246,.4)}
+.arch-svg-style .c-gold,.arch-svg-style .c-amber{fill:var(--gold-bg);stroke:var(--gold)}
+.arch-svg-style .c-gray rect{fill:var(--bg-section);stroke:var(--border2)}
+.arch-svg-style .c-green rect{fill:rgba(16,185,129,.08);stroke:rgba(16,185,129,.3)}
+.arch-svg-style line{stroke:var(--border2);stroke-width:1}
+.arch-svg-style .c-teal .th,.arch-svg-style .c-blue .th,.arch-svg-style .c-coral .th,.arch-svg-style .c-purple .th{fill:var(--text)}
+
+/* ── STATUS BADGES ── */
+.rel-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600;font-family:var(--mono)}
+.rb-done{background:#e1f8ee;color:#0a7a53;border:1px solid #b2e8d0}
+.rb-prog{background:#fff8e6;color:#8b5c00;border:1px solid #fde9a0}
+.rb-plan{background:#edf4ff;color:#1a5fa8;border:1px solid #c0d8f5}
+
+/* ── TOOLTIP ── */
+.mod-card:hover .mod-tooltip{display:block}
+.mod-tooltip{display:none;position:absolute;bottom:calc(100% + 6px);left:16px;background:var(--dark);color:#fff;font-size:11px;padding:6px 10px;border-radius:6px;white-space:nowrap;pointer-events:none;z-index:10}
+.mod-tooltip::after{content:'';position:absolute;top:100%;left:12px;border:4px solid transparent;border-top-color:var(--dark)}
+
+/* ── UTILITIES ── */
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+.kpi{background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px 20px;box-shadow:var(--shadow)}
+.kpi-val{font-size:28px;font-weight:900;font-family:var(--mono);color:var(--text);line-height:1}
+.kpi-label{font-size:11px;color:var(--text3);margin-top:4px}
+.kpi-sub{font-size:10px;font-family:var(--mono);margin-top:2px;font-weight:600}
+.hr{border:none;border-top:1px solid var(--border);margin:28px 0}
+
+/* ── FULL PROG GRID 4 cols ── */
+.prog-grid-4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:20px}
+
+/* ── PRINT ── */
+@media print{
+  .nav-bar,.site-header{display:none}
+  .section{display:block!important;padding:20px;max-width:100%}
+  .mod-card{break-inside:avoid}
+  .cover{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<header class="site-header">
+  <div class="sh-logo">
+    <div class="sh-logo-icon">👟</div>
+    <span class="sh-logo-text">EUROTRIPS</span>
+  </div>
+  <div class="sh-divider"></div>
+  <span class="sh-title">Система бронювання — Документ модулів</span>
+  <span class="sh-version">v1.0 · 2025</span>
+</header>
+
+<!-- ── NAV ── -->
+<nav class="nav-bar">
+  <div class="nav-tab on" onclick="show(&#39;overview&#39;,this)">Огляд проекту</div>
+  <div class="nav-tab" onclick="show(&#39;modules&#39;,this)">Модулі системи</div>
+  <div class="nav-tab" onclick="show(&#39;progress&#39;,this)">Прогрес реалізації</div>
+  <div class="nav-tab" onclick="show(&#39;arch&#39;,this)">Архітектурна схема</div>
+</nav>
+
+<!-- ══════════════════════════
+     OVERVIEW
+══════════════════════════ -->
+<div id="overview" class="section on">
+
+  <!-- COVER -->
+  <div class="cover">
+    <div class="cover-eyebrow">🗺 Eurotrips Booking System — Design Document</div>
+    <div class="cover-title">Система бронювання<br>турів Eurotrips</div>
+    <div class="cover-subtitle">20 модулів · 3 релізи · Повний стек</div>
+    <div class="cover-pills">
+      <div class="cover-pill cp-cyan">🟢 Реліз 1 — критичні · 6 модулів</div>
+      <div class="cover-pill cp-blue">🔵 Реліз 1 — важливі · 9 модулів</div>
+      <div class="cover-pill cp-gold">🟡 Реліз 2 · 3 модулі</div>
+      <div class="cover-pill cp-red">🔴 Реліз 3 · 2 модулі</div>
+    </div>
+    <div class="cover-mvp">
+      <div class="mvp-ring">
+        <div class="mvp-val">73%</div>
+        <div class="mvp-sub">MVP</div>
+      </div>
+      <div class="mvp-label">~4–5 тижнів до prod</div>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="grid4">
+    <div class="kpi" style="border-top:3px solid var(--cyan)">
+      <div class="kpi-val" style="color:var(--cyan)">20</div>
+      <div class="kpi-label">Модулів системи</div>
+      <div class="kpi-sub" style="color:var(--cyan)">15 у Реліз 1</div>
+    </div>
+    <div class="kpi" style="border-top:3px solid var(--blue)">
+      <div class="kpi-val" style="color:var(--blue)">7</div>
+      <div class="kpi-label">Ролей користувачів</div>
+      <div class="kpi-sub" style="color:var(--blue)">admin → tourist</div>
+    </div>
+    <div class="kpi" style="border-top:3px solid var(--gold)">
+      <div class="kpi-val" style="color:var(--gold)">15</div>
+      <div class="kpi-label">Статусів бронювання</div>
+      <div class="kpi-sub" style="color:var(--gold)">BR-06 FSM</div>
+    </div>
+    <div class="kpi" style="border-top:3px solid var(--red)">
+      <div class="kpi-val" style="color:var(--red)">85</div>
+      <div class="kpi-label">E2E тестів (Playwright)</div>
+      <div class="kpi-sub" style="color:var(--red)">auth · rbac · tours · books</div>
+    </div>
+  </div>
+
+  <!-- TECH STACK -->
+  <div class="sh"><div class="sh-eyebrow">Tech Stack</div><div class="sh-h2">Архітектура системи</div></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">
+    <div class="kpi">
+      <div style="font-size:11px;font-weight:700;color:var(--cyan);letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;font-family:var(--mono)">🖥 Backend</div>
+      <div style="font-size:12px;color:var(--text2);line-height:2">
+        Node.js 20 · Fastify 4 · TypeScript<br>
+        Prisma 5 · PostgreSQL 16 · Redis 7<br>
+        BullMQ · JWT · bcrypt<br>
+        <span style="font-family:var(--mono);color:var(--cyan);font-size:10px">api.eurotrips.ua/api/v1/</span>
+      </div>
+    </div>
+    <div class="kpi">
+      <div style="font-size:11px;font-weight:700;color:var(--blue);letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;font-family:var(--mono)">⚛ Frontend</div>
+      <div style="font-size:12px;color:var(--text2);line-height:2">
+        React 18 · Vite · TypeScript<br>
+        TanStack Query · Zustand<br>
+        Tailwind CSS · Lucide Icons<br>
+        <span style="font-family:var(--mono);color:var(--blue);font-size:10px">React Hook Form + Zod</span>
+      </div>
+    </div>
+    <div class="kpi">
+      <div style="font-size:11px;font-weight:700;color:var(--gold);letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;font-family:var(--mono)">🔗 Інтеграції + DevOps</div>
+      <div style="font-size:12px;color:var(--text2);line-height:2">
+        Zoho CRM · LiqPay · Brevo<br>
+        TurboSMS · Telegram Bot<br>
+        Docker + GitHub Actions CI/CD<br>
+        <span style="font-family:var(--mono);color:var(--gold);font-size:10px">Hetzner CX32 · Nürnberg</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════
+     MODULES
+══════════════════════════ -->
+<div id="modules" class="section">
+  <div class="sh">
+    <div class="sh-eyebrow">Архітектура продукту</div>
+    <div class="sh-h2">Всі модулі системи бронювання</div>
+    <div class="sh-desc">20 модулів об'єднані в 3 релізи. Ядро системи — Реліз 1.</div>
+  </div>
+
+  <div class="legend">
+    <div class="leg"><div class="leg-dot" style="background:var(--cyan)"></div><strong style="color:var(--cyan)">Реліз 1 — критичні</strong> · Ядро продажів</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--blue)"></div><strong style="color:var(--blue)">Реліз 1 — важливі</strong> · Операційний блок</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--gold)"></div><strong style="color:var(--gold)">Реліз 2</strong> · Розширення</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--red)"></div><strong style="color:var(--red)">Реліз 3</strong> · Майбутнє</div>
+  </div>
+
+  <!-- Group: Core R1 -->
+  <div class="group-label">
+    <span style="color:var(--cyan)">●</span> Ядро системи — Реліз 1 · Критичні
+  </div>
+  <div class="mod-grid">
+    <div class="mod-card mc-cyan">
+      <div class="mod-head">
+        <span class="mod-num mn-cyan">01</span>
+        <span class="mod-title">Авторизація та RBAC</span>
+      </div>
+      <div class="mod-desc">Вхід в систему, управління ролями та правами доступу. Захист усіх ендпоінтів залежно від ролі. Jwt refresh token + audit log.</div>
+      <div class="mod-tags">
+        <span class="mod-tag">JWT</span><span class="mod-tag">7 ролей</span><span class="mod-tag">refresh token</span><span class="mod-tag">audit log</span>
+      </div>
+    </div>
+    <div class="mod-card mc-cyan">
+      <div class="mod-head">
+        <span class="mod-num mn-cyan">02</span>
+        <span class="mod-title">Каталог турів</span>
+      </div>
+      <div class="mod-desc">Єдина база всіх турів: управління квотами, статусами, цінами, фільтрація, публікація на сайт. BR-01 атомарний decrement, BR-04 маржа.</div>
+      <div class="mod-tags">
+        <span class="mod-tag">CRUD</span><span class="mod-tag">8 статусів</span><span class="mod-tag">BR-01</span><span class="mod-tag">BR-04</span>
+      </div>
+    </div>
+    <div class="mod-card mc-cyan">
+      <div class="mod-head">
+        <span class="mod-num mn-cyan">03</span>
+        <span class="mod-title">CRM / Ліди</span>
+      </div>
+      <div class="mod-desc">Єдина воронка продажів: збір звернень з 10 каналів, 7 статусів ліда, конвертація в бронювання. Синхронізація з Zoho CRM.</div>
+      <div class="mod-tags">
+        <span class="mod-tag">7 статусів</span><span class="mod-tag">10 каналів</span><span class="mod-tag">конвертація</span><span class="mod-tag">Zoho sync</span>
+      </div>
+    </div>
+    <div class="mod-card mc-cyan" style="border-color:var(--red);border-width:1.5px">
+      <div class="mod-head">
+        <span class="mod-num mn-cyan">04</span>
+        <span class="mod-title">Бронювання ⭐</span>
+      </div>
+      <div class="mod-desc">Центральний модуль: від нової заявки до завершення туру. 15 статусів FSM, повний фінансовий облік, документи, учасники, розсадка.</div>
+      <div class="mod-tags">
+        <span class="mod-tag">15 статусів</span><span class="mod-tag">BR-06 FSM</span><span class="mod-tag">BR-08</span><span class="mod-tag">ET-YYYY-NNNNN</span>
+      </div>
+    </div>
+    <div class="mod-card mc-blue">
+      <div class="mod-head">
+        <span class="mod-num mn-blue">05</span>
+        <span class="mod-title">Фінанси</span>
+      </div>
+      <div class="mod-desc">Облік оплат, передоплати, залишків, повернень, комісій агентів та фінансового результату по турах. Все в EUR.</div>
+      <div class="mod-tags">
+        <span class="mod-tag">EUR</span><span class="mod-tag">LiqPay</span><span class="mod-tag">борги</span><span class="mod-tag">P&amp;L туру</span>
+      </div>
+    </div>
+    <div class="mod-card mc-blue">
+      <div class="mod-head">
+        <span class="mod-num mn-blue">06</span>
+        <span class="mod-title">Кабінет агента</span>
+      </div>
+      <div class="mod-desc">Окремий B2B-інтерфейс. Перегляд турів, створення бронювань, статуси, комісії. Роялті +2% для мережевих агентів (BR-07).</div>
+      <div class="mod-tags">
+        <span class="mod-tag">BR-04</span><span class="mod-tag">BR-07 роялті</span><span class="mod-tag">standard</span><span class="mod-tag">network</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Group: Ops R1 -->
+  <div class="group-label">
+    <span style="color:var(--blue)">●</span> Операційний блок — Реліз 1 · Важливі
+  </div>
+  <div class="mod-grid">
+    <div class="mod-card mc-blue">
+      <div class="mod-head"><span class="mod-num mn-blue">07</span><span class="mod-title">Операційний блок</span></div>
+      <div class="mod-desc">Підготовка туру до виїзду: списки туристів, перевірка оплат і документів, чеклісти виїзду, призначення турлідера.</div>
+      <div class="mod-tags"><span class="mod-tag">чекліст</span><span class="mod-tag">румінг</span><span class="mod-tag">розсадка</span><span class="mod-tag">готовність</span></div>
+    </div>
+    <div class="mod-card mc-blue">
+      <div class="mod-head"><span class="mod-num mn-blue">08</span><span class="mod-title">Проживання</span></div>
+      <div class="mod-desc">База 563 готелів, бронювання по турах, типи номерів (SGL/DBL/TWIN/TRPL), румінг DRAFT→APPROVED→FINAL, дедлайни.</div>
+      <div class="mod-tags"><span class="mod-tag">563 готелі</span><span class="mod-tag">OPS-01/02/03</span><span class="mod-tag">румінг</span></div>
+    </div>
+    <div class="mod-card mc-blue">
+      <div class="mod-head"><span class="mod-num mn-blue">09</span><span class="mod-title">Транспорт</span></div>
+      <div class="mod-desc">Перевізники, автобуси, водії. Схема розсадки 48 місць, кілометраж, паливний збір, бронювання по турах.</div>
+      <div class="mod-tags"><span class="mod-tag">розсадка</span><span class="mod-tag">кілометраж</span><span class="mod-tag">паливний збір</span></div>
+    </div>
+    <div class="mod-card mc-blue">
+      <div class="mod-head"><span class="mod-num mn-blue">10</span><span class="mod-title">Страхування</span></div>
+      <div class="mod-desc">Туристичне страхування для кожного учасника. Поліси, тарифи, терміни, документи. BR-09: авіа без поліса → блок.</div>
+      <div class="mod-tags"><span class="mod-tag">BR-09</span><span class="mod-tag">VUSO</span><span class="mod-tag">AXA</span><span class="mod-tag">поліс PDF</span></div>
+    </div>
+    <div class="mod-card mc-blue">
+      <div class="mod-head"><span class="mod-num mn-blue">11</span><span class="mod-title">Документи</span></div>
+      <div class="mod-desc">Централізоване сховище: договори, ваучери, підтвердження, рахунки, списки туристів. Автогенерація PDF по ролях.</div>
+      <div class="mod-tags"><span class="mod-tag">7 типів</span><span class="mod-tag">5 ролей</span><span class="mod-tag">PDF auto</span></div>
+    </div>
+    <div class="mod-card mc-blue">
+      <div class="mod-head"><span class="mod-num mn-blue">12</span><span class="mod-title">Комунікації</span></div>
+      <div class="mod-desc">8 тригерних сповіщень через email/SMS/месенджери. Brevo 5 шаблонів, TurboSMS, Telegram Bot. BullMQ черги.</div>
+      <div class="mod-tags"><span class="mod-tag">Brevo</span><span class="mod-tag">TurboSMS</span><span class="mod-tag">Telegram</span><span class="mod-tag">BullMQ</span></div>
+    </div>
+    <div class="mod-card mc-blue">
+      <div class="mod-head"><span class="mod-num mn-blue">18</span><span class="mod-title">Активності</span></div>
+      <div class="mod-desc">Бронювання екскурсій та активностей по містах туру. Гіди, час, вартість, статус. 4 341+ записів у базі.</div>
+      <div class="mod-tags"><span class="mod-tag">4341 записів</span><span class="mod-tag">гіди</span><span class="mod-tag">міста</span></div>
+    </div>
+  </div>
+
+  <!-- Group: Integrations -->
+  <div class="group-label">
+    <span style="color:var(--gold)">●</span> Інтеграції — Реліз 1
+  </div>
+  <div class="mod-grid">
+    <div class="mod-card mc-gold">
+      <div class="mod-head"><span class="mod-num mn-gold">13</span><span class="mod-title">Zoho CRM</span></div>
+      <div class="mod-desc">Двостороння синхронізація. Міграція 22 модулів Zoho. Webhook для ongoing sync (Leads, Contacts, Deals). OAuth2.</div>
+      <div class="mod-tags"><span class="mod-tag">22 модулі</span><span class="mod-tag">OAuth2</span><span class="mod-tag">webhook</span><span class="mod-tag">idempotent</span></div>
+    </div>
+    <div class="mod-card mc-gold">
+      <div class="mod-head"><span class="mod-num mn-gold">14</span><span class="mod-title">Платежі (LiqPay)</span></div>
+      <div class="mod-desc">Прийом онлайн-оплат через LiqPay. SHA1 верифікація webhook, ідемпотентність, автоматичне оновлення статусу бронювання.</div>
+      <div class="mod-tags"><span class="mod-tag">LiqPay</span><span class="mod-tag">WayForPay</span><span class="mod-tag">SHA1</span><span class="mod-tag">BR-01</span></div>
+    </div>
+    <div class="mod-card mc-gold">
+      <div class="mod-head"><span class="mod-num mn-gold">15</span><span class="mod-title">Управління агентами</span></div>
+      <div class="mod-desc">Реєстрація агентств та агентів, договори, мережеві агенти з роялті, онбординг. 3 моделі: Agency → AgentNetwork → Agent.</div>
+      <div class="mod-tags"><span class="mod-tag">Agency</span><span class="mod-tag">Agent</span><span class="mod-tag">AgentNetwork</span><span class="mod-tag">BR-07</span></div>
+    </div>
+  </div>
+
+  <!-- Group: R2-R3 -->
+  <div class="group-label">
+    <span style="color:var(--gold)">●</span> Реліз 2 — Розширення
+    &nbsp;&nbsp;&nbsp;<span style="color:var(--red)">●</span> Реліз 3 — Майбутнє
+  </div>
+  <div class="mod-grid">
+    <div class="mod-card mc-gold">
+      <div class="mod-head"><span class="mod-num mn-gold">16</span><span class="mod-title">Аналітика / BI</span></div>
+      <div class="mod-desc">11 дашбордів: продажі по каналах/менеджерах, завантаженість, середній чек, конверсія, прибутковість напрямків.</div>
+      <div class="mod-tags"><span class="mod-tag">Реліз 2</span><span class="mod-tag">BI</span><span class="mod-tag">11 KPI</span><span class="mod-tag">real-time</span></div>
+    </div>
+    <div class="mod-card mc-gold">
+      <div class="mod-head"><span class="mod-num mn-gold">17</span><span class="mod-title">Кабінет туриста</span></div>
+      <div class="mod-desc">Особистий кабінет: перегляд бронювання, статусів, оплат, документів, вибір місця в автобусі та типу номеру (OPS-03).</div>
+      <div class="mod-tags"><span class="mod-tag">Реліз 2</span><span class="mod-tag">OPS-03</span><span class="mod-tag">self-service</span></div>
+    </div>
+    <div class="mod-card mc-red">
+      <div class="mod-head"><span class="mod-num mn-red">19</span><span class="mod-title">Мобільний додаток</span></div>
+      <div class="mod-desc">iOS/Android для туристів і агентів. Push-сповіщення, offline доступ до документів, оплата in-app.</div>
+      <div class="mod-tags"><span class="mod-tag">Реліз 3</span><span class="mod-tag">iOS</span><span class="mod-tag">Android</span><span class="mod-tag">PWA</span></div>
+    </div>
+    <div class="mod-card mc-red">
+      <div class="mod-head"><span class="mod-num mn-red">20</span><span class="mod-title">Групові запити</span></div>
+      <div class="mod-desc">Корпоративні та групові тури: бриф, індивідуальна пропозиція, групове бронювання, звітність клієнту.</div>
+      <div class="mod-tags"><span class="mod-tag">Реліз 2</span><span class="mod-tag">corporate</span><span class="mod-tag">group</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════
+     PROGRESS
+══════════════════════════ -->
+<div id="progress" class="section">
+
+  <div class="mvp-banner">
+    <div class="mvp-banner-left">
+      <div class="mvb-title">Загальна готовність MVP — Реліз 1</div>
+      <div class="mvb-sub">Оцінка по всіх компонентах: Backend · Frontend · Integrations · QA · DevOps</div>
+    </div>
+    <div class="mvp-banner-right">
+      <div class="mvb-pct">73%</div>
+      <div class="mvb-eta">~4–5 тижнів до production</div>
+    </div>
+  </div>
+
+  <div class="prog-grid">
+    <div class="prog-card">
+      <div class="prog-card-title"><span style="color:var(--cyan)">▊</span> Backend API (Node.js · Fastify · Prisma)</div>
+      <div class="prog-item"><span class="prog-label">Авторизація (Auth)</span><div class="prog-bar-bg"><div class="prog-bar pb-cyan" style="width: 95%;"></div></div><span class="prog-pct" style="color:var(--cyan)">95%</span></div>
+      <div class="prog-item"><span class="prog-label">Каталог турів</span><div class="prog-bar-bg"><div class="prog-bar pb-cyan" style="width: 90%;"></div></div><span class="prog-pct" style="color:var(--cyan)">90%</span></div>
+      <div class="prog-item"><span class="prog-label">Бронювання</span><div class="prog-bar-bg"><div class="prog-bar pb-cyan" style="width: 85%;"></div></div><span class="prog-pct" style="color:var(--cyan)">85%</span></div>
+      <div class="prog-item"><span class="prog-label">CRM / Ліди</span><div class="prog-bar-bg"><div class="prog-bar pb-cyan" style="width: 80%;"></div></div><span class="prog-pct" style="color:var(--cyan)">80%</span></div>
+      <div class="prog-item"><span class="prog-label">Фінанси</span><div class="prog-bar-bg"><div class="prog-bar pb-gold" style="width: 70%;"></div></div><span class="prog-pct" style="color:var(--gold)">70%</span></div>
+      <div class="prog-item"><span class="prog-label">Агенти</span><div class="prog-bar-bg"><div class="prog-bar pb-gold" style="width: 75%;"></div></div><span class="prog-pct" style="color:var(--gold)">75%</span></div>
+      <div class="prog-item"><span class="prog-label">База даних (Prisma)</span><div class="prog-bar-bg"><div class="prog-bar pb-cyan" style="width: 88%;"></div></div><span class="prog-pct" style="color:var(--cyan)">88%</span></div>
+    </div>
+    <div class="prog-card">
+      <div class="prog-card-title"><span style="color:var(--blue)">▊</span> Frontend (React 18 · TypeScript · Vite)</div>
+      <div class="prog-item"><span class="prog-label">Авторизація (UI)</span><div class="prog-bar-bg"><div class="prog-bar pb-cyan" style="width: 95%;"></div></div><span class="prog-pct" style="color:var(--cyan)">95%</span></div>
+      <div class="prog-item"><span class="prog-label">Каталог турів</span><div class="prog-bar-bg"><div class="prog-bar pb-gold" style="width: 75%;"></div></div><span class="prog-pct" style="color:var(--gold)">75%</span></div>
+      <div class="prog-item"><span class="prog-label">Список бронювань</span><div class="prog-bar-bg"><div class="prog-bar pb-gold" style="width: 70%;"></div></div><span class="prog-pct" style="color:var(--gold)">70%</span></div>
+      <div class="prog-item"><span class="prog-label">Деталь бронювання</span><div class="prog-bar-bg"><div class="prog-bar pb-blue" style="width: 20%;"></div></div><span class="prog-pct" style="color:var(--blue)">20%</span></div>
+      <div class="prog-item"><span class="prog-label">Кабінет агента</span><div class="prog-bar-bg"><div class="prog-bar pb-cyan" style="width: 80%;"></div></div><span class="prog-pct" style="color:var(--cyan)">80%</span></div>
+      <div class="prog-item"><span class="prog-label">Dashboard</span><div class="prog-bar-bg"><div class="prog-bar pb-gold" style="width: 65%;"></div></div><span class="prog-pct" style="color:var(--gold)">65%</span></div>
+      <div class="prog-item"><span class="prog-label">Brand tokens</span><div class="prog-bar-bg"><div class="prog-bar pb-blue" style="width: 40%;"></div></div><span class="prog-pct" style="color:var(--blue)">40%</span></div>
+    </div>
+    <div class="prog-card">
+      <div class="prog-card-title"><span style="color:var(--gold)">▊</span> Інтеграції</div>
+      <div class="prog-item"><span class="prog-label">LiqPay</span><div class="prog-bar-bg"><div class="prog-bar pb-cyan" style="width: 90%;"></div></div><span class="prog-pct" style="color:var(--cyan)">90%</span></div>
+      <div class="prog-item"><span class="prog-label">Email (Brevo)</span><div class="prog-bar-bg"><div class="prog-bar pb-cyan" style="width: 80%;"></div></div><span class="prog-pct" style="color:var(--cyan)">80%</span></div>
+      <div class="prog-item"><span class="prog-label">Zoho міграція</span><div class="prog-bar-bg"><div class="prog-bar pb-gold" style="width: 65%;"></div></div><span class="prog-pct" style="color:var(--gold)">65%</span></div>
+      <div class="prog-item"><span class="prog-label">Zoho webhook</span><div class="prog-bar-bg"><div class="prog-bar pb-gold" style="width: 75%;"></div></div><span class="prog-pct" style="color:var(--gold)">75%</span></div>
+      <div class="prog-item"><span class="prog-label">SMS (TurboSMS)</span><div class="prog-bar-bg"><div class="prog-bar pb-blue" style="width: 30%;"></div></div><span class="prog-pct" style="color:var(--blue)">30%</span></div>
+      <div class="prog-item"><span class="prog-label">Telegram Bot</span><div class="prog-bar-bg"><div class="prog-bar pb-blue" style="width: 25%;"></div></div><span class="prog-pct" style="color:var(--blue)">25%</span></div>
+    </div>
+    <div class="prog-card">
+      <div class="prog-card-title"><span style="color:var(--red)">▊</span> QA та DevOps</div>
+      <div class="prog-item"><span class="prog-label">E2E тести (85 тестів)</span><div class="prog-bar-bg"><div class="prog-bar pb-gold" style="width: 75%;"></div></div><span class="prog-pct" style="color:var(--gold)">75%</span></div>
+      <div class="prog-item"><span class="prog-label">Docker (dev + prod)</span><div class="prog-bar-bg"><div class="prog-bar pb-cyan" style="width: 95%;"></div></div><span class="prog-pct" style="color:var(--cyan)">95%</span></div>
+      <div class="prog-item"><span class="prog-label">CI/CD (GitHub Actions)</span><div class="prog-bar-bg"><div class="prog-bar pb-cyan" style="width: 90%;"></div></div><span class="prog-pct" style="color:var(--cyan)">90%</span></div>
+      <div class="prog-item"><span class="prog-label">Production (Hetzner) 🚧</span><div class="prog-bar-bg"><div class="prog-bar" style="width: 10%; background: var(--red);"></div></div><span class="prog-pct" style="color:var(--red)">10%</span></div>
+      <div class="prog-item"><span class="prog-label">Nginx / SSL</span><div class="prog-bar-bg"><div class="prog-bar pb-cyan" style="width: 85%;"></div></div><span class="prog-pct" style="color:var(--cyan)">85%</span></div>
+      <div class="prog-item"><span class="prog-label">Backup / rollback</span><div class="prog-bar-bg"><div class="prog-bar pb-cyan" style="width: 90%;"></div></div><span class="prog-pct" style="color:var(--cyan)">90%</span></div>
+    </div>
+  </div>
+
+  <!-- CRITICAL BLOCKER -->
+  <div style="background:rgba(240,54,109,.06);border:1.5px solid var(--red);border-radius:10px;padding:16px 20px;display:flex;align-items:center;gap:16px">
+    <div style="font-size:24px">🚧</div>
+    <div>
+      <div style="font-size:14px;font-weight:700;color:var(--red);margin-bottom:3px">Критичний блокер MVP — Production Deploy</div>
+      <div style="font-size:12px;color:var(--text2)">Hetzner CX32 не задеплоєно (10%). Потребує: generate-secrets.sh → first-deploy.sh → verify-prod.sh. Блокує всі production-тести та інтеграцію з Zoho CRM.</div>
+    </div>
+    <div style="margin-left:auto;text-align:right;font-family:var(--mono)">
+      <div style="font-size:22px;font-weight:900;color:var(--red)">10%</div>
+      <div style="font-size:10px;color:var(--text3)">production</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════
+     ARCHITECTURE
+══════════════════════════ -->
+<div id="arch" class="section">
+  <div class="sh">
+    <div class="sh-eyebrow">System Design</div>
+    <div class="sh-h2">Архітектурна схема — всі модулі</div>
+    <div class="sh-desc">Блок-схема зв'язків між 20 модулями: від каталогу турів і CRM до аналітики та інтеграцій</div>
+  </div>
+
+  <div class="arch-wrap arch-svg-style">
+    <svg width="100%" viewBox="0 0 680 780" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M2 1L8 5L2 9" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+        </marker>
+      </defs>
+      <style>
+        .th{font-family:'Montserrat',sans-serif;font-size:11px;font-weight:600;fill:#1a1a2e}
+        .ts{font-family:'Montserrat',sans-serif;font-size:9.5px;fill:#64748b}
+        .c-teal rect{fill:rgba(83,199,214,.1);stroke:#53c7d6;stroke-width:1}
+        .c-blue rect{fill:rgba(45,112,185,.1);stroke:#2d70b9;stroke-width:1}
+        .c-coral rect{fill:rgba(240,54,109,.07);stroke:#f0366d;stroke-width:1.5}
+        .c-purple rect{fill:rgba(139,92,246,.07);stroke:rgba(139,92,246,.5);stroke-width:1}
+        .c-amber rect{fill:rgba(249,192,29,.1);stroke:#f9c01d;stroke-width:1}
+        .c-green rect{fill:rgba(16,185,129,.08);stroke:rgba(16,185,129,.4);stroke-width:1}
+        .c-gray rect{fill:#f0f3f8;stroke:#d0d7e6;stroke-width:1}
+        line{stroke:#d0d7e6}
+      </style>
+
+      <!-- ROW 0: Site -->
+      <g class="c-gray"><rect x="270" y="16" width="140" height="36" rx="6"></rect><text class="ts" x="340" y="38" text-anchor="middle" dominant-baseline="central">eurotrips.ua</text></g>
+      <line x1="340" y1="52" x2="340" y2="78" marker-end="url(#ar)"></line>
+
+      <!-- ROW 1: Auth -->
+      <g class="c-teal"><rect x="240" y="80" width="200" height="44" rx="8"></rect>
+      <text class="th" x="340" y="96" text-anchor="middle" dominant-baseline="central">01 · Авторизація</text>
+      <text class="ts" x="340" y="112" text-anchor="middle" dominant-baseline="central">JWT · 7 ролей · RBAC</text></g>
+      <line x1="340" y1="124" x2="340" y2="148" marker-end="url(#ar)"></line>
+
+      <!-- ROW 2: Tours + CRM + Agents -->
+      <g class="c-teal"><rect x="40" y="150" width="180" height="44" rx="8"></rect>
+      <text class="th" x="130" y="166" text-anchor="middle" dominant-baseline="central">02 · Каталог турів</text>
+      <text class="ts" x="130" y="182" text-anchor="middle" dominant-baseline="central">CRUD · 8 статусів · квоти</text></g>
+
+      <g class="c-teal"><rect x="260" y="150" width="180" height="44" rx="8"></rect>
+      <text class="th" x="350" y="166" text-anchor="middle" dominant-baseline="central">03 · CRM / Ліди</text>
+      <text class="ts" x="350" y="182" text-anchor="middle" dominant-baseline="central">7 статусів · 10 каналів</text></g>
+
+      <g class="c-blue"><rect x="480" y="150" width="160" height="44" rx="8"></rect>
+      <text class="th" x="560" y="166" text-anchor="middle" dominant-baseline="central">06 · Агенти</text>
+      <text class="ts" x="560" y="182" text-anchor="middle" dominant-baseline="central">standard · network</text></g>
+
+      <line x1="130" y1="194" x2="130" y2="248" marker-end="url(#ar)"></line>
+      <line x1="350" y1="194" x2="310" y2="248" marker-end="url(#ar)"></line>
+      <line x1="560" y1="194" x2="430" y2="248" marker-end="url(#ar)"></line>
+
+      <!-- ROW 3: Bookings CENTRAL -->
+      <g class="c-coral"><rect x="80" y="250" width="380" height="54" rx="8"></rect>
+      <text class="th" x="270" y="268" text-anchor="middle" dominant-baseline="central">04 · Бронювання — центральний модуль</text>
+      <text class="ts" x="270" y="288" text-anchor="middle" dominant-baseline="central">15 статусів · BR-01/06/08 · ET-YYYY-NNNNN · туристи · оплати · документи</text></g>
+
+      <line x1="150" y1="304" x2="80" y2="360" marker-end="url(#ar)"></line>
+      <line x1="220" y1="304" x2="200" y2="360" marker-end="url(#ar)"></line>
+      <line x1="270" y1="304" x2="270" y2="360" marker-end="url(#ar)"></line>
+      <line x1="340" y1="304" x2="380" y2="360" marker-end="url(#ar)"></line>
+      <line x1="400" y1="304" x2="520" y2="360" marker-end="url(#ar)"></line>
+
+      <!-- ROW 4: Ops -->
+      <g class="c-blue"><rect x="40" y="362" width="110" height="44" rx="8"></rect>
+      <text class="th" x="95" y="378" text-anchor="middle" dominant-baseline="central">05 · Фінанси</text>
+      <text class="ts" x="95" y="394" text-anchor="middle" dominant-baseline="central">LiqPay · P&amp;L</text></g>
+
+      <g class="c-blue"><rect x="162" y="362" width="110" height="44" rx="8"></rect>
+      <text class="th" x="217" y="378" text-anchor="middle" dominant-baseline="central">07 · Операції</text>
+      <text class="ts" x="217" y="394" text-anchor="middle" dominant-baseline="central">чеклісти · румінг</text></g>
+
+      <g class="c-blue"><rect x="230" y="362" width="110" height="44" rx="8"></rect>
+      <text class="th" x="285" y="378" text-anchor="middle" dominant-baseline="central">11 · Документи</text>
+      <text class="ts" x="285" y="394" text-anchor="middle" dominant-baseline="central">PDF · 7 типів</text></g>
+
+      <g class="c-blue"><rect x="352" y="362" width="110" height="44" rx="8"></rect>
+      <text class="th" x="407" y="378" text-anchor="middle" dominant-baseline="central">12 · Комунікації</text>
+      <text class="ts" x="407" y="394" text-anchor="middle" dominant-baseline="central">email · SMS · TG</text></g>
+
+      <g class="c-purple"><rect x="474" y="362" width="110" height="44" rx="8"></rect>
+      <text class="th" x="529" y="378" text-anchor="middle" dominant-baseline="central">10 · Страхування</text>
+      <text class="ts" x="529" y="394" text-anchor="middle" dominant-baseline="central">VUSO · AXA · поліс</text></g>
+
+      <line x1="217" y1="406" x2="150" y2="460" marker-end="url(#ar)"></line>
+      <line x1="270" y1="406" x2="310" y2="460" marker-end="url(#ar)"></line>
+      <line x1="407" y1="406" x2="480" y2="460" marker-end="url(#ar)"></line>
+
+      <!-- ROW 5 -->
+      <g class="c-purple"><rect x="40" y="462" width="140" height="44" rx="8"></rect>
+      <text class="th" x="110" y="478" text-anchor="middle" dominant-baseline="central">08 · Проживання</text>
+      <text class="ts" x="110" y="494" text-anchor="middle" dominant-baseline="central">563 готелі · румінг</text></g>
+
+      <g class="c-purple"><rect x="220" y="462" width="140" height="44" rx="8"></rect>
+      <text class="th" x="290" y="478" text-anchor="middle" dominant-baseline="central">09 · Транспорт</text>
+      <text class="ts" x="290" y="494" text-anchor="middle" dominant-baseline="central">розсадка · маршрут</text></g>
+
+      <g class="c-purple"><rect x="400" y="462" width="140" height="44" rx="8"></rect>
+      <text class="th" x="470" y="478" text-anchor="middle" dominant-baseline="central">18 · Активності</text>
+      <text class="ts" x="470" y="494" text-anchor="middle" dominant-baseline="central">4341 записів · гіди</text></g>
+
+      <!-- Integrations dashed box -->
+      <rect x="30" y="530" width="620" height="80" rx="10" fill="none" stroke="#f9c01d" stroke-width="1" stroke-dasharray="6 3"></rect>
+      <text class="ts" x="44" y="548" fill="#f9c01d" dominant-baseline="central">ІНТЕГРАЦІЇ</text>
+      <g class="c-teal"><rect x="44" y="556" width="140" height="40" rx="6"></rect>
+      <text class="th" x="114" y="572" text-anchor="middle" dominant-baseline="central">LiqPay 90%</text>
+      <text class="ts" x="114" y="586" text-anchor="middle" dominant-baseline="central">SHA1 · idempotent</text></g>
+      <g class="c-teal"><rect x="200" y="556" width="140" height="40" rx="6"></rect>
+      <text class="th" x="270" y="572" text-anchor="middle" dominant-baseline="central">Brevo Email 80%</text>
+      <text class="ts" x="270" y="586" text-anchor="middle" dominant-baseline="central">5 шаблонів</text></g>
+      <g class="c-amber"><rect x="356" y="556" width="130" height="40" rx="6"></rect>
+      <text class="th" x="421" y="572" text-anchor="middle" dominant-baseline="central">Zoho CRM 65%</text>
+      <text class="ts" x="421" y="586" text-anchor="middle" dominant-baseline="central">22 модулі</text></g>
+      <g class="c-blue"><rect x="502" y="556" width="138" height="40" rx="6"></rect>
+      <text class="th" x="571" y="572" text-anchor="middle" dominant-baseline="central">SMS · TG Bot</text>
+      <text class="ts" x="571" y="586" text-anchor="middle" dominant-baseline="central">30% · 25%</text></g>
+
+      <!-- MVP Banner -->
+      <rect x="30" y="630" width="620" height="46" rx="8" fill="rgba(26,26,46,.06)" stroke="#53c7d6" stroke-width="1"></rect>
+      <text class="th" x="200" y="648" text-anchor="middle" dominant-baseline="central">Загальна готовність MVP: 73%</text>
+      <text class="ts" x="200" y="665" text-anchor="middle" dominant-baseline="central">~4–5 тижнів до першого production релізу</text>
+      <text class="th" x="510" y="648" text-anchor="middle" dominant-baseline="central" fill="#f0366d">🚧 Blocker: Production deploy</text>
+      <text class="ts" x="510" y="665" text-anchor="middle" dominant-baseline="central">Hetzner CX32 — не задеплоєно</text>
+    </svg>
+  </div>
+</div>
+
+<script>
+function show(id, el) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('on'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+  el.classList.add('on');
+  window.scrollTo(0, 0);
+  // animate progress bars
+  setTimeout(() => {
+    document.querySelectorAll('.prog-bar').forEach(b => {
+      const w = b.style.width; b.style.width = '0';
+      requestAnimationFrame(() => requestAnimationFrame(() => { b.style.width = w; }));
+    });
+  }, 50);
+}
+// init progress animation on load
+setTimeout(() => {
+  document.querySelectorAll('.prog-bar').forEach(b => {
+    const w = b.style.width; b.style.width = '0';
+    setTimeout(() => { b.style.width = w; }, 200);
+  });
+}, 100);
+</script>
+
+
+</body></html>
