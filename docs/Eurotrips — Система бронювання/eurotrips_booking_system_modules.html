@@ -1,0 +1,500 @@
+
+<style>
+:root{--et-cyan:#53c7d6;--et-red:#f0366d;--et-gold:#f9c01d;--et-blue:#2d70b9;--et-dark:#1a1a2e;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--font-sans);}
+.tabs{display:flex;gap:0;border-bottom:0.5px solid var(--color-border-tertiary);margin-bottom:20px;}
+.tab{padding:10px 20px;font-size:13px;cursor:pointer;color:var(--color-text-secondary);border-bottom:2px solid transparent;margin-bottom:-0.5px;transition:all .2s;}
+.tab.active{color:var(--et-cyan);border-bottom-color:var(--et-cyan);font-weight:500;}
+.tab:hover{color:var(--color-text-primary);}
+.section{display:none;} .section.active{display:block;}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:24px;}
+.card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:14px 16px;cursor:pointer;transition:border-color .2s;}
+.card:hover{border-color:var(--et-cyan);}
+.card-head{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.card-title{font-size:14px;font-weight:500;color:var(--color-text-primary);}
+.card-sub{font-size:12px;color:var(--color-text-secondary);line-height:1.5;margin-bottom:8px;}
+.tags{display:flex;flex-wrap:wrap;gap:4px;}
+.tag{font-size:11px;padding:2px 8px;border-radius:20px;background:var(--color-background-secondary);color:var(--color-text-secondary);}
+.prog-wrap{margin-bottom:24px;}
+.prog-item{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.prog-label{font-size:12px;color:var(--color-text-secondary);width:160px;flex-shrink:0;}
+.prog-bar-bg{flex:1;height:6px;background:var(--color-background-secondary);border-radius:3px;overflow:hidden;}
+.prog-bar{height:100%;border-radius:3px;transition:width .6s ease;}
+.prog-pct{font-size:12px;font-weight:500;width:36px;text-align:right;flex-shrink:0;}
+.status-badge{font-size:11px;padding:2px 10px;border-radius:20px;font-weight:500;}
+.done{background:#e1f5ee;color:#0f6e56;} .dark .done{background:#04342c;color:#5dcaa5;}
+.progress{background:#faeeda;color:#854f0b;} .dark .progress{background:#412402;color:#f0a020;}
+.planned{background:#e6f1fb;color:#185fa5;} .dark .planned{background:#042c53;color:#85b7eb;}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;}
+.leg-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--color-text-secondary);}
+.leg-dot{width:8px;height:8px;border-radius:50%;}
+h2{font-size:16px;font-weight:500;color:var(--color-text-primary);margin-bottom:12px;}
+h3{font-size:13px;font-weight:500;color:var(--color-text-secondary);margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em;}
+</style>
+
+<div class="tabs">
+  <div class="tab active" onclick="show('planned')">Заплановані модулі</div>
+  <div class="tab" onclick="show('impl')">Реалізовані модулі</div>
+  <div class="tab" onclick="show('diag1')">Схема: план</div>
+  <div class="tab" onclick="show('diag2')">Схема: реалізація</div>
+</div>
+
+<div id="planned" class="section active">
+<h2>Всі модулі системи бронювання Eurotrips</h2>
+<div class="legend">
+  <div class="leg-item"><div class="leg-dot" style="background:var(--et-cyan)"></div>Реліз 1 — критичні</div>
+  <div class="leg-item"><div class="leg-dot" style="background:var(--et-blue)"></div>Реліз 1 — важливі</div>
+  <div class="leg-item"><div class="leg-dot" style="background:var(--et-gold)"></div>Реліз 2</div>
+  <div class="leg-item"><div class="leg-dot" style="background:var(--et-red)"></div>Реліз 3</div>
+</div>
+<h3>Ядро системи — Реліз 1</h3>
+<div class="grid">
+<div class="card" onclick="sendPrompt('Розкажи детальніше про модуль авторизації та управління ролями в системі Eurotrips')">
+  <div class="card-head"><div class="dot" style="background:var(--et-cyan)"></div><span class="card-title">01 · Авторизація та RBAC</span></div>
+  <div class="card-sub">Вхід в систему, управління ролями та правами доступу. Захист усіх ендпоінтів залежно від ролі.</div>
+  <div class="tags"><span class="tag">JWT</span><span class="tag">7 ролей</span><span class="tag">refresh token</span><span class="tag">audit log</span></div>
+</div>
+<div class="card" onclick="sendPrompt('Розкажи детальніше про модуль каталогу турів Eurotrips')">
+  <div class="card-head"><div class="dot" style="background:var(--et-cyan)"></div><span class="card-title">02 · Каталог турів</span></div>
+  <div class="card-sub">Єдина база всіх турів: управління квотами, статусами, цінами, фільтрація, публікація на сайт.</div>
+  <div class="tags"><span class="tag">CRUD</span><span class="tag">8 статусів</span><span class="tag">BR-01 квоти</span><span class="tag">BR-04 маржа</span></div>
+</div>
+<div class="card" onclick="sendPrompt('Розкажи детальніше про модуль CRM та лідів Eurotrips')">
+  <div class="card-head"><div class="dot" style="background:var(--et-cyan)"></div><span class="card-title">03 · CRM / Ліди</span></div>
+  <div class="card-sub">Єдина воронка продажів: збір звернень з 10 каналів, 7 статусів ліда, конвертація в бронювання.</div>
+  <div class="tags"><span class="tag">7 статусів</span><span class="tag">10 каналів</span><span class="tag">конвертація</span><span class="tag">Zoho sync</span></div>
+</div>
+<div class="card" onclick="sendPrompt('Розкажи детальніше про центральний модуль бронювань Eurotrips')">
+  <div class="card-head"><div class="dot" style="background:var(--et-cyan)"></div><span class="card-title">04 · Бронювання</span></div>
+  <div class="card-sub">Центральний модуль: від нової заявки до завершення туру. 15 статусів, повний фінансовий облік, документи, учасники.</div>
+  <div class="tags"><span class="tag">15 статусів</span><span class="tag">BR-06 FSM</span><span class="tag">BR-08 скасування</span><span class="tag">ET-YYYY-NNNNN</span></div>
+</div>
+<div class="card" onclick="sendPrompt('Розкажи детальніше про фінансовий модуль системи Eurotrips')">
+  <div class="card-head"><div class="dot" style="background:var(--et-blue)"></div><span class="card-title">05 · Фінанси</span></div>
+  <div class="card-sub">Облік оплат, передоплати, залишків, повернень, комісій агентів та фінансового результату по турах.</div>
+  <div class="tags"><span class="tag">EUR</span><span class="tag">LiqPay</span><span class="tag">борги</span><span class="tag">P&L туру</span></div>
+</div>
+<div class="card" onclick="sendPrompt('Розкажи детальніше про кабінет агента в системі Eurotrips')">
+  <div class="card-head"><div class="dot" style="background:var(--et-blue)"></div><span class="card-title">06 · Кабінет агента</span></div>
+  <div class="card-sub">Окремий B2B-інтерфейс. Перегляд турів, створення бронювань, статуси, комісії. Роялті для мережевих агентів.</div>
+  <div class="tags"><span class="tag">BR-04</span><span class="tag">BR-07 роялті</span><span class="tag">standard/network</span></div>
+</div>
+</div>
+<h3>Операційний блок — Реліз 1</h3>
+<div class="grid">
+<div class="card" onclick="sendPrompt('Розкажи детальніше про операційний модуль системи Eurotrips')">
+  <div class="card-head"><div class="dot" style="background:var(--et-blue)"></div><span class="card-title">07 · Операційний блок</span></div>
+  <div class="card-sub">Підготовка туру до виїзду: списки туристів, перевірка оплат і документів, чеклісти, призначення турлідера.</div>
+  <div class="tags"><span class="tag">чекліст</span><span class="tag">румінг</span><span class="tag">розсадка</span><span class="tag">готовність</span></div>
+</div>
+<div class="card" onclick="sendPrompt('Розкажи детальніше про модуль проживання та готелів Eurotrips')">
+  <div class="card-head"><div class="dot" style="background:var(--et-blue)"></div><span class="card-title">08 · Проживання</span></div>
+  <div class="card-sub">База готелів, бронювання по турах, типи номерів (SGL/DBL/TWIN/TRPL), румінг, дедлайни, статуси.</div>
+  <div class="tags"><span class="tag">563 готелі</span><span class="tag">OPS-01/02/03</span><span class="tag">румінг DRAFT→FINAL</span></div>
+</div>
+<div class="card" onclick="sendPrompt('Розкажи детальніше про транспортний модуль системи Eurotrips')">
+  <div class="card-head"><div class="dot" style="background:var(--et-blue)"></div><span class="card-title">09 · Транспорт</span></div>
+  <div class="card-sub">Перевізники, автобуси, водії. Схема розсадки, кілометраж, паливний збір, бронювання по турах.</div>
+  <div class="tags"><span class="tag">розсадка</span><span class="tag">кілометраж</span><span class="tag">паливний збір</span></div>
+</div>
+<div class="card" onclick="sendPrompt('Розкажи детальніше про модуль страхування туристів в Eurotrips')">
+  <div class="card-head"><div class="dot" style="background:var(--et-blue)"></div><span class="card-title">10 · Страхування</span></div>
+  <div class="card-sub">Туристичне страхування для кожного учасника. Поліси, тарифи, терміни, документи (VUSO, AXA).</div>
+  <div class="tags"><span class="tag">BR-09</span><span class="tag">VUSO</span><span class="tag">AXA</span><span class="tag">поліс PDF</span></div>
+</div>
+<div class="card" onclick="sendPrompt('Розкажи детальніше про модуль документів системи Eurotrips')">
+  <div class="card-head"><div class="dot" style="background:var(--et-blue)"></div><span class="card-title">11 · Документи</span></div>
+  <div class="card-sub">Централізоване сховище: договори, ваучери, підтвердження, рахунки, списки туристів. Автогенерація по ролях.</div>
+  <div class="tags"><span class="tag">7 типів</span><span class="tag">5 ролей</span><span class="tag">PDF auto</span></div>
+</div>
+<div class="card" onclick="sendPrompt('Розкажи детальніше про модуль комунікацій та нотифікацій Eurotrips')">
+  <div class="card-head"><div class="dot" style="background:var(--et-blue)"></div><span class="card-title">12 · Комунікації</span></div>
+  <div class="card-sub">8 тригерних сповіщень через email/SMS/месенджери. Brevo, TurboSMS, Telegram. Внутрішні нотифікації команди.</div>
+  <div class="tags"><span class="tag">Brevo email</span><span class="tag">TurboSMS</span><span class="tag">Telegram bot</span><span class="tag">BullMQ</span></div>
+</div>
+</div>
+<h3>Інтеграції</h3>
+<div class="grid">
+<div class="card" onclick="sendPrompt('Розкажи детальніше про інтеграцію з Zoho CRM в системі Eurotrips')">
+  <div class="card-head"><div class="dot" style="background:var(--et-gold)"></div><span class="card-title">13 · Zoho CRM</span></div>
+  <div class="card-sub">Двостороння синхронізація. Міграція 22 модулів Zoho. Webhook для ongoing sync (Leads, Contacts, Deals).</div>
+  <div class="tags"><span class="tag">22 модулі</span><span class="tag">OAuth2</span><span class="tag">webhook</span><span class="tag">idempotent</span></div>
+</div>
+<div class="card" onclick="sendPrompt('Розкажи детальніше про платіжну інтеграцію LiqPay в системі Eurotrips')">
+  <div class="card-head"><div class="dot" style="background:var(--et-gold)"></div><span class="card-title">14 · Платежі (LiqPay)</span></div>
+  <div class="card-sub">Прийом онлайн-оплат через LiqPay. SHA1 верифікація webhook, ідемпотентність, автоматичне оновлення статусу.</div>
+  <div class="tags"><span class="tag">LiqPay</span><span class="tag">WayForPay</span><span class="tag">SHA1</span><span class="tag">BR-01</span></div>
+</div>
+<div class="card" onclick="sendPrompt('Розкажи детальніше про модуль управління агентами в системі Eurotrips')">
+  <div class="card-head"><div class="dot" style="background:var(--et-gold)"></div><span class="card-title">15 · Управління агентами</span></div>
+  <div class="card-sub">Реєстрація агентств та агентів, договори, мережеві агенти з роялті, онбординг, рейтинги.</div>
+  <div class="tags"><span class="tag">Agency</span><span class="tag">Agent</span><span class="tag">AgentNetwork</span><span class="tag">BR-07</span></div>
+</div>
+</div>
+<h3>Реліз 2–3</h3>
+<div class="grid">
+<div class="card" onclick="sendPrompt('Розкажи детальніше про модуль аналітики та дашбордів Eurotrips')">
+  <div class="card-head"><div class="dot" style="background:var(--et-gold)"></div><span class="card-title">16 · Аналітика / BI</span></div>
+  <div class="card-sub">11 дашбордів: продажі, канали, менеджери, агенти, завантаженість, середній чек, конверсія, прибутковість.</div>
+  <div class="tags"><span class="tag">Реліз 2</span><span class="tag">BI</span><span class="tag">KPI</span><span class="tag">real-time</span></div>
+</div>
+<div class="card" onclick="sendPrompt('Розкажи детальніше про кабінет туриста в системі Eurotrips')">
+  <div class="card-head"><div class="dot" style="background:var(--et-gold)"></div><span class="card-title">17 · Кабінет туриста</span></div>
+  <div class="card-sub">Особистий кабінет: перегляд бронювання, статусів, оплат, документів, вибір місця в автобусі.</div>
+  <div class="tags"><span class="tag">Реліз 2</span><span class="tag">OPS-03</span><span class="tag">self-service</span></div>
+</div>
+<div class="card" onclick="sendPrompt('Розкажи детальніше про модуль активностей та екскурсій Eurotrips')">
+  <div class="card-head"><div class="dot" style="background:var(--et-blue)"></div><span class="card-title">18 · Активності</span></div>
+  <div class="card-sub">Бронювання екскурсій та активностей по містах туру. Гіди, час, вартість, статус (4341+ записи).</div>
+  <div class="tags"><span class="tag">4341 записів</span><span class="tag">гіди</span><span class="tag">міста</span></div>
+</div>
+<div class="card" onclick="sendPrompt('Розкажи про майбутні можливості мобільного додатку Eurotrips')">
+  <div class="card-head"><div class="dot" style="background:var(--et-red)"></div><span class="card-title">19 · Мобільний додаток</span></div>
+  <div class="card-sub">iOS/Android для туристів і агентів. Push-сповіщення, offline доступ до документів, оплата.</div>
+  <div class="tags"><span class="tag">Реліз 3</span><span class="tag">iOS</span><span class="tag">Android</span><span class="tag">PWA</span></div>
+</div>
+<div class="card" onclick="sendPrompt('Розкажи про корпоративні та групові бронювання в системі Eurotrips')">
+  <div class="card-head"><div class="dot" style="background:var(--et-red)"></div><span class="card-title">20 · Групові запити</span></div>
+  <div class="card-sub">Корпоративні та групові тури: бриф, індивідуальна пропозиція, групове бронювання, звітність.</div>
+  <div class="tags"><span class="tag">Реліз 2</span><span class="tag">corporate</span><span class="tag">group</span></div>
+</div>
+</div>
+</div>
+
+<div id="impl" class="section">
+<h2>Прогрес реалізації</h2>
+<div class="legend">
+  <div class="leg-item"><div class="leg-dot" style="background:var(--et-cyan)"></div>Завершено (&gt;85%)</div>
+  <div class="leg-item"><div class="leg-dot" style="background:var(--et-gold)"></div>В процесі (50–85%)</div>
+  <div class="leg-item"><div class="leg-dot" style="background:var(--et-blue)"></div>Розпочато (&lt;50%)</div>
+</div>
+<div class="prog-wrap">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+<div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:14px 16px;">
+<div style="font-size:13px;font-weight:500;color:var(--color-text-secondary);margin-bottom:12px;text-transform:uppercase;letter-spacing:.05em;">Backend API</div>
+<div class="prog-item"><span class="prog-label">Авторизація (Auth)</span><div class="prog-bar-bg"><div class="prog-bar" style="width:95%;background:var(--et-cyan)"></div></div><span class="prog-pct" style="color:var(--et-cyan)">95%</span></div>
+<div class="prog-item"><span class="prog-label">Каталог турів</span><div class="prog-bar-bg"><div class="prog-bar" style="width:90%;background:var(--et-cyan)"></div></div><span class="prog-pct" style="color:var(--et-cyan)">90%</span></div>
+<div class="prog-item"><span class="prog-label">Бронювання</span><div class="prog-bar-bg"><div class="prog-bar" style="width:85%;background:var(--et-cyan)"></div></div><span class="prog-pct" style="color:var(--et-cyan)">85%</span></div>
+<div class="prog-item"><span class="prog-label">CRM / Ліди</span><div class="prog-bar-bg"><div class="prog-bar" style="width:80%;background:var(--et-cyan)"></div></div><span class="prog-pct" style="color:var(--et-cyan)">80%</span></div>
+<div class="prog-item"><span class="prog-label">Фінанси</span><div class="prog-bar-bg"><div class="prog-bar" style="width:70%;background:var(--et-gold)"></div></div><span class="prog-pct" style="color:var(--et-gold)">70%</span></div>
+<div class="prog-item"><span class="prog-label">Агенти</span><div class="prog-bar-bg"><div class="prog-bar" style="width:75%;background:var(--et-gold)"></div></div><span class="prog-pct" style="color:var(--et-gold)">75%</span></div>
+<div class="prog-item"><span class="prog-label">База даних (Prisma)</span><div class="prog-bar-bg"><div class="prog-bar" style="width:88%;background:var(--et-cyan)"></div></div><span class="prog-pct" style="color:var(--et-cyan)">88%</span></div>
+</div>
+<div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:14px 16px;">
+<div style="font-size:13px;font-weight:500;color:var(--color-text-secondary);margin-bottom:12px;text-transform:uppercase;letter-spacing:.05em;">Frontend</div>
+<div class="prog-item"><span class="prog-label">Авторизація (UI)</span><div class="prog-bar-bg"><div class="prog-bar" style="width:95%;background:var(--et-cyan)"></div></div><span class="prog-pct" style="color:var(--et-cyan)">95%</span></div>
+<div class="prog-item"><span class="prog-label">Каталог турів</span><div class="prog-bar-bg"><div class="prog-bar" style="width:75%;background:var(--et-gold)"></div></div><span class="prog-pct" style="color:var(--et-gold)">75%</span></div>
+<div class="prog-item"><span class="prog-label">Список бронювань</span><div class="prog-bar-bg"><div class="prog-bar" style="width:70%;background:var(--et-gold)"></div></div><span class="prog-pct" style="color:var(--et-gold)">70%</span></div>
+<div class="prog-item"><span class="prog-label">Деталь бронювання</span><div class="prog-bar-bg"><div class="prog-bar" style="width:20%;background:var(--et-blue)"></div></div><span class="prog-pct" style="color:var(--et-blue)">20%</span></div>
+<div class="prog-item"><span class="prog-label">Кабінет агента</span><div class="prog-bar-bg"><div class="prog-bar" style="width:80%;background:var(--et-cyan)"></div></div><span class="prog-pct" style="color:var(--et-cyan)">80%</span></div>
+<div class="prog-item"><span class="prog-label">Dashboard</span><div class="prog-bar-bg"><div class="prog-bar" style="width:65%;background:var(--et-gold)"></div></div><span class="prog-pct" style="color:var(--et-gold)">65%</span></div>
+<div class="prog-item"><span class="prog-label">Brand tokens</span><div class="prog-bar-bg"><div class="prog-bar" style="width:40%;background:var(--et-blue)"></div></div><span class="prog-pct" style="color:var(--et-blue)">40%</span></div>
+</div>
+<div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:14px 16px;">
+<div style="font-size:13px;font-weight:500;color:var(--color-text-secondary);margin-bottom:12px;text-transform:uppercase;letter-spacing:.05em;">Інтеграції</div>
+<div class="prog-item"><span class="prog-label">LiqPay</span><div class="prog-bar-bg"><div class="prog-bar" style="width:90%;background:var(--et-cyan)"></div></div><span class="prog-pct" style="color:var(--et-cyan)">90%</span></div>
+<div class="prog-item"><span class="prog-label">Email (Brevo)</span><div class="prog-bar-bg"><div class="prog-bar" style="width:80%;background:var(--et-cyan)"></div></div><span class="prog-pct" style="color:var(--et-cyan)">80%</span></div>
+<div class="prog-item"><span class="prog-label">Zoho міграція</span><div class="prog-bar-bg"><div class="prog-bar" style="width:65%;background:var(--et-gold)"></div></div><span class="prog-pct" style="color:var(--et-gold)">65%</span></div>
+<div class="prog-item"><span class="prog-label">Zoho webhook</span><div class="prog-bar-bg"><div class="prog-bar" style="width:75%;background:var(--et-gold)"></div></div><span class="prog-pct" style="color:var(--et-gold)">75%</span></div>
+<div class="prog-item"><span class="prog-label">SMS (TurboSMS)</span><div class="prog-bar-bg"><div class="prog-bar" style="width:30%;background:var(--et-blue)"></div></div><span class="prog-pct" style="color:var(--et-blue)">30%</span></div>
+<div class="prog-item"><span class="prog-label">Telegram Bot</span><div class="prog-bar-bg"><div class="prog-bar" style="width:25%;background:var(--et-blue)"></div></div><span class="prog-pct" style="color:var(--et-blue)">25%</span></div>
+</div>
+<div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:14px 16px;">
+<div style="font-size:13px;font-weight:500;color:var(--color-text-secondary);margin-bottom:12px;text-transform:uppercase;letter-spacing:.05em;">QA та DevOps</div>
+<div class="prog-item"><span class="prog-label">E2E тести (85 тестів)</span><div class="prog-bar-bg"><div class="prog-bar" style="width:75%;background:var(--et-gold)"></div></div><span class="prog-pct" style="color:var(--et-gold)">75%</span></div>
+<div class="prog-item"><span class="prog-label">Docker (dev + prod)</span><div class="prog-bar-bg"><div class="prog-bar" style="width:95%;background:var(--et-cyan)"></div></div><span class="prog-pct" style="color:var(--et-cyan)">95%</span></div>
+<div class="prog-item"><span class="prog-label">CI/CD (GitHub Actions)</span><div class="prog-bar-bg"><div class="prog-bar" style="width:90%;background:var(--et-cyan)"></div></div><span class="prog-pct" style="color:var(--et-cyan)">90%</span></div>
+<div class="prog-item"><span class="prog-label">Production (Hetzner)</span><div class="prog-bar-bg"><div class="prog-bar" style="width:10%;background:var(--et-blue)"></div></div><span class="prog-pct" style="color:var(--et-blue)">10%</span></div>
+<div class="prog-item"><span class="prog-label">Nginx / SSL</span><div class="prog-bar-bg"><div class="prog-bar" style="width:85%;background:var(--et-cyan)"></div></div><span class="prog-pct" style="color:var(--et-cyan)">85%</span></div>
+<div class="prog-item"><span class="prog-label">Backup / rollback</span><div class="prog-bar-bg"><div class="prog-bar" style="width:90%;background:var(--et-cyan)"></div></div><span class="prog-pct" style="color:var(--et-cyan)">90%</span></div>
+</div>
+</div>
+</div>
+<div style="background:var(--color-background-secondary);border-radius:var(--border-radius-lg);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;margin-top:8px;">
+<div><span style="font-size:14px;font-weight:500;color:var(--color-text-primary);">Загальна готовність MVP</span><br><span style="font-size:12px;color:var(--color-text-secondary);">Реліз 1 — оцінка по всіх компонентах</span></div>
+<div style="text-align:right;"><span style="font-size:32px;font-weight:500;color:var(--et-cyan)">73%</span><br><span style="font-size:12px;color:var(--color-text-secondary);">~4–5 тижнів до production</span></div>
+</div>
+</div>
+
+<div id="diag1" class="section">
+<h2>Архітектурна схема — всі модулі системи</h2>
+<svg width="100%" viewBox="0 0 680 780" role="img">
+<title>Архітектурна схема всіх модулів системи бронювання Eurotrips</title>
+<desc>Блок-схема зв'язків між 20 модулями: від каталогу турів і CRM до аналітики та інтеграцій</desc>
+<defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+
+<!-- ROW 0: Site -->
+<g class="c-gray"><rect x="270" y="16" width="140" height="36" rx="6" stroke-width="0.5"/><text class="ts" x="340" y="38" text-anchor="middle" dominant-baseline="central">eurotrips.ua</text></g>
+<line x1="340" y1="52" x2="340" y2="78" stroke="var(--color-border-secondary)" stroke-width="0.5" marker-end="url(#ar)"/>
+
+<!-- ROW 1: Auth -->
+<g class="c-teal"><rect x="240" y="80" width="200" height="44" rx="8" stroke-width="0.5"/>
+<text class="th" x="340" y="96" text-anchor="middle" dominant-baseline="central">01 · Авторизація</text>
+<text class="ts" x="340" y="112" text-anchor="middle" dominant-baseline="central">JWT · 7 ролей · RBAC</text></g>
+
+<!-- Arrow down -->
+<line x1="340" y1="124" x2="340" y2="148" stroke="var(--color-border-secondary)" stroke-width="0.5" marker-end="url(#ar)"/>
+
+<!-- ROW 2: Tours + CRM -->
+<g class="c-teal"><rect x="40" y="150" width="180" height="44" rx="8" stroke-width="0.5"/>
+<text class="th" x="130" y="166" text-anchor="middle" dominant-baseline="central">02 · Каталог турів</text>
+<text class="ts" x="130" y="182" text-anchor="middle" dominant-baseline="central">CRUD · 8 статусів · квоти</text></g>
+
+<g class="c-teal"><rect x="260" y="150" width="180" height="44" rx="8" stroke-width="0.5"/>
+<text class="th" x="350" y="166" text-anchor="middle" dominant-baseline="central">03 · CRM / Ліди</text>
+<text class="ts" x="350" y="182" text-anchor="middle" dominant-baseline="central">7 статусів · 10 каналів</text></g>
+
+<g class="c-blue"><rect x="480" y="150" width="160" height="44" rx="8" stroke-width="0.5"/>
+<text class="th" x="560" y="166" text-anchor="middle" dominant-baseline="central">06 · Агенти</text>
+<text class="ts" x="560" y="182" text-anchor="middle" dominant-baseline="central">standard · network</text></g>
+
+<!-- Arrows to bookings -->
+<line x1="130" y1="194" x2="130" y2="248" stroke="var(--color-border-secondary)" stroke-width="0.5" marker-end="url(#ar)"/>
+<line x1="350" y1="194" x2="310" y2="248" stroke="var(--color-border-secondary)" stroke-width="0.5" marker-end="url(#ar)"/>
+<line x1="560" y1="194" x2="430" y2="248" stroke="var(--color-border-secondary)" stroke-width="0.5" marker-end="url(#ar)"/>
+
+<!-- ROW 3: Bookings (central) -->
+<g class="c-coral"><rect x="80" y="250" width="380" height="54" rx="8" stroke-width="1"/>
+<text class="th" x="270" y="268" text-anchor="middle" dominant-baseline="central">04 · Бронювання — центральний модуль</text>
+<text class="ts" x="270" y="288" text-anchor="middle" dominant-baseline="central">15 статусів · BR-01/06/08 · ET-YYYY-NNNNN · туристи · оплати · документи</text></g>
+
+<!-- Arrows from bookings -->
+<line x1="150" y1="304" x2="80" y2="360" stroke="var(--color-border-secondary)" stroke-width="0.5" marker-end="url(#ar)"/>
+<line x1="220" y1="304" x2="200" y2="360" stroke="var(--color-border-secondary)" stroke-width="0.5" marker-end="url(#ar)"/>
+<line x1="270" y1="304" x2="270" y2="360" stroke="var(--color-border-secondary)" stroke-width="0.5" marker-end="url(#ar)"/>
+<line x1="340" y1="304" x2="380" y2="360" stroke="var(--color-border-secondary)" stroke-width="0.5" marker-end="url(#ar)"/>
+<line x1="400" y1="304" x2="520" y2="360" stroke="var(--color-border-secondary)" stroke-width="0.5" marker-end="url(#ar)"/>
+
+<!-- ROW 4: Ops block -->
+<g class="c-blue"><rect x="40" y="362" width="110" height="44" rx="8" stroke-width="0.5"/>
+<text class="th" x="95" y="378" text-anchor="middle" dominant-baseline="central">05 · Фінанси</text>
+<text class="ts" x="95" y="394" text-anchor="middle" dominant-baseline="central">LiqPay · P&L</text></g>
+
+<g class="c-blue"><rect x="162" y="362" width="110" height="44" rx="8" stroke-width="0.5"/>
+<text class="th" x="217" y="378" text-anchor="middle" dominant-baseline="central">07 · Операції</text>
+<text class="ts" x="217" y="394" text-anchor="middle" dominant-baseline="central">чеклісти · румінг</text></g>
+
+<g class="c-blue"><rect x="230" y="362" width="110" height="44" rx="8" stroke-width="0.5"/>
+<text class="th" x="285" y="378" text-anchor="middle" dominant-baseline="central">11 · Документи</text>
+<text class="ts" x="285" y="394" text-anchor="middle" dominant-baseline="central">PDF · 7 типів</text></g>
+
+<g class="c-blue"><rect x="352" y="362" width="110" height="44" rx="8" stroke-width="0.5"/>
+<text class="th" x="407" y="378" text-anchor="middle" dominant-baseline="central">12 · Комунікації</text>
+<text class="ts" x="407" y="394" text-anchor="middle" dominant-baseline="central">email · SMS · TG</text></g>
+
+<g class="c-purple"><rect x="474" y="362" width="110" height="44" rx="8" stroke-width="0.5"/>
+<text class="th" x="529" y="378" text-anchor="middle" dominant-baseline="central">10 · Страхування</text>
+<text class="ts" x="529" y="394" text-anchor="middle" dominant-baseline="central">VUSO · AXA · поліс</text></g>
+
+<!-- ROW 5: Accommodation / Transport / Activities -->
+<line x1="217" y1="406" x2="150" y2="460" stroke="var(--color-border-secondary)" stroke-width="0.5" marker-end="url(#ar)"/>
+<line x1="270" y1="406" x2="310" y2="460" stroke="var(--color-border-secondary)" stroke-width="0.5" marker-end="url(#ar)"/>
+<line x1="407" y1="406" x2="480" y2="460" stroke="var(--color-border-secondary)" stroke-width="0.5" marker-end="url(#ar)"/>
+
+<g class="c-purple"><rect x="40" y="462" width="140" height="44" rx="8" stroke-width="0.5"/>
+<text class="th" x="110" y="478" text-anchor="middle" dominant-baseline="central">08 · Проживання</text>
+<text class="ts" x="110" y="494" text-anchor="middle" dominant-baseline="central">готелі · румінг</text></g>
+
+<g class="c-purple"><rect x="220" y="462" width="140" height="44" rx="8" stroke-width="0.5"/>
+<text class="th" x="290" y="478" text-anchor="middle" dominant-baseline="central">09 · Транспорт</text>
+<text class="ts" x="290" y="494" text-anchor="middle" dominant-baseline="central">автобуси · розсадка</text></g>
+
+<g class="c-purple"><rect x="400" y="462" width="140" height="44" rx="8" stroke-width="0.5"/>
+<text class="th" x="470" y="478" text-anchor="middle" dominant-baseline="central">18 · Активності</text>
+<text class="ts" x="470" y="494" text-anchor="middle" dominant-baseline="central">екскурсії · гіди</text></g>
+
+<!-- Integrations -->
+<line x1="270" y1="506" x2="270" y2="570" stroke="var(--color-border-secondary)" stroke-width="0.5" stroke-dasharray="4 3"/>
+
+<!-- ROW 6: Integrations -->
+<g class="c-amber"><rect x="40" y="572" width="120" height="44" rx="8" stroke-width="0.5"/>
+<text class="th" x="100" y="588" text-anchor="middle" dominant-baseline="central">13 · Zoho CRM</text>
+<text class="ts" x="100" y="604" text-anchor="middle" dominant-baseline="central">22 модулі · sync</text></g>
+
+<g class="c-amber"><rect x="180" y="572" width="120" height="44" rx="8" stroke-width="0.5"/>
+<text class="th" x="240" y="588" text-anchor="middle" dominant-baseline="central">14 · Платежі</text>
+<text class="ts" x="240" y="604" text-anchor="middle" dominant-baseline="central">LiqPay · WayForPay</text></g>
+
+<g class="c-amber"><rect x="320" y="572" width="120" height="44" rx="8" stroke-width="0.5"/>
+<text class="th" x="380" y="588" text-anchor="middle" dominant-baseline="central">Email / SMS</text>
+<text class="ts" x="380" y="604" text-anchor="middle" dominant-baseline="central">Brevo · TurboSMS</text></g>
+
+<g class="c-amber"><rect x="460" y="572" width="120" height="44" rx="8" stroke-width="0.5"/>
+<text class="th" x="520" y="588" text-anchor="middle" dominant-baseline="central">Telegram Bot</text>
+<text class="ts" x="520" y="604" text-anchor="middle" dominant-baseline="central">нотифікації</text></g>
+
+<!-- Analytics row -->
+<line x1="270" y1="616" x2="270" y2="660" stroke="var(--color-border-secondary)" stroke-width="0.5" stroke-dasharray="4 3"/>
+<g class="c-green"><rect x="80" y="662" width="420" height="44" rx="8" stroke-width="0.5"/>
+<text class="th" x="290" y="678" text-anchor="middle" dominant-baseline="central">16 · Аналітика та BI-дашборди</text>
+<text class="ts" x="290" y="694" text-anchor="middle" dominant-baseline="central">продажі · конверсія · завантаженість · прибутковість · реліз 2</text></g>
+
+<!-- Cabinet tourist -->
+<g class="c-gray"><rect x="80" y="730" width="180" height="36" rx="6" stroke-width="0.5"/>
+<text class="ts" x="170" y="752" text-anchor="middle" dominant-baseline="central">17 · Кабінет туриста</text></g>
+<g class="c-gray"><rect x="280" y="730" width="160" height="36" rx="6" stroke-width="0.5"/>
+<text class="ts" x="360" y="752" text-anchor="middle" dominant-baseline="central">19 · Мобільний додаток</text></g>
+<g class="c-gray"><rect x="460" y="730" width="140" height="36" rx="6" stroke-width="0.5"/>
+<text class="ts" x="530" y="752" text-anchor="middle" dominant-baseline="central">20 · Групові запити</text></g>
+</svg>
+</div>
+
+<div id="diag2" class="section">
+<h2>Реалізовані модулі — поточний стан</h2>
+<svg width="100%" viewBox="0 0 680 680" role="img">
+<title>Реалізовані модулі системи бронювання Eurotrips станом на червень 2026</title>
+<desc>Схема показує що вже реалізовано і рівень готовності кожного компонента</desc>
+<defs><marker id="ar2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+
+<!-- Legend inline -->
+<rect x="40" y="16" width="12" height="12" rx="2" fill="#53c7d6"/>
+<text class="ts" x="56" y="26" dominant-baseline="central">Завершено</text>
+<rect x="150" y="16" width="12" height="12" rx="2" fill="#f9c01d"/>
+<text class="ts" x="166" y="26" dominant-baseline="central">В процесі</text>
+<rect x="264" y="16" width="12" height="12" rx="2" fill="#2d70b9"/>
+<text class="ts" x="280" y="26" dominant-baseline="central">Розпочато</text>
+
+<!-- BACKEND block -->
+<rect x="30" y="48" width="300" height="230" rx="12" fill="none" stroke="var(--et-cyan)" stroke-width="0.5" stroke-dasharray="6 3"/>
+<text class="ts" x="44" y="64" fill="var(--et-cyan)" dominant-baseline="central">BACKEND</text>
+
+<g class="c-teal"><rect x="44" y="74" width="130" height="40" rx="6" stroke-width="0.5"/>
+<text class="th" x="109" y="90" text-anchor="middle" dominant-baseline="central">Auth API</text>
+<text class="ts" x="109" y="106" text-anchor="middle" dominant-baseline="central">95% ✓</text></g>
+
+<g class="c-teal"><rect x="190" y="74" width="130" height="40" rx="6" stroke-width="0.5"/>
+<text class="th" x="255" y="90" text-anchor="middle" dominant-baseline="central">Tours API</text>
+<text class="ts" x="255" y="106" text-anchor="middle" dominant-baseline="central">90% ✓</text></g>
+
+<g class="c-teal"><rect x="44" y="126" width="130" height="40" rx="6" stroke-width="0.5"/>
+<text class="th" x="109" y="142" text-anchor="middle" dominant-baseline="central">Bookings API</text>
+<text class="ts" x="109" y="158" text-anchor="middle" dominant-baseline="central">85% ✓</text></g>
+
+<g class="c-teal"><rect x="190" y="126" width="130" height="40" rx="6" stroke-width="0.5"/>
+<text class="th" x="255" y="142" text-anchor="middle" dominant-baseline="central">Leads API</text>
+<text class="ts" x="255" y="158" text-anchor="middle" dominant-baseline="central">80% ✓</text></g>
+
+<g class="c-amber"><rect x="44" y="178" width="130" height="40" rx="6" stroke-width="0.5"/>
+<text class="th" x="109" y="194" text-anchor="middle" dominant-baseline="central">Finance API</text>
+<text class="ts" x="109" y="210" text-anchor="middle" dominant-baseline="central">70%</text></g>
+
+<g class="c-amber"><rect x="190" y="178" width="130" height="40" rx="6" stroke-width="0.5"/>
+<text class="th" x="255" y="194" text-anchor="middle" dominant-baseline="central">Agents API</text>
+<text class="ts" x="255" y="210" text-anchor="middle" dominant-baseline="central">75%</text></g>
+
+<text class="ts" x="180" y="250" text-anchor="middle" dominant-baseline="central">Prisma 20 моделей · seed.ts · audit_log</text>
+
+<!-- FRONTEND block -->
+<rect x="350" y="48" width="300" height="230" rx="12" fill="none" stroke="var(--et-blue)" stroke-width="0.5" stroke-dasharray="6 3"/>
+<text class="ts" x="364" y="64" fill="var(--et-blue)" dominant-baseline="central">FRONTEND (React + Vite)</text>
+
+<g class="c-teal"><rect x="364" y="74" width="130" height="40" rx="6" stroke-width="0.5"/>
+<text class="th" x="429" y="90" text-anchor="middle" dominant-baseline="central">Login / Auth</text>
+<text class="ts" x="429" y="106" text-anchor="middle" dominant-baseline="central">95% ✓</text></g>
+
+<g class="c-teal"><rect x="506" y="74" width="130" height="40" rx="6" stroke-width="0.5"/>
+<text class="th" x="571" y="90" text-anchor="middle" dominant-baseline="central">AgentCabinet</text>
+<text class="ts" x="571" y="106" text-anchor="middle" dominant-baseline="central">80% ✓</text></g>
+
+<g class="c-amber"><rect x="364" y="126" width="130" height="40" rx="6" stroke-width="0.5"/>
+<text class="th" x="429" y="142" text-anchor="middle" dominant-baseline="central">Tours.tsx</text>
+<text class="ts" x="429" y="158" text-anchor="middle" dominant-baseline="central">75%</text></g>
+
+<g class="c-amber"><rect x="506" y="126" width="130" height="40" rx="6" stroke-width="0.5"/>
+<text class="th" x="571" y="142" text-anchor="middle" dominant-baseline="central">Bookings.tsx</text>
+<text class="ts" x="571" y="158" text-anchor="middle" dominant-baseline="central">70%</text></g>
+
+<g class="c-amber"><rect x="364" y="178" width="130" height="40" rx="6" stroke-width="0.5"/>
+<text class="th" x="429" y="194" text-anchor="middle" dominant-baseline="central">Dashboard</text>
+<text class="ts" x="429" y="210" text-anchor="middle" dominant-baseline="central">65%</text></g>
+
+<g class="c-blue"><rect x="506" y="178" width="130" height="40" rx="6" stroke-width="0.5"/>
+<text class="th" x="571" y="194" text-anchor="middle" dominant-baseline="central">BookingDetail</text>
+<text class="ts" x="571" y="210" text-anchor="middle" dominant-baseline="central">20% 🚧</text></g>
+
+<text class="ts" x="500" y="250" text-anchor="middle" dominant-baseline="central">TanStack Query · RBAC hooks · bookingTransitions</text>
+
+<!-- Arrows between Backend ↔ Frontend -->
+<line x1="330" y1="148" x2="350" y2="148" stroke="var(--et-cyan)" stroke-width="0.5" marker-end="url(#ar2)"/>
+
+<!-- INTEGRATIONS block -->
+<rect x="30" y="294" width="620" height="130" rx="12" fill="none" stroke="var(--et-gold)" stroke-width="0.5" stroke-dasharray="6 3"/>
+<text class="ts" x="44" y="312" fill="var(--et-gold)" dominant-baseline="central">ІНТЕГРАЦІЇ</text>
+
+<g class="c-teal"><rect x="44" y="322" width="135" height="44" rx="6" stroke-width="0.5"/>
+<text class="th" x="111" y="340" text-anchor="middle" dominant-baseline="central">LiqPay</text>
+<text class="ts" x="111" y="356" text-anchor="middle" dominant-baseline="central">90% · SHA1 · idempotent</text></g>
+
+<g class="c-teal"><rect x="193" y="322" width="135" height="44" rx="6" stroke-width="0.5"/>
+<text class="th" x="260" y="340" text-anchor="middle" dominant-baseline="central">Email (Brevo)</text>
+<text class="ts" x="260" y="356" text-anchor="middle" dominant-baseline="central">80% · 5 шаблонів</text></g>
+
+<g class="c-amber"><rect x="342" y="322" width="135" height="44" rx="6" stroke-width="0.5"/>
+<text class="th" x="409" y="340" text-anchor="middle" dominant-baseline="central">Zoho CRM</text>
+<text class="ts" x="409" y="356" text-anchor="middle" dominant-baseline="central">65% · 22 модулі</text></g>
+
+<g class="c-amber"><rect x="491" y="322" width="135" height="44" rx="6" stroke-width="0.5"/>
+<text class="th" x="558" y="340" text-anchor="middle" dominant-baseline="central">Zoho webhook</text>
+<text class="ts" x="558" y="356" text-anchor="middle" dominant-baseline="central">75% · ongoing sync</text></g>
+
+<g class="c-blue"><rect x="44" y="380" width="135" height="36" rx="6" stroke-width="0.5"/>
+<text class="th" x="111" y="402" text-anchor="middle" dominant-baseline="central">SMS TurboSMS 30%</text></g>
+
+<g class="c-blue"><rect x="193" y="380" width="135" height="36" rx="6" stroke-width="0.5"/>
+<text class="th" x="260" y="402" text-anchor="middle" dominant-baseline="central">Telegram Bot 25%</text></g>
+
+<!-- QA + DevOps row -->
+<rect x="30" y="440" width="300" height="110" rx="12" fill="none" stroke="var(--et-cyan)" stroke-width="0.5" stroke-dasharray="6 3"/>
+<text class="ts" x="44" y="456" fill="var(--et-cyan)" dominant-baseline="central">QA</text>
+
+<g class="c-amber"><rect x="44" y="464" width="130" height="40" rx="6" stroke-width="0.5"/>
+<text class="th" x="109" y="480" text-anchor="middle" dominant-baseline="central">85 Playwright тестів</text>
+<text class="ts" x="109" y="496" text-anchor="middle" dominant-baseline="central">75% · не запущені live</text></g>
+
+<g class="c-teal"><rect x="190" y="464" width="130" height="40" rx="6" stroke-width="0.5"/>
+<text class="th" x="255" y="480" text-anchor="middle" dominant-baseline="central">Test Strategy</text>
+<text class="ts" x="255" y="496" text-anchor="middle" dominant-baseline="central">auth · rbac · tours · books</text></g>
+
+<rect x="350" y="440" width="300" height="110" rx="12" fill="none" stroke="var(--et-blue)" stroke-width="0.5" stroke-dasharray="6 3"/>
+<text class="ts" x="364" y="456" fill="var(--et-blue)" dominant-baseline="central">DevOps</text>
+
+<g class="c-teal"><rect x="364" y="464" width="130" height="40" rx="6" stroke-width="0.5"/>
+<text class="th" x="429" y="480" text-anchor="middle" dominant-baseline="central">Docker dev+prod</text>
+<text class="ts" x="429" y="496" text-anchor="middle" dominant-baseline="central">95% ✓</text></g>
+
+<g class="c-teal"><rect x="506" y="464" width="130" height="40" rx="6" stroke-width="0.5"/>
+<text class="th" x="571" y="480" text-anchor="middle" dominant-baseline="central">CI/CD GitHub</text>
+<text class="ts" x="571" y="496" text-anchor="middle" dominant-baseline="central">90% ✓</text></g>
+
+<g class="c-blue"><rect x="44" y="516" width="277" height="26" rx="6" stroke-width="0.5"/>
+<text class="ts" x="182" y="533" text-anchor="middle" dominant-baseline="central">bookings.spec · tours.spec · auth.spec · rbac.spec</text></g>
+
+<g class="c-blue"><rect x="364" y="516" width="272" height="26" rx="6" stroke-width="0.5"/>
+<text class="ts" x="500" y="533" text-anchor="middle" dominant-baseline="central">Hetzner CX32 — не задеплоєно 🚧</text></g>
+
+<!-- Overall status -->
+<rect x="30" y="570" width="620" height="50" rx="8" fill="var(--color-background-secondary)" stroke="var(--et-cyan)" stroke-width="0.5"/>
+<text class="th" x="200" y="590" text-anchor="middle" dominant-baseline="central">Загальна готовність MVP: 73%</text>
+<text class="ts" x="200" y="610" text-anchor="middle" dominant-baseline="central">~4–5 тижнів до першого production релізу</text>
+<text class="th" x="490" y="595" text-anchor="middle" dominant-baseline="central" fill="var(--et-red)">🚧 Критичний блокер:</text>
+<text class="ts" x="490" y="614" text-anchor="middle" dominant-baseline="central">Production deploy не виконано</text>
+</svg>
+</div>
+
+<script>
+function show(id){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  const idx={'planned':0,'impl':1,'diag1':2,'diag2':3}[id];
+  document.querySelectorAll('.tab')[idx].classList.add('active');
+}
+setTimeout(()=>{
+  document.querySelectorAll('.prog-bar').forEach(b=>{
+    const w=b.style.width;b.style.width='0';
+    setTimeout(()=>{b.style.width=w;},200);
+  });
+},100);
+</script>

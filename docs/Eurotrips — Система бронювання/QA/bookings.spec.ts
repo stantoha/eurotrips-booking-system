@@ -23,8 +23,8 @@ import {
   CREDENTIALS,
   apiLogin,
   type UserRole,
-} from './fixtures/auth.fixtures';
-import { API_URL } from '../playwright.config';
+} from '../fixtures/auth.fixtures';
+import { API_URL } from '../../playwright.config';
 
 // ─── TYPES ────────────────────────────────────────────────────
 // Відповідають DTO у useBookings.ts — НЕ camelCase, snake_case!

@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eurotrips · Brand Tokens → Frontend</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
+:root{
+  /* ══ РЕАЛЬНІ БРЕНД-КОЛЬОРИ (з PDF брендбуку) ══ */
+  --et-blue:       #2d70b9;
+  --et-blue-dark:  #245d9c;
+  --et-blue-light: #3d80c9;
+  --et-red:        #f0366d;
+  --et-red-dark:   #d42b5f;
+  --et-cyan:       #53c7d6;
+  --et-cyan-dark:  #3fb4c3;
+  --et-gold:       #f9c01d;
+  --et-gold-dark:  #e0aa10;
+  --et-pink:       #f7c5d0;
+  --et-white:      #ffffff;
+
+  /* ══ UI SYSTEM (темна тема системи) ══ */
+  --bg:#0d0f14; --bg2:#141720; --bg3:#1c2030;
+  --border:#252a3a; --border2:#2f3650;
+  --text:#e2e8f0; --text2:#94a3b8; --text3:#64748b;
+  --mono:'IBM Plex Mono',monospace;
+  --sans:'IBM Plex Sans',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);font-size:13px;line-height:1.6}
+
+.topnav{position:sticky;top:0;z-index:100;background:rgba(13,15,20,.96);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);display:flex;align-items:center;height:50px;padding:0 20px;gap:0}
+.logo{font-family:var(--mono);font-weight:700;font-size:14px;color:var(--et-blue);letter-spacing:2px;margin-right:24px}
+.logo span{color:var(--text3);font-weight:400}
+.ntabs{display:flex;gap:0}
+.ntab{padding:0 16px;height:50px;display:flex;align-items:center;font-size:12px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;color:var(--text3);white-space:nowrap;transition:all .15s}
+.ntab:hover{color:var(--text)}
+.ntab.active{color:var(--et-blue);border-bottom-color:var(--et-blue)}
+.erratum{margin-left:auto;background:rgba(249,192,29,.1);border:1px solid rgba(249,192,29,.3);border-radius:4px;padding:4px 10px;font-size:10px;color:#f9c01d;font-family:var(--mono)}
+
+.section{display:none;max-width:1300px;margin:0 auto;padding:24px 20px}
+.section.active{display:block}
+.ph{margin-bottom:24px}
+.ph-title{font-size:20px;font-weight:700;font-family:var(--mono);color:#fff;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.ph-badge{font-size:11px;padding:3px 10px;border-radius:2px;font-family:var(--sans);font-weight:600;background:var(--et-blue);color:#fff}
+.ph-sub{font-size:12px;color:var(--text2);margin-top:5px;font-family:var(--mono)}
+
+/* COLOR SWATCHES */
+.swatch-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}
+.swatch{border-radius:8px;overflow:hidden;width:160px;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.swatch-color{height:80px;position:relative}
+.swatch-role{position:absolute;top:8px;left:8px;font-size:9px;font-family:var(--mono);font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:2px 6px;border-radius:3px;background:rgba(0,0,0,.35);color:#fff}
+.swatch-info{background:var(--bg2);border:1px solid var(--border);border-top:none;padding:10px 12px}
+.swatch-hex{font-family:var(--mono);font-size:13px;font-weight:700;color:#fff;margin-bottom:2px}
+.swatch-name{font-size:11px;color:var(--text3)}
+.swatch-token{font-family:var(--mono);font-size:10px;color:var(--et-cyan);margin-top:4px}
+
+/* FONT BLOCKS */
+.font-block{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:20px;margin-bottom:12px}
+.font-sample{margin-bottom:8px}
+.font-meta{font-size:10px;color:var(--text3);font-family:var(--mono)}
+.font-badge{display:inline-block;font-size:10px;font-weight:600;padding:2px 8px;border-radius:3px;margin-left:6px}
+.fb-head{background:rgba(45,112,185,.15);color:#93c5fd;border:1px solid rgba(45,112,185,.25)}
+.fb-body{background:rgba(16,185,129,.1);color:#6ee7b7;border:1px solid rgba(16,185,129,.2)}
+
+/* CODE BLOCK */
+pre{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:12px 14px;font-family:var(--mono);font-size:11px;line-height:1.8;overflow-x:auto;margin:6px 0}
+.ck{color:#93c5fd} .cs{color:#fcd34d} .cc{color:var(--text3)} .cv{color:#6ee7b7} .co{color:#f9c01d}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.card-hd{background:var(--bg3);border-bottom:1px solid var(--border);padding:10px 16px;font-size:12px;font-weight:600}
+.card-bd{padding:14px}
+
+.alert{border-radius:6px;padding:10px 14px;font-size:11px;margin-bottom:12px;display:flex;gap:10px}
+.alert-fix{background:rgba(249,192,29,.08);border:1px solid rgba(249,192,29,.2);color:#fcd34d}
+.alert-ok{background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);color:#a7f3d0}
+.alert-info{background:rgba(45,112,185,.08);border:1px solid rgba(45,112,185,.2);color:#93c5fd}
+
+.sect-title{font-size:10px;font-weight:700;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.6px;margin:16px 0 8px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+
+/* COMPONENT PREVIEW */
+.btn-preview{padding:10px 20px;border-radius:6px;border:none;font-weight:600;font-size:13px;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:8px;margin:4px}
+.btn-blue{background:var(--et-blue);color:#fff}
+.btn-blue:hover{background:var(--et-blue-dark)}
+.btn-red{background:var(--et-red);color:#fff}
+.btn-red:hover{background:var(--et-red-dark)}
+.btn-cyan{background:var(--et-cyan);color:#fff}
+.btn-gold{background:var(--et-gold);color:#1a1a1a}
+.btn-outline-blue{background:transparent;color:var(--et-blue);border:2px solid var(--et-blue)}
+.btn-outline-blue:hover{background:var(--et-blue);color:#fff}
+.tag-preview{display:inline-block;font-size:11px;font-weight:600;padding:3px 10px;border-radius:12px;margin:3px}
+
+/* BLOB */
+.blob-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.blob{border-radius:50% 40% 60% 35% / 45% 55% 40% 60%;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;font-family:var(--mono);font-weight:700}
+
+/* LOGIN PREVIEW */
+.login-preview{background:#f8fafc;border-radius:10px;padding:32px 28px;max-width:340px;box-shadow:0 4px 24px rgba(0,0,0,.15)}
+.lp-logo{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:20px}
+.lp-logo-icon{width:36px;height:36px;background:var(--et-blue);border-radius:8px;display:flex;align-items:center;justify-content:center}
+.lp-logo-text{font-weight:700;font-size:16px;color:#1a1a2e}
+.lp-h1{font-size:18px;font-weight:700;text-align:center;color:#1a1a2e;margin-bottom:4px}
+.lp-sub{font-size:12px;color:#64748b;text-align:center;margin-bottom:20px}
+.lp-label{font-size:12px;font-weight:600;color:#374151;margin-bottom:4px;display:block}
+.lp-input{width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:6px;font-size:13px;margin-bottom:12px;outline:none;transition:border-color .15s}
+.lp-input:focus{border-color:var(--et-blue);box-shadow:0 0 0 3px rgba(45,112,185,.15)}
+.lp-btn{width:100%;padding:10px;background:var(--et-blue);color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;transition:background .15s;margin-top:4px}
+.lp-btn:hover{background:var(--et-blue-dark)}
+.lp-forgot{display:block;text-align:center;margin-top:12px;font-size:12px;color:var(--et-blue);text-decoration:none}
+</style>
+</head>
+<body>
+
+<div class="topnav">
+  <div class="logo">EUROTRIPS <span>BRAND</span></div>
+  <div class="ntabs">
+    <div class="ntab active" onclick="goTab('colors',this)">🎨 Кольори</div>
+    <div class="ntab" onclick="goTab('fonts',this)">🖋 Шрифти</div>
+    <div class="ntab" onclick="goTab('code',this)">⚙ Code Tokens</div>
+    <div class="ntab" onclick="goTab('components',this)">🧩 Компоненти</div>
+    <div class="ntab" onclick="goTab('erratum',this)">⚠ Виправлення</div>
+  </div>
+  <div class="erratum">⚠ Виправлено фідбек I-02 · нові реальні кольори бренду</div>
+</div>
+
+<!-- ░░░ COLORS ░░░ -->
+<div id="colors" class="section active">
+  <div class="ph">
+    <div class="ph-title"><span class="ph-badge">BRAND COLORS</span>Кольорова система Eurotrips</div>
+    <div class="ph-sub">// Джерело: PDF брендбук · Основні та додаткові кольори</div>
+  </div>
+
+  <div class="alert alert-info">
+    <span>ℹ</span>
+    <div><strong>Основні кольори</strong>: синій <code>#2d70b9</code> та блакитний <code>#53c7d6</code> — головна пара бренду. Червоний і золотий — акцентні (додаткові). Використовуй синій для primary action, золотий — для highlights.</div>
+  </div>
+
+  <div class="sect-title">ОСНОВНІ КОЛЬОРИ (Primary)</div>
+  <div class="swatch-row">
+    <div class="swatch">
+      <div class="swatch-color" style="background:#2d70b9">
+        <span class="swatch-role">PRIMARY</span>
+      </div>
+      <div class="swatch-info">
+        <div class="swatch-hex">#2d70b9</div>
+        <div class="swatch-name">Синій · Blue</div>
+        <div class="swatch-token">--et-blue / brand.blue</div>
+        <div style="margin-top:6px;font-size:10px;color:var(--text3)">Кнопки, посилання, активні стани, хедер</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#245d9c">
+        <span class="swatch-role">HOVER</span>
+      </div>
+      <div class="swatch-info">
+        <div class="swatch-hex">#245d9c</div>
+        <div class="swatch-name">Синій темний · Blue Dark</div>
+        <div class="swatch-token">--et-blue-dark / brand.blueDark</div>
+        <div style="margin-top:6px;font-size:10px;color:var(--text3)">Hover стан кнопок, активний item меню</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#53c7d6">
+        <span class="swatch-role">SECONDARY</span>
+      </div>
+      <div class="swatch-info">
+        <div class="swatch-hex">#53c7d6</div>
+        <div class="swatch-name">Блакитний · Cyan</div>
+        <div class="swatch-token">--et-cyan / brand.cyan</div>
+        <div style="margin-top:6px;font-size:10px;color:var(--text3)">Бейджі, фони секцій, ілюстрації</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sect-title">АКЦЕНТНІ КОЛЬОРИ (Accent)</div>
+  <div class="swatch-row">
+    <div class="swatch">
+      <div class="swatch-color" style="background:#f0366d">
+        <span class="swatch-role">ACCENT</span>
+      </div>
+      <div class="swatch-info">
+        <div class="swatch-hex">#f0366d</div>
+        <div class="swatch-name">Червоний · Red</div>
+        <div class="swatch-token">--et-red / brand.red</div>
+        <div style="margin-top:6px;font-size:10px;color:var(--text3)">CTA акцент, попередження, скасування</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#f9c01d">
+        <span class="swatch-role">HIGHLIGHT</span>
+      </div>
+      <div class="swatch-info">
+        <div class="swatch-hex">#f9c01d</div>
+        <div class="swatch-name">Золотий · Gold</div>
+        <div class="swatch-token">--et-gold / brand.gold</div>
+        <div style="margin-top:6px;font-size:10px;color:var(--text3)">Highlights, рейтинг, комісія агента</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#f7c5d0">
+        <span class="swatch-role">SOFT</span>
+      </div>
+      <div class="swatch-info">
+        <div class="swatch-hex">#f7c5d0</div>
+        <div class="swatch-name">Рожевий · Pink</div>
+        <div class="swatch-token">--et-pink / brand.pink</div>
+        <div style="margin-top:6px;font-size:10px;color:var(--text3)">Фон карток, м'які акценти</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#ffffff;border:1px solid #e5e7eb">
+        <span class="swatch-role" style="background:rgba(0,0,0,.15);color:#333">NEUTRAL</span>
+      </div>
+      <div class="swatch-info">
+        <div class="swatch-hex">#ffffff</div>
+        <div class="swatch-name">Білий · White</div>
+        <div class="swatch-token">--et-white / brand.white</div>
+        <div style="margin-top:6px;font-size:10px;color:var(--text3)">Текст на кольорових фонах, карткові фони</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sect-title">BLOB-ЕЛЕМЕНТИ (декоративні)</div>
+  <div class="alert alert-info" style="margin-bottom:10px">
+    <span>ℹ</span>
+    <div>Blob'и — органічні форми з брендбуку. Використовуються як декоративні елементи фону, плашки, ілюстрації. Є готові у Figma. CSS-версія — приклад нижче.</div>
+  </div>
+  <div class="blob-row">
+    <div class="blob" style="background:#2d70b9;width:70px;height:65px">blue</div>
+    <div class="blob" style="background:#53c7d6;width:55px;height:60px;border-radius:60% 40% 30% 70% / 60% 30% 70% 40%">cyan</div>
+    <div class="blob" style="background:#f0366d;width:60px;height:55px;border-radius:30% 70% 70% 30% / 30% 30% 70% 70%">red</div>
+    <div class="blob" style="background:#f9c01d;width:65px;height:60px;border-radius:70% 30% 30% 70% / 70% 70% 30% 30%;color:#1a1a1a">gold</div>
+    <div class="blob" style="background:#f7c5d0;width:50px;height:55px;border-radius:40% 60% 60% 40% / 40% 40% 60% 60%;color:#1a1a1a">pink</div>
+  </div>
+</div>
+
+<!-- ░░░ FONTS ░░░ -->
+<div id="fonts" class="section">
+  <div class="ph">
+    <div class="ph-title"><span class="ph-badge">TYPOGRAPHY</span>Шрифтова система Eurotrips</div>
+    <div class="ph-sub">// Два сімейства: Druk Text (заголовки) + Proxima Nova (основний текст)</div>
+  </div>
+
+  <div class="alert alert-fix">
+    <span>⚠</span>
+    <div><strong>Для Frontend:</strong> Druk Text та Proxima Nova — комерційні шрифти. Для веб-системи потрібні або ліцензія, або web-safe замінники. Рекомендація нижче.</div>
+  </div>
+
+  <div class="sect-title">1. ЗАГОЛОВКИ — Druk Text Family</div>
+  <div class="font-block">
+    <div class="font-sample" style="font-size:32px;font-weight:900;color:#fff;font-family:'Impact',sans-serif;letter-spacing:-0.5px">
+      Eurotrips — подорожі вашої мрії
+      <span class="font-badge fb-head">Druk Text Heavy</span>
+    </div>
+    <div class="font-sample" style="font-size:28px;font-weight:700;color:#fff;font-family:'Impact',sans-serif;letter-spacing:-0.5px">
+      Знижки до 30% на весняні тури
+      <span class="font-badge fb-head">Druk Text Bold</span>
+    </div>
+    <div class="font-meta">
+      Сімейство: <strong>Druk Text</strong> · Варіанти: Heavy (для H1, hero), Bold (для H2, H3)<br>
+      Ліцензія: Commercial Typefaces (Commercial Type)<br>
+      CSS fallback: <code>font-family: 'Druk Text', 'Impact', sans-serif</code><br>
+      <strong style="color:var(--et-gold)">📋 Де використовувати:</strong> H1 лендингу, назви турів у каталозі, hero-заголовки, маркетингові банери
+    </div>
+  </div>
+
+  <div class="sect-title">2. ОСНОВНИЙ ТЕКСТ — Proxima Nova Family</div>
+  <div class="font-block">
+    <div class="font-sample" style="font-size:18px;font-weight:700;color:#fff;font-family:'Montserrat','Proxima Nova',sans-serif">
+      Підтверджено · Документи зібрані · Готово до виїзду
+      <span class="font-badge fb-body">Proxima Nova Bold</span>
+    </div>
+    <div class="font-sample" style="font-size:15px;font-weight:500;color:#e2e8f0;font-family:'Montserrat','Proxima Nova',sans-serif">
+      Бронювання #BR-1247 · Париж — Нормандія · 25.10.2025
+      <span class="font-badge fb-body">Proxima Nova Medium</span>
+    </div>
+    <div class="font-sample" style="font-size:13px;font-weight:400;color:#94a3b8;font-family:'Montserrat','Proxima Nova',sans-serif">
+      Клієнт підтвердив участь, внесена передоплата 800 EUR. Очікуємо доплату до 1 червня.
+      <span class="font-badge fb-body">Proxima Nova Regular</span>
+    </div>
+    <div class="font-meta">
+      Сімейство: <strong>Proxima Nova</strong> · Варіанти: Bold (UI labels, кнопки), Medium (body, картки), Regular (описи, коментарі)<br>
+      Ліцензія: Adobe Fonts / Mark Simonson Studio<br>
+      CSS fallback: <code>font-family: 'Proxima Nova', 'Montserrat', sans-serif</code><br>
+      <strong style="color:var(--et-gold)">📋 Де використовувати:</strong> Увесь системний UI — кнопки, таблиці, поля форм, статуси, підписи
+    </div>
+  </div>
+
+  <div class="sect-title">ШРИФТОВА ШКАЛА — рекомендована для системи</div>
+  <div class="card">
+    <div class="card-hd">Font Scale · Система бронювання</div>
+    <div class="card-bd">
+      <table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead><tr style="border-bottom:2px solid var(--border2)">
+          <th style="text-align:left;padding:6px 10px;color:var(--text3);font-family:var(--mono)">TOKEN</th>
+          <th style="text-align:left;padding:6px 10px;color:var(--text3);font-family:var(--mono)">SIZE</th>
+          <th style="text-align:left;padding:6px 10px;color:var(--text3);font-family:var(--mono)">WEIGHT</th>
+          <th style="text-align:left;padding:6px 10px;color:var(--text3);font-family:var(--mono)">FONT</th>
+          <th style="text-align:left;padding:6px 10px;color:var(--text3);font-family:var(--mono)">USAGE</th>
+          <th style="text-align:left;padding:6px 10px;color:var(--text3);font-family:var(--mono)">PREVIEW</th>
+        </tr></thead>
+        <tbody>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 10px;font-family:var(--mono);color:var(--et-cyan)">text-hero</td><td style="padding:8px 10px;font-family:var(--mono)">48px</td><td style="padding:8px 10px">900</td><td style="padding:8px 10px;color:var(--text3)">Druk Text Heavy</td><td style="padding:8px 10px;color:var(--text3)">Hero, лендинг</td><td style="padding:8px 10px;font-size:28px;font-weight:900;color:#fff">Eurotrips</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 10px;font-family:var(--mono);color:var(--et-cyan)">text-h1</td><td style="padding:8px 10px;font-family:var(--mono)">32px</td><td style="padding:8px 10px">700</td><td style="padding:8px 10px;color:var(--text3)">Druk Text Bold</td><td style="padding:8px 10px;color:var(--text3)">Заголовок сторінки</td><td style="padding:8px 10px;font-size:20px;font-weight:700;color:#fff">Каталог турів</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 10px;font-family:var(--mono);color:var(--et-cyan)">text-h2</td><td style="padding:8px 10px;font-family:var(--mono)">22px</td><td style="padding:8px 10px">700</td><td style="padding:8px 10px;color:var(--text3)">Proxima Nova Bold</td><td style="padding:8px 10px;color:var(--text3)">Заголовок секції</td><td style="padding:8px 10px;font-size:16px;font-weight:700;color:#fff">Мої бронювання</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 10px;font-family:var(--mono);color:var(--et-cyan)">text-h3</td><td style="padding:8px 10px;font-family:var(--mono)">16px</td><td style="padding:8px 10px">600</td><td style="padding:8px 10px;color:var(--text3)">Proxima Nova Bold</td><td style="padding:8px 10px;color:var(--text3)">Картки, блоки</td><td style="padding:8px 10px;font-size:13px;font-weight:600;color:#fff">Підтверджено</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 10px;font-family:var(--mono);color:var(--et-cyan)">text-body</td><td style="padding:8px 10px;font-family:var(--mono)">14px</td><td style="padding:8px 10px">400</td><td style="padding:8px 10px;color:var(--text3)">Proxima Nova Regular</td><td style="padding:8px 10px;color:var(--text3)">Основний текст</td><td style="padding:8px 10px;font-size:12px;color:var(--text)">Виїзд 25.10.2025</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 10px;font-family:var(--mono);color:var(--et-cyan)">text-sm</td><td style="padding:8px 10px;font-family:var(--mono)">12px</td><td style="padding:8px 10px">400</td><td style="padding:8px 10px;color:var(--text3)">Proxima Nova Regular</td><td style="padding:8px 10px;color:var(--text3)">Мітки, підписи</td><td style="padding:8px 10px;font-size:11px;color:var(--text2)">Менеджер: Олена Ш.</td></tr>
+          <tr><td style="padding:8px 10px;font-family:var(--mono);color:var(--et-cyan)">text-mono</td><td style="padding:8px 10px;font-family:var(--mono)">12px</td><td style="padding:8px 10px">500</td><td style="padding:8px 10px;color:var(--text3)">IBM Plex Mono</td><td style="padding:8px 10px;color:var(--text3)">Коди, ID, статуси</td><td style="padding:8px 10px;font-size:11px;font-family:var(--mono);color:var(--et-cyan)">#BR-1247</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ░░░ CODE TOKENS ░░░ -->
+<div id="code" class="section">
+  <div class="ph">
+    <div class="ph-title"><span class="ph-badge">CODE TOKENS</span>Готовий код для Frontend</div>
+    <div class="ph-sub">// tailwind.config.ts · CSS variables · Точне відтворення бренду</div>
+  </div>
+
+  <div class="grid2">
+    <div>
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-hd">tailwind.config.ts · Brand Colors</div>
+        <div class="card-bd">
+<pre><span class="cc">// tailwind.config.ts</span>
+<span class="ck">import</span> <span class="ck">type</span> { Config } <span class="ck">from</span> <span class="cs">'tailwindcss'</span>
+
+<span class="ck">const</span> config: Config = {
+  content: [<span class="cs">'./src/**/*.{ts,tsx}'</span>],
+  theme: {
+    extend: {
+      colors: {
+        brand: {
+          <span class="cc">/* ── Основні ── */</span>
+          blue:       <span class="cs">'#2d70b9'</span>, <span class="cc">// PRIMARY</span>
+          <span class="cs">'blue-dark'</span>: <span class="cs">'#245d9c'</span>, <span class="cc">// hover</span>
+          <span class="cs">'blue-light'</span>:<span class="cs">'#3d80c9'</span>, <span class="cc">// active/focus</span>
+          cyan:       <span class="cs">'#53c7d6'</span>, <span class="cc">// SECONDARY</span>
+          <span class="cs">'cyan-dark'</span>: <span class="cs">'#3fb4c3'</span>,
+
+          <span class="cc">/* ── Акцентні ── */</span>
+          red:        <span class="cs">'#f0366d'</span>, <span class="cc">// danger/CTA</span>
+          <span class="cs">'red-dark'</span>:  <span class="cs">'#d42b5f'</span>,
+          gold:       <span class="cs">'#f9c01d'</span>, <span class="cc">// highlight</span>
+          <span class="cs">'gold-dark'</span>: <span class="cs">'#e0aa10'</span>,
+          pink:       <span class="cs">'#f7c5d0'</span>, <span class="cc">// soft</span>
+        },
+      },
+      fontFamily: {
+        <span class="cc">// Заголовки</span>
+        heading: [<span class="cs">'Druk Text'</span>, <span class="cs">'Impact'</span>, <span class="cs">'sans-serif'</span>],
+        <span class="cc">// Основний текст</span>
+        body: [<span class="cs">'Proxima Nova'</span>, <span class="cs">'Montserrat'</span>, <span class="cs">'sans-serif'</span>],
+        <span class="cc">// Коди / ID</span>
+        mono: [<span class="cs">'IBM Plex Mono'</span>, <span class="cs">'monospace'</span>],
+      },
+    },
+  },
+}
+<span class="ck">export default</span> config</pre>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-hd">globals.css · CSS Variables</div>
+        <div class="card-bd">
+<pre><span class="cc">/* src/styles/globals.css */</span>
+<span class="ck">:root</span> {
+  <span class="cc">/* ── Brand colors ── */</span>
+  <span class="cv">--et-blue</span>:       <span class="cs">#2d70b9</span>;
+  <span class="cv">--et-blue-dark</span>:  <span class="cs">#245d9c</span>;
+  <span class="cv">--et-blue-light</span>: <span class="cs">#3d80c9</span>;
+  <span class="cv">--et-cyan</span>:       <span class="cs">#53c7d6</span>;
+  <span class="cv">--et-cyan-dark</span>:  <span class="cs">#3fb4c3</span>;
+  <span class="cv">--et-red</span>:        <span class="cs">#f0366d</span>;
+  <span class="cv">--et-red-dark</span>:   <span class="cs">#d42b5f</span>;
+  <span class="cv">--et-gold</span>:       <span class="cs">#f9c01d</span>;
+  <span class="cv">--et-gold-dark</span>:  <span class="cs">#e0aa10</span>;
+  <span class="cv">--et-pink</span>:       <span class="cs">#f7c5d0</span>;
+  <span class="cv">--et-white</span>:      <span class="cs">#ffffff</span>;
+
+  <span class="cc">/* ── Fonts ── */</span>
+  <span class="cv">--font-heading</span>: <span class="cs">'Druk Text'</span>, Impact, sans-serif;
+  <span class="cv">--font-body</span>:    <span class="cs">'Proxima Nova'</span>, Montserrat, sans-serif;
+  <span class="cv">--font-mono</span>:    <span class="cs">'IBM Plex Mono'</span>, monospace;
+}</pre>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-hd">brand.ts · TypeScript constants</div>
+        <div class="card-bd">
+<pre><span class="cc">// src/constants/brand.ts</span>
+<span class="cc">// ЩЕ РАЗ: це РЕАЛЬНІ кольори з брендбуку PDF!</span>
+<span class="cc">// Попередній фідбек I-02 мав хибні значення.</span>
+
+<span class="ck">export const</span> BRAND_COLORS = {
+  <span class="cc">// Основні</span>
+  blue:       <span class="cs">'#2d70b9'</span>,
+  blueDark:   <span class="cs">'#245d9c'</span>,
+  blueLight:  <span class="cs">'#3d80c9'</span>,
+  cyan:       <span class="cs">'#53c7d6'</span>,
+  cyanDark:   <span class="cs">'#3fb4c3'</span>,
+
+  <span class="cc">// Акцентні</span>
+  red:        <span class="cs">'#f0366d'</span>,
+  redDark:    <span class="cs">'#d42b5f'</span>,
+  gold:       <span class="cs">'#f9c01d'</span>,
+  goldDark:   <span class="cs">'#e0aa10'</span>,
+  pink:       <span class="cs">'#f7c5d0'</span>,
+  white:      <span class="cs">'#ffffff'</span>,
+} <span class="ck">as const</span>
+
+<span class="ck">export type</span> BrandColor = <span class="ck">keyof typeof</span> BRAND_COLORS
+
+<span class="ck">export const</span> BRAND_FONTS = {
+  heading: <span class="cs">'Druk Text'</span>,    <span class="cc">// Heavy / Bold</span>
+  body:    <span class="cs">'Proxima Nova'</span>,  <span class="cc">// Bold / Medium / Regular</span>
+  mono:    <span class="cs">'IBM Plex Mono'</span>, <span class="cc">// для ID, кодів</span>
+} <span class="ck">as const</span></pre>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-hd">⚠ Виправлення фідбеку I-02 · LoginForm.tsx</div>
+        <div class="card-bd">
+<pre><span class="cc">// ❌ НЕПРАВИЛЬНО (старий фідбек I-02)</span>
+<span class="cc">// brand.blue: '#1B4F9C'  ← ХИБНО</span>
+<span class="cc">// brand.gold: '#F5A623'  ← ХИБНО</span>
+<span class="cc">// Ці значення були взяті невірно</span>
+
+<span class="cc">// ✅ ПРАВИЛЬНО (з PDF брендбуку)</span>
+<span class="co">// bg-[#2d70b9]  ← синій PRIMARY кнопка входу</span>
+<span class="co">// hover:bg-[#245d9c]</span>
+
+<span class="cc">// LoginForm.tsx — виправлений фрагмент:</span>
+className=<span class="cs">"w-full mt-2 py-2.5 px-4 rounded-lg font-medium
+  bg-brand-blue text-white
+  hover:bg-brand-blue-dark
+  disabled:opacity-50 disabled:cursor-not-allowed
+  flex items-center justify-center gap-2
+  transition-colors duration-150
+  focus:outline-none focus:ring-2
+  focus:ring-brand-blue focus:ring-offset-2"</span></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ░░░ COMPONENTS ░░░ -->
+<div id="components" class="section">
+  <div class="ph">
+    <div class="ph-title"><span class="ph-badge">КОМПОНЕНТИ</span>Бренд у дії — приклади UI</div>
+    <div class="ph-sub">// Кнопки · Бейджі · Форма входу · Використання кольорів</div>
+  </div>
+
+  <div class="grid2">
+    <div>
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-hd">Кнопки · Tailwind classes</div>
+        <div class="card-bd">
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+            <button class="btn-preview btn-blue">Забронювати</button>
+            <button class="btn-preview btn-red">Скасувати</button>
+            <button class="btn-preview btn-cyan">Інфолист</button>
+            <button class="btn-preview btn-gold">Комісія ★</button>
+            <button class="btn-preview btn-outline-blue">Деталі →</button>
+          </div>
+<pre style="font-size:10px"><span class="cc">// Primary — синій</span>
+<span class="ck">bg-brand-blue</span> <span class="ck">hover:bg-brand-blue-dark</span> text-white
+
+<span class="cc">// Danger — червоний</span>
+<span class="ck">bg-brand-red</span> <span class="ck">hover:bg-brand-red-dark</span> text-white
+
+<span class="cc">// Secondary — блакитний</span>
+<span class="ck">bg-brand-cyan</span> <span class="ck">hover:bg-brand-cyan-dark</span> text-white
+
+<span class="cc">// Highlight — золотий (текст темний!)</span>
+<span class="ck">bg-brand-gold</span> <span class="ck">hover:bg-brand-gold-dark</span> text-gray-900
+
+<span class="cc">// Outline</span>
+<span class="ck">border-2 border-brand-blue</span> text-brand-blue
+<span class="ck">hover:bg-brand-blue</span> hover:text-white</pre>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-hd">Бейджі · Статуси · Теги</div>
+        <div class="card-bd">
+          <div style="margin-bottom:12px">
+            <span class="tag-preview" style="background:#eff6ff;color:#2d70b9;border:1px solid #bfdbfe">У роботі</span>
+            <span class="tag-preview" style="background:#fdf2f8;color:#f0366d;border:1px solid #fbcfe8">Скасовано</span>
+            <span class="tag-preview" style="background:#ecfeff;color:#0891b2;border:1px solid #a5f3fc">Підтверджено</span>
+            <span class="tag-preview" style="background:#fefce8;color:#a16207;border:1px solid #fde68a">Очікує</span>
+            <span class="tag-preview" style="background:#fdf2f8;color:#f0366d;border:1px solid #f0366d">⚠ Прострочено</span>
+          </div>
+<pre style="font-size:10px"><span class="cc">// Info — blue tint</span>
+bg-blue-50 text-brand-blue border-blue-200
+
+<span class="cc">// Danger — red tint</span>
+bg-pink-50 text-brand-red border-pink-200
+
+<span class="cc">// Warning — gold tint</span>
+bg-yellow-50 text-yellow-700 border-yellow-200
+
+<span class="cc">// Success — cyan tint</span>
+bg-cyan-50 text-cyan-700 border-cyan-200</pre>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <div class="card-hd">Login Page · Виправлений бренд</div>
+        <div class="card-bd" style="display:flex;justify-content:center">
+          <div class="login-preview">
+            <div class="lp-logo">
+              <div class="lp-logo-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2L8 8H4L8 14L6 20L12 16L18 20L16 14L20 8H16L12 2Z" fill="#f9c01d"/>
+                </svg>
+              </div>
+              <span class="lp-logo-text">EUROTRIPS</span>
+            </div>
+            <div class="lp-h1">Вхід у систему</div>
+            <div class="lp-sub">Система бронювання та управління турами</div>
+            <label class="lp-label">Email</label>
+            <input class="lp-input" placeholder="manager@eurotrips.ua" style="background:#f9fafb;color:#1a1a2e">
+            <label class="lp-label">Пароль</label>
+            <input class="lp-input" type="password" placeholder="••••••••" style="background:#f9fafb;color:#1a1a2e">
+            <button class="lp-btn">Увійти в систему</button>
+            <a class="lp-forgot" href="#">Забули пароль?</a>
+          </div>
+        </div>
+        <div style="padding:10px 14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:var(--mono)">
+          ↑ Виправлена версія: кнопка <strong style="color:var(--et-blue)">#2d70b9</strong> (не slate-900) · додана "Забули пароль?" · лого з брендом
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ░░░ ERRATUM ░░░ -->
+<div id="erratum" class="section">
+  <div class="ph">
+    <div class="ph-title"><span class="ph-badge" style="background:var(--et-gold);color:#1a1a1a">⚠ ВИПРАВЛЕННЯ</span>Поправка до фідбек-сесії #1</div>
+    <div class="ph-sub">// Пункт I-02 містив неправильні кольори бренду</div>
+  </div>
+
+  <div class="alert alert-fix">
+    <div class="alert-icon">⚠</div>
+    <div><strong>ERRATUM · UX Feedback Session #1 · Пункт I-02</strong><br>
+    У попередньому фідбеку (файл <code>eurotrips_ux_feedback_frontend.html</code>, секція "Важливі", I-02) я вказав кольори бренду на основі памʼяті, а не реального брендбуку. Це неправильно. Кольори виправлено згідно з PDF.</div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-hd">Порівняння: старі (хибні) vs нові (правильні) значення</div>
+    <div class="card-bd">
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr style="border-bottom:2px solid var(--border2)">
+          <th style="padding:8px 12px;text-align:left;font-size:10px;color:var(--text3);font-family:var(--mono)">ТОКЕН</th>
+          <th style="padding:8px 12px;text-align:left;font-size:10px;color:var(--text3);font-family:var(--mono)">❌ СТАРЕ (хибне)</th>
+          <th style="padding:8px 12px;text-align:left;font-size:10px;color:var(--text3);font-family:var(--mono)">✅ НОВЕ (правильне)</th>
+          <th style="padding:8px 12px;text-align:left;font-size:10px;color:var(--text3);font-family:var(--mono)">SWATCHES</th>
+        </tr></thead>
+        <tbody>
+          <tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:10px 12px;font-family:var(--mono);color:var(--et-cyan)">brand.blue (PRIMARY)</td>
+            <td style="padding:10px 12px"><code style="color:var(--et-red)">#1B4F9C</code> — взятий з голови</td>
+            <td style="padding:10px 12px"><code style="color:#6ee7b7">#2d70b9</code> — з PDF брендбуку</td>
+            <td style="padding:10px 12px;display:flex;gap:6px;align-items:center">
+              <div style="width:28px;height:28px;border-radius:4px;background:#1B4F9C"></div>
+              <span style="color:var(--text3)">→</span>
+              <div style="width:28px;height:28px;border-radius:4px;background:#2d70b9"></div>
+            </td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:10px 12px;font-family:var(--mono);color:var(--et-cyan)">brand.gold (ACCENT)</td>
+            <td style="padding:10px 12px"><code style="color:var(--et-red)">#F5A623</code> — взятий з голови</td>
+            <td style="padding:10px 12px"><code style="color:#6ee7b7">#f9c01d</code> — з PDF брендбуку</td>
+            <td style="padding:10px 12px;display:flex;gap:6px;align-items:center">
+              <div style="width:28px;height:28px;border-radius:4px;background:#F5A623"></div>
+              <span style="color:var(--text3)">→</span>
+              <div style="width:28px;height:28px;border-radius:4px;background:#f9c01d"></div>
+            </td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:10px 12px;font-family:var(--mono);color:var(--et-cyan)">brand.red (DANGER)</td>
+            <td style="padding:10px 12px"><code style="color:var(--text3)">не вказувався</code></td>
+            <td style="padding:10px 12px"><code style="color:#6ee7b7">#f0366d</code> — акцентний червоний</td>
+            <td style="padding:10px 12px;display:flex;gap:6px;align-items:center">
+              <span style="color:var(--text3)">—</span>
+              <span style="color:var(--text3)">→</span>
+              <div style="width:28px;height:28px;border-radius:4px;background:#f0366d"></div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:10px 12px;font-family:var(--mono);color:var(--et-cyan)">brand.cyan (SECONDARY)</td>
+            <td style="padding:10px 12px"><code style="color:var(--text3)">не вказувався</code></td>
+            <td style="padding:10px 12px"><code style="color:#6ee7b7">#53c7d6</code> — другорядний синій</td>
+            <td style="padding:10px 12px;display:flex;gap:6px;align-items:center">
+              <span style="color:var(--text3)">—</span>
+              <span style="color:var(--text3)">→</span>
+              <div style="width:28px;height:28px;border-radius:4px;background:#53c7d6"></div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="alert alert-ok">
+    <div class="alert-icon">✅</div>
+    <div><strong>Шрифти — підтверджені без змін:</strong> Druk Text Heavy / Bold для заголовків та Proxima Nova Bold / Medium / Regular для основного тексту — збігаються з брендбуком. Файл <code>brand.ts</code> та <code>tailwind.config.ts</code> у секції "Code Tokens" вже містять правильні значення.</div>
+  </div>
+
+  <div class="card">
+    <div class="card-hd">Що потрібно оновити у вже написаному коді</div>
+    <div class="card-bd">
+<pre><span class="cc">// 1. tailwind.config.ts (якщо вже додані старі кольори) — замінити:</span>
+<span class="ck">brand</span>: {
+  blue:  <span class="cs">'#2d70b9'</span>, <span class="cc">// було #1B4F9C</span>
+  gold:  <span class="cs">'#f9c01d'</span>, <span class="cc">// було #F5A623</span>
+  <span class="cc">// + додати нові:</span>
+  red:   <span class="cs">'#f0366d'</span>,
+  cyan:  <span class="cs">'#53c7d6'</span>,
+}
+
+<span class="cc">// 2. LoginForm.tsx — кнопка (якщо вже виправляли по I-02):</span>
+className=<span class="cs">"bg-brand-blue hover:bg-brand-blue-dark"</span>
+<span class="cc">// перевірити що використовується #2d70b9, не #1B4F9C</span>
+
+<span class="cc">// 3. statuses.ts STATUS_COLOR_CLASSES — якщо є brand-кольори:</span>
+<span class="cc">// замінити будь-які посилання на старі hex-значення</span></pre>
+    </div>
+  </div>
+</div>
+
+<script>
+function goTab(id,el){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.ntab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  el.classList.add('active');
+  window.scrollTo(0,0);
+}
+</script>
+</body>
+</html>

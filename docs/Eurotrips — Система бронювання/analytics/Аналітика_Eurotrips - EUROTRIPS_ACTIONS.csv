@@ -1,0 +1,16 @@
+tour_id,direction_main,price_avg,value_score,price_vs_median,route_class,action,manual_note
+EUR-38,Угорщина,404,"0,03974261759","0,7680525164",THIN,ADD,Додати 1 strong OTHER stop або 1 anchor city
+EUR-33,Греція,594,"0,07722487139","0,5076142132",THIN,ADD,Додати 1 strong OTHER stop або 1 anchor city
+EUR-34,Греція,369,"0,1459022877","-0,06345177665",THIN,ADD,Додати 1 strong OTHER stop або 1 anchor city
+EUR-7,Румунія,99,"0,1883933081","-0,38125",THIN,ADD,Додати 1 strong OTHER stop або 1 anchor city
+EUR-35,Туреччина,184,"0,2254347826",0,THIN,ADD,Додати 1 strong OTHER stop або 1 anchor city
+EUR-6,Угорщина,149,"0,2781809437","-0,3479212254",THIN,ADD,Додати 1 strong OTHER stop або 1 anchor city
+EUR-14,Польща,129,"0,3848075655","-0,2434017595",THIN,ADD,Додати 1 strong OTHER stop або 1 anchor city
+EUR-19,Польща,129,"0,3848075655","-0,2434017595",THIN,ADD,Додати 1 strong OTHER stop або 1 anchor city
+EUR-30,Польща,129,"0,3848075655","-0,2434017595",THIN,ADD,Додати 1 strong OTHER stop або 1 anchor city
+EUR-32,Угорщина,579,"-0,07663329592","1,533916849",BALANCED,REVIEW,Перевірити вручну
+EUR-31,Польща,589,"-0,004786232443","2,454545455",BALANCED,REVIEW,Перевірити вручну
+EUR-18,Італія,549,"0,06338040519","0,601750547",BALANCED,REVIEW,Перевірити вручну
+EUR-8,Італія,149,"0,07057700498","-0,5652808169",BALANCED,REVIEW,Перевірити вручну
+EUR-1,Угорщина,244,"0,1447429781","0,06783369803",BALANCED,REVIEW,Перевірити вручну
+EUR-13,Італія,399,"0,1731429572","0,1641137856",BALANCED,REVIEW,Перевірити вручну

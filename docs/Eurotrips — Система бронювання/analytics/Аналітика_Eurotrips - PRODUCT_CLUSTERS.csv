@@ -1,0 +1,490 @@
+ID ТУРУ,ID КЛАСТЕРА,ПОДІБНІСТЬ,ОСНОВНИЙ НАПРЯМОК,ДНІ,ТУРОПЕРАТОР
+EUR-1,1,100%,Італія,6,Eurotrips
+EUR-4,1,29%,Італія,5,Eurotrips
+EUR-8,1,33%,Італія,4,Eurotrips
+EUR-12,1,33%,Італія,5,Eurotrips
+EUR-17,1,44%,Італія,6,Eurotrips
+EUR-20,1,33%,Італія,5,Eurotrips
+EUR-22,1,29%,Італія,5,Eurotrips
+EUR-23,1,33%,Італія,6,Eurotrips
+EUR-29,1,50%,Італія,6,Eurotrips
+ACC-59,1,30%,Італія,5,Accord tour
+ACC-68,1,33%,Італія,4,Accord tour
+ACC-75,1,43%,Італія,5,Accord tour
+ACC-91,1,30%,Італія,4,Accord tour
+ACC-95,1,38%,Італія,6,Accord tour
+ACC-98,1,57%,Італія,5,Accord tour
+ACC-121,1,27%,Італія,7,Accord tour
+ACC-130,1,27%,Італія,6,Accord tour
+ADR-35,1,50%,Італія,4,Adriatic
+ADR-44,1,43%,Італія,5,Adriatic
+ADR-82,1,43%,Італія,5,Adriatic
+ADR-121,1,25%,Італія,8,Adriatic
+ADR-130,1,29%,Італія,5,Adriatic
+ADR-132,1,30%,Італія,9,Adriatic
+ITR-2,1,43%,Італія,5,ITravel
+ITR-13,1,33%,Італія,6,ITravel
+ITR-15,1,27%,Італія,7,ITravel
+ITR-16,1,60%,Італія,4,ITravel
+ITR-26,1,25%,Італія,5,ITravel
+ITR-38,1,50%,Італія,4,ITravel
+RIC-3,1,29%,Італія,8,Rich Tour
+TAN-37,1,60%,Італія,5,Tango Travel
+EUR-26,1,17%,Італія,8,Eurotrips
+ACC-64,1,22%,Італія,6,Accord tour
+ACC-73,1,22%,Італія,5,Accord tour
+ACC-74,1,20%,Італія,4,Accord tour
+ACC-107,1,22%,Італія,6,Accord tour
+ADR-5,1,22%,Італія,5,Adriatic
+ADR-58,1,22%,Італія,6,Adriatic
+ITR-18,1,22%,Італія,5,ITravel
+ITR-33,1,22%,Італія,6,ITravel
+ITR-39,1,22%,Італія,5,ITravel
+ADR-80,1,20%,Італія,6,Adriatic
+ACC-58,1,9%,Італія,5,Accord tour
+ACC-60,1,20%,Італія,6,Accord tour
+ITR-30,1,21%,Італія,7,ITravel
+ACC-70,1,23%,Італія,6,Accord tour
+ADR-61,1,14%,Італія,5,Adriatic
+ACC-79,1,17%,Італія,7,Accord tour
+ACC-80,1,15%,Італія,7,Accord tour
+ACC-86,1,18%,Італія,6,Accord tour
+ACC-90,1,17%,Італія,6,Accord tour
+ACC-117,1,17%,Італія,6,Accord tour
+ADR-15,1,17%,Італія,8,Adriatic
+DAV-7,1,17%,Італія,8,DavClub
+ITR-23,1,18%,Італія,7,ITravel
+ADR-18,1,8%,Італія,6,Adriatic
+ADR-39,1,10%,Італія,5,Adriatic
+ACC-87,1,15%,Італія,6,Accord tour
+ACC-82,1,12%,Італія,8,Accord tour
+ACC-126,1,20%,Італія,8,Accord tour
+ACC-127,1,12%,Італія,8,Accord tour
+ADR-2,1,8%,Італія,6,Adriatic
+ADR-69,1,11%,Італія,7,Adriatic
+ACC-105,1,12%,Італія,8,Accord tour
+ITR-14,1,17%,Італія,8,ITravel
+ADR-120,1,17%,Італія,8,Adriatic
+ADR-36,1,11%,Італія,7,Adriatic
+ADR-125,1,0%,Італія,9,Adriatic
+ACC-69,1,17%,Італія,5,Accord tour
+ACC-116,1,13%,Італія,6,Accord tour
+ACC-85,1,13%,Італія,10,Accord tour
+ACC-129,1,15%,Італія,10,Accord tour
+ACC-128,1,11%,Італія,9,Accord tour
+ACC-65,1,5%,Італія,8,Accord tour
+ACC-83,1,9%,Італія,8,Accord tour
+DAV-4,1,0%,Італія,9,DavClub
+DAV-9,1,14%,Італія,4,DavClub
+ACC-101,1,6%,Італія,6,Accord tour
+ADR-41,1,10%,Італія,6,Adriatic
+ITR-52,1,10%,Італія,7,ITravel
+ACC-14,1,6%,Італія,7,Accord tour
+ACC-92,1,6%,Італія,8,Accord tour
+ADR-119,1,9%,Італія,10,Adriatic
+ACC-142,1,5%,Італія,10,Accord tour
+ACC-84,1,5%,Італія,8,Accord tour
+ACC-137,1,0%,Італія,10,Accord tour
+ACC-120,1,0%,Італія,9,Accord tour
+ACC-145,1,7%,Італія,7,Accord tour
+EUR-2,2,100%,Нідерланди,6,Eurotrips
+ACC-1,2,38%,Нідерланди,7,Accord tour
+ACC-3,2,29%,Нідерланди,8,Accord tour
+ACC-7,2,55%,Нідерланди,7,Accord tour
+ACC-8,2,38%,Нідерланди,7,Accord tour
+ACC-11,2,38%,Нідерланди,7,Accord tour
+ACC-49,2,36%,Нідерланди,6,Accord tour
+ACC-51,2,42%,Нідерланди,4,Accord tour
+ACC-57,2,25%,Нідерланди,8,Accord tour
+ACC-104,2,25%,Нідерланди,7,Accord tour
+ACC-122,2,33%,Нідерланди,6,Accord tour
+ACC-165,2,33%,Нідерланди,6,Accord tour
+ACC-181,2,38%,Нідерланди,6,Accord tour
+ADR-49,2,31%,Нідерланди,7,Adriatic
+ADR-50,2,29%,Нідерланди,6,Adriatic
+ADR-52,2,29%,Нідерланди,6,Adriatic
+ADR-74,2,27%,Нідерланди,6,Adriatic
+ADR-126,2,36%,Нідерланди,7,Adriatic
+RIC-7,2,30%,Нідерланди,7,Rich Tour
+ACC-53,2,14%,Нідерланди,6,Accord tour
+ACC-144,2,24%,Нідерланди,7,Accord tour
+ADR-27,2,21%,Нідерланди,6,Adriatic
+ADR-43,2,18%,Нідерланди,7,Adriatic
+ADR-59,2,18%,Нідерланди,9,Adriatic
+ADR-94,2,21%,Нідерланди,5,Adriatic
+ADR-112,2,17%,Нідерланди,7,Adriatic
+ADR-88,2,13%,Нідерланди,8,Adriatic
+ADR-107,2,19%,Нідерланди,6,Adriatic
+ADR-124,2,14%,Нідерланди,5,Adriatic
+EUR-3,3,100%,Латвія,6,Eurotrips
+EUR-5,4,100%,Австрія,5,Eurotrips
+EUR-27,4,50%,Австрія,4,Eurotrips
+EUR-36,4,33%,Австрія,4,Eurotrips
+ACC-19,4,38%,Австрія,4,Accord tour
+ACC-77,4,43%,Австрія,5,Accord tour
+ACC-88,4,25%,Австрія,3,Accord tour
+ADR-3,4,33%,Австрія,4,Adriatic
+ADR-7,4,25%,Австрія,4,Adriatic
+ADR-9,4,29%,Австрія,4,Adriatic
+ADR-23,4,25%,Австрія,4,Adriatic
+ADR-25,4,38%,Австрія,4,Adriatic
+ADR-38,4,43%,Австрія,4,Adriatic
+ADR-57,4,27%,Австрія,6,Adriatic
+ADR-129,4,33%,Австрія,4,Adriatic
+DAV-8,4,33%,Австрія,6,DavClub
+ITR-5,4,29%,Австрія,4,ITravel
+ITR-9,4,43%,Австрія,4,ITravel
+ITR-11,4,33%,Австрія,4,ITravel
+ITR-20,4,33%,Австрія,7,ITravel
+ITR-21,4,36%,Австрія,6,ITravel
+ADR-42,4,20%,Австрія,5,Adriatic
+ADR-46,4,18%,Австрія,7,Adriatic
+ITR-19,4,18%,Австрія,6,ITravel
+ACC-110,4,22%,Австрія,4,Accord tour
+ADR-66,4,17%,Австрія,3,Adriatic
+ITR-10,4,22%,Австрія,5,ITravel
+ITR-12,4,20%,Австрія,4,ITravel
+ITR-1,4,22%,Австрія,5,ITravel
+ITR-24,4,14%,Австрія,6,ITravel
+ITR-28,4,18%,Австрія,7,ITravel
+ITR-3,4,9%,Австрія,6,ITravel
+EUR-6,5,100%,Угорщина,4,Eurotrips
+EUR-21,5,100%,Угорщина,4,Eurotrips
+ACC-113,5,29%,Угорщина,5,Accord tour
+ACC-143,5,40%,Угорщина,4,Accord tour
+ACC-171,5,40%,Угорщина,4,Accord tour
+ACC-119,5,20%,Угорщина,4,Accord tour
+ACC-183,5,22%,Угорщина,5,Accord tour
+ADR-133,5,20%,Угорщина,3,Adriatic
+EUR-7,6,100%,Румунія,4,Eurotrips
+ADR-11,6,33%,Румунія,3,Adriatic
+ADR-13,6,33%,Румунія,4,Adriatic
+ADR-21,6,33%,Румунія,4,Adriatic
+EUR-11,6,17%,Румунія,4,Eurotrips
+EUR-37,6,17%,Румунія,4,Eurotrips
+ACC-133,6,13%,Румунія,3,Accord tour
+ACC-149,6,20%,Румунія,4,Accord tour
+ACC-150,6,17%,Румунія,5,Accord tour
+ACC-161,6,11%,Румунія,4,Accord tour
+ACC-167,6,0%,Румунія,3,Accord tour
+ACC-100,6,0%,Румунія,3,Accord tour
+ACC-155,6,9%,Румунія,4,Accord tour
+ACC-162,6,8%,Румунія,5,Accord tour
+EUR-9,7,100%,Чехія,4,Eurotrips
+EUR-10,7,40%,Чехія,4,Eurotrips
+ACC-16,7,25%,Чехія,5,Accord tour
+ACC-17,7,25%,Чехія,4,Accord tour
+ACC-45,7,67%,Чехія,4,Accord tour
+ACC-72,7,25%,Чехія,5,Accord tour
+ACC-96,7,25%,Чехія,4,Accord tour
+ACC-158,7,29%,Чехія,4,Accord tour
+ADR-1,7,29%,Чехія,5,Adriatic
+ADR-8,7,25%,Чехія,4,Adriatic
+ADR-14,7,50%,Чехія,4,Adriatic
+ADR-17,7,50%,Чехія,4,Adriatic
+DAV-1,7,40%,Чехія,5,DavClub
+ACC-26,7,22%,Чехія,5,Accord tour
+ACC-164,7,22%,Чехія,7,Accord tour
+ACC-159,7,17%,Чехія,4,Accord tour
+EUR-28,7,14%,Чехія,4,Eurotrips
+DAV-2,7,17%,Чехія,6,DavClub
+ACC-13,7,17%,Чехія,5,Accord tour
+EUR-13,8,100%,Іспанія,8,Eurotrips
+EUR-32,8,27%,Іспанія,10,Eurotrips
+ACC-29,8,25%,Іспанія,8,Accord tour
+ACC-114,8,27%,Іспанія,8,Accord tour
+ACC-136,8,33%,Іспанія,10,Accord tour
+ACC-153,8,33%,Іспанія,8,Accord tour
+ADR-37,8,36%,Іспанія,8,Adriatic
+ITR-17,8,29%,Іспанія,9,ITravel
+TAN-28,8,33%,Іспанія,7,Tango Travel
+ACC-28,8,22%,Іспанія,8,Accord tour
+ACC-36,8,14%,Іспанія,9,Accord tour
+ACC-34,8,20%,Іспанія,10,Accord tour
+ADR-105,8,13%,Іспанія,10,Adriatic
+ADR-106,8,18%,Іспанія,11,Adriatic
+ADR-134,8,24%,Іспанія,8,Adriatic
+ACC-41,8,14%,Іспанія,11,Accord tour
+ACC-115,8,11%,Іспанія,10,Accord tour
+ADR-104,8,15%,Іспанія,12,Adriatic
+ADR-91,8,22%,Іспанія,12,Adriatic
+ACC-37,8,18%,Іспанія,10,Accord tour
+ACC-140,8,11%,Іспанія,14,Accord tour
+EUR-14,9,100%,Польща,3,Eurotrips
+EUR-15,9,67%,Польща,3,Eurotrips
+EUR-19,9,100%,Польща,3,Eurotrips
+EUR-30,9,100%,Польща,3,Eurotrips
+ACC-27,9,40%,Польща,3,Accord tour
+ACC-32,9,25%,Польща,2,Accord tour
+ADR-12,9,100%,Польща,3,Adriatic
+ADR-16,9,67%,Польща,3,Adriatic
+ADR-24,9,67%,Польща,3,Adriatic
+ADR-63,9,25%,Польща,5,Adriatic
+TAN-29,9,33%,Польща,4,Tango Travel
+TAN-39,9,100%,Польща,5,Tango Travel
+EUR-16,10,100%,Франція,7,Eurotrips
+ACC-102,10,27%,Франція,7,Accord tour
+ITR-51,10,25%,Франція,7,ITravel
+TAN-31,10,25%,Франція,7,Tango Travel
+ADR-55,10,22%,Франція,8,Adriatic
+ADR-56,10,19%,Франція,9,Adriatic
+ADR-115,10,10%,Франція,7,Adriatic
+EUR-18,11,100%,Італія,10,Eurotrips
+EUR-24,12,100%,Франція,7,Eurotrips
+ACC-6,12,27%,Франція,7,Accord tour
+ACC-35,12,30%,Франція,6,Accord tour
+ACC-38,12,25%,Франція,7,Accord tour
+ACC-44,12,25%,Франція,6,Accord tour
+ACC-48,12,27%,Франція,6,Accord tour
+ACC-61,12,30%,Франція,6,Accord tour
+ACC-106,12,33%,Франція,7,Accord tour
+ITR-35,12,25%,Франція,7,ITravel
+RIC-6,12,33%,Франція,6,Rich Tour
+ACC-2,12,11%,Франція,10,Accord tour
+ACC-4,12,18%,Франція,8,Accord tour
+ACC-5,12,11%,Франція,10,Accord tour
+ACC-12,12,14%,Франція,7,Accord tour
+ACC-21,12,14%,Франція,6,Accord tour
+ACC-31,12,15%,Франція,9,Accord tour
+ACC-39,12,17%,Франція,6,Accord tour
+ACC-42,12,18%,Франція,6,Accord tour
+ACC-43,12,17%,Франція,6,Accord tour
+ACC-118,12,23%,Франція,7,Accord tour
+ACC-170,12,17%,Франція,7,Accord tour
+ADR-6,12,22%,Франція,6,Adriatic
+ADR-84,12,20%,Франція,5,Adriatic
+DAV-10,12,15%,Франція,8,DavClub
+ITR-32,12,20%,Франція,6,ITravel
+ITR-36,12,17%,Франція,7,ITravel
+ACC-30,12,13%,Франція,8,Accord tour
+ACC-97,12,20%,Франція,5,Accord tour
+ACC-166,12,20%,Франція,7,Accord tour
+ADR-70,12,13%,Франція,6,Adriatic
+ACC-10,12,16%,Франція,8,Accord tour
+ACC-54,12,7%,Франція,6,Accord tour
+ACC-63,12,11%,Франція,10,Accord tour
+ADR-83,12,12%,Франція,7,Adriatic
+ACC-46,12,15%,Франція,6,Accord tour
+ADR-19,12,22%,Франція,6,Adriatic
+ADR-26,12,12%,Франція,7,Adriatic
+ADR-101,12,13%,Франція,7,Adriatic
+ADR-102,12,13%,Франція,6,Adriatic
+ITR-31,12,18%,Франція,6,ITravel
+EUR-25,12,13%,Франція,9,Eurotrips
+ADR-116,12,13%,Франція,7,Adriatic
+ADR-10,12,11%,Франція,8,Adriatic
+ADR-20,12,13%,Франція,7,Adriatic
+ADR-29,12,11%,Франція,7,Adriatic
+ADR-30,12,13%,Франція,6,Adriatic
+ADR-71,12,13%,Франція,6,Adriatic
+ADR-79,12,13%,Франція,7,Adriatic
+ADR-92,12,6%,Франція,7,Adriatic
+ADR-122,12,5%,Франція,8,Adriatic
+ITR-4,12,7%,Франція,7,ITravel
+ADR-48,12,20%,Франція,7,Adriatic
+ADR-32,12,13%,Франція,6,Adriatic
+ADR-72,12,9%,Франція,8,Adriatic
+ADR-136,12,10%,Франція,8,Adriatic
+ADR-123,12,11%,Франція,8,Adriatic
+ADR-45,12,0%,Франція,9,Adriatic
+ADR-31,12,0%,Франція,7,Adriatic
+ADR-97,12,0%,Франція,8,Adriatic
+EUR-31,13,100%,Норвегія,10,Eurotrips
+ACC-93,13,36%,Норвегія,7,Accord tour
+ACC-132,13,46%,Норвегія,9,Accord tour
+ADR-51,13,50%,Норвегія,7,Adriatic
+ADR-60,13,33%,Норвегія,7,Adriatic
+ADR-73,13,42%,Норвегія,7,Adriatic
+ADR-78,13,42%,Норвегія,7,Adriatic
+TAN-35,13,27%,Норвегія,7,Tango Travel
+TAN-40,13,31%,Норвегія,9,Tango Travel
+EUR-33,14,100%,Греція,10,Eurotrips
+EUR-34,14,100%,Греція,10,Eurotrips
+ACC-173,14,29%,Греція,8,Accord tour
+DAV-3,14,33%,Греція,9,DavClub
+DAV-5,14,33%,Греція,10,DavClub
+TAN-36,14,33%,Греція,10,Tango Travel
+ACC-76,14,19%,Греція,8,Accord tour
+ACC-81,14,21%,Греція,7,Accord tour
+ACC-99,14,55%,Греція,5,Accord tour
+ACC-103,14,24%,Греція,6,Accord tour
+ACC-111,14,29%,Греція,6,Accord tour
+ACC-112,14,33%,Греція,5,Accord tour
+ACC-152,14,31%,Греція,6,Accord tour
+ACC-156,14,22%,Греція,10,Accord tour
+ACC-174,14,10%,Греція,11,Accord tour
+EUR-35,15,100%,Туреччина,5,Eurotrips
+EUR-38,16,100%,Чорногорія,10,Eurotrips
+EUR-39,17,100%,Швейцарія,6,Eurotrips
+ACC-15,17,33%,Швейцарія,7,Accord tour
+ACC-23,17,29%,Швейцарія,7,Accord tour
+ACC-24,17,33%,Швейцарія,7,Accord tour
+ACC-40,17,36%,Швейцарія,7,Accord tour
+ACC-47,17,36%,Швейцарія,6,Accord tour
+ACC-52,17,31%,Швейцарія,5,Accord tour
+ACC-56,17,33%,Швейцарія,7,Accord tour
+ACC-67,17,25%,Швейцарія,4,Accord tour
+ACC-78,17,29%,Швейцарія,5,Accord tour
+ACC-89,17,29%,Швейцарія,5,Accord tour
+ACC-94,17,29%,Швейцарія,5,Accord tour
+ACC-108,17,31%,Швейцарія,6,Accord tour
+ADR-33,17,27%,Швейцарія,6,Adriatic
+ADR-96,17,25%,Швейцарія,5,Adriatic
+TAN-41,17,30%,Швейцарія,5,Tango Travel
+ACC-25,17,24%,Швейцарія,8,Accord tour
+ACC-109,17,21%,Швейцарія,6,Accord tour
+ACC-125,17,19%,Швейцарія,10,Accord tour
+ADR-4,17,20%,Швейцарія,5,Adriatic
+ADR-34,17,17%,Швейцарія,4,Adriatic
+ADR-103,17,7%,Швейцарія,6,Adriatic
+ADR-109,17,7%,Швейцарія,5,Adriatic
+ADR-108,17,13%,Швейцарія,6,Adriatic
+ADR-113,17,12%,Швейцарія,8,Adriatic
+ADR-95,17,11%,Швейцарія,7,Adriatic
+ACC-9,18,100%,Бельгія,7,Accord tour
+ACC-18,19,100%,Німеччина,4,Accord tour
+ACC-62,19,25%,Німеччина,5,Accord tour
+ADR-128,19,50%,Німеччина,5,Adriatic
+ITR-6,19,25%,Німеччина,6,ITravel
+ADR-62,19,13%,Німеччина,4,Adriatic
+ADR-28,19,22%,Німеччина,4,Adriatic
+ADR-65,19,22%,Німеччина,5,Adriatic
+ADR-68,19,13%,Німеччина,4,Adriatic
+ACC-33,19,13%,Німеччина,4,Accord tour
+ACC-71,19,0%,Німеччина,4,Accord tour
+ITR-8,19,14%,Німеччина,7,ITravel
+ITR-25,19,15%,Німеччина,7,ITravel
+ITR-29,19,11%,Німеччина,4,ITravel
+ADR-67,19,0%,Німеччина,4,Adriatic
+ACC-182,19,9%,Німеччина,5,Accord tour
+ITR-34,19,9%,Німеччина,6,ITravel
+ACC-20,20,100%,Австрія,4,Accord tour
+ACC-22,21,100%,Польща,3,Accord tour
+ADR-22,21,50%,Польща,5,Adriatic
+ACC-50,22,100%,Бельгія,6,Accord tour
+ACC-55,23,100%,Словаччина,4,Accord tour
+ACC-66,24,100%,Португалія,11,Accord tour
+ACC-123,25,100%,Чорногорія,8,Accord tour
+ACC-124,25,69%,Чорногорія,8,Accord tour
+ACC-134,25,35%,Чорногорія,9,Accord tour
+ACC-135,25,27%,Чорногорія,8,Accord tour
+ACC-139,25,50%,Чорногорія,10,Accord tour
+ACC-157,25,35%,Чорногорія,11,Accord tour
+ADR-75,25,22%,Чорногорія,12,Adriatic
+ADR-76,25,22%,Чорногорія,12,Adriatic
+ADR-77,25,22%,Чорногорія,12,Adriatic
+ACC-131,26,100%,Данія,7,Accord tour
+ACC-138,27,100%,Естонія,5,Accord tour
+ADR-93,27,50%,Естонія,6,Adriatic
+ACC-141,28,100%,Іспанія,14,Accord tour
+ACC-146,29,100%,Молдова,7,Accord tour
+ACC-147,30,100%,Болгарія,6,Accord tour
+ACC-148,31,100%,Румунія,3,Accord tour
+ACC-151,32,100%,Румунія,3,Accord tour
+ACC-154,33,100%,Греція,6,Accord tour
+ACC-172,33,31%,Греція,7,Accord tour
+ITR-48,33,7%,Греція,9,ITravel
+ITR-53,33,8%,Греція,10,ITravel
+ITR-54,33,8%,Греція,10,ITravel
+ACC-160,34,100%,Фінляндія,8,Accord tour
+ACC-163,35,100%,Молдова,3,Accord tour
+ACC-168,36,100%,Албанія,13,Accord tour
+ACC-169,36,29%,Албанія,11,Accord tour
+ACC-176,36,40%,Албанія,11,Accord tour
+ADR-135,36,33%,Албанія,12,Adriatic
+ACC-175,36,11%,Албанія,10,Accord tour
+ACC-177,36,14%,Албанія,13,Accord tour
+ACC-178,37,100%,Албанія,8,Accord tour
+ACC-179,38,100%,Фінляндія,10,Accord tour
+ACC-180,39,100%,Португалія,14,Accord tour
+ADR-40,40,100%,Чехія,6,Adriatic
+ADR-47,41,100%,Угорщина,5,Adriatic
+ADR-53,42,100%,Хорватія,7,Adriatic
+ADR-54,42,29%,Хорватія,9,Adriatic
+ADR-117,42,29%,Хорватія,7,Adriatic
+ADR-131,42,36%,Хорватія,10,Adriatic
+ADR-110,42,20%,Хорватія,10,Adriatic
+ADR-111,42,20%,Хорватія,10,Adriatic
+ADR-64,43,100%,Швеція,8,Adriatic
+ADR-89,43,33%,Швеція,6,Adriatic
+ADR-90,43,27%,Швеція,5,Adriatic
+ITR-42,43,25%,Швеція,6,ITravel
+ADR-81,44,100%,Греція,10,Adriatic
+ADR-85,44,100%,Греція,10,Adriatic
+ADR-86,44,100%,Греція,10,Adriatic
+ADR-87,44,29%,Греція,10,Adriatic
+TAN-42,44,29%,Греція,7,Tango Travel
+TAN-43,44,29%,Греція,5,Tango Travel
+ADR-98,45,100%,Португалія,14,Adriatic
+ADR-99,46,100%,Хорватія,4,Adriatic
+ADR-100,46,33%,Хорватія,5,Adriatic
+ADR-114,47,100%,Чорногорія,8,Adriatic
+ADR-118,48,100%,Італія,11,Adriatic
+ADR-127,49,100%,Албанія,12,Adriatic
+DAV-6,50,100%,Греція,12,DavClub
+DAV-11,51,0%,Угорщина,4,DavClub
+ITR-7,52,100%,Бельгія,8,ITravel
+ITR-22,53,100%,Австрія,8,ITravel
+ITR-27,54,100%,Бельгія,6,ITravel
+ITR-37,55,100%,Болгарія,10,ITravel
+ITR-40,56,100%,Литва,4,ITravel
+ITR-41,56,75%,Литва,4,ITravel
+TAN-34,56,25%,Литва,4,Tango Travel
+ITR-43,57,0%,Італія,6,ITravel
+ITR-44,58,0%,Чорногорія,10,ITravel
+ITR-45,59,0%,Румунія,4,ITravel
+ITR-46,60,0%,Італія,7,ITravel
+ITR-47,61,0%,Австрія,6,ITravel
+ITR-49,62,0%,Румунія,5,ITravel
+ITR-50,63,0%,Німеччина,7,ITravel
+RIC-1,64,100%,Хорватія,10,Rich Tour
+RIC-2,65,100%,Італія,10,Rich Tour
+RIC-4,66,100%,Греція,10,Rich Tour
+RIC-5,67,100%,Чорногорія,10,Rich Tour
+RIC-8,68,100%,Італія,5,Rich Tour
+RIC-9,69,100%,Швейцарія,7,Rich Tour
+RIC-10,70,100%,Польща,9,Rich Tour
+TAN-1,71,100%,Австрія,4,Tango Travel
+TAN-2,72,100%,Італія,5,Tango Travel
+TAN-3,73,100%,Угорщина,4,Tango Travel
+TAN-4,74,100%,Австрія,4,Tango Travel
+TAN-5,75,100%,Чехія,4,Tango Travel
+TAN-6,76,100%,Італія,5,Tango Travel
+TAN-7,77,100%,Австрія,4,Tango Travel
+TAN-8,78,100%,Нідерланди,5,Tango Travel
+TAN-9,79,100%,Франція,6,Tango Travel
+TAN-10,80,100%,Румунія,4,Tango Travel
+TAN-11,81,100%,Швеція,5,Tango Travel
+TAN-12,82,100%,Швеція,5,Tango Travel
+TAN-13,83,100%,Нідерланди,6,Tango Travel
+TAN-14,84,100%,Італія,6,Tango Travel
+TAN-15,85,100%,Румунія,4,Tango Travel
+TAN-16,86,100%,Швеція,6,Tango Travel
+TAN-17,87,100%,Румунія,3,Tango Travel
+TAN-18,88,100%,Франція,6,Tango Travel
+TAN-19,89,100%,Чехія,4,Tango Travel
+TAN-20,90,100%,Австрія,5,Tango Travel
+TAN-21,91,100%,Австрія,5,Tango Travel
+TAN-22,92,100%,Італія,6,Tango Travel
+TAN-23,93,100%,Угорщина,4,Tango Travel
+TAN-24,94,100%,Північна Македонія,4,Tango Travel
+TAN-25,95,100%,Італія,7,Tango Travel
+TAN-26,96,100%,Швейцарія,5,Tango Travel
+TAN-27,97,100%,Франція,8,Tango Travel
+TAN-30,98,100%,Боснія і Герцеговина,5,Tango Travel
+TAN-32,99,100%,Албанія,8,Tango Travel
+TAN-33,100,100%,Словенія,4,Tango Travel
+TAN-38,101,100%,Швеція,8,Tango Travel
+TRM-1,102,0%,Франція,8,Travel Room
+TRM-2,103,0%,Італія,6,Travel Room
+TRM-3,104,0%,Франція,7,Travel Room
+TRM-4,105,0%,Німеччина,5,Travel Room
+TRM-5,106,0%,Італія,5,Travel Room
+TRM-6,107,0%,Італія,10,Travel Room
+TRM-7,108,0%,Швейцарія,8,Travel Room
+TRM-8,109,0%,Польща,4,Travel Room
+TRM-9,110,0%,Нідерланди,7,Travel Room
+TRM-10,111,0%,Італія,5,Travel Room
+TRM-11,112,0%,Італія,5,Travel Room
+TRM-12,113,0%,Італія,5,Travel Room
+TRM-13,114,0%,Італія,5,Travel Room

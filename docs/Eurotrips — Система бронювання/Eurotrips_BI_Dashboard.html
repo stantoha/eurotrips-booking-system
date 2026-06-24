@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eurotrips — BI Дашборд Керівника 2026</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1" integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous"></script>
+<style>
+  :root {
+    --cyan: #53c7d6;
+    --red:  #f0366d;
+    --gold: #f9c01d;
+    --blue: #2d70b9;
+    --pink: #f7c5d0;
+    --dark: #1b3a6b;
+    --bg:   #f0f4f8;
+    --card: #ffffff;
+    --text: #1a2340;
+    --sub:  #6b7a99;
+    --border: #e2e8f0;
+    --radius: 12px;
+    --shadow: 0 2px 12px rgba(27,58,107,.10);
+    --gap: 16px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color: var(--text); font-size:14px; }
+
+  /* ── Header ── */
+  .header {
+    background: linear-gradient(135deg, var(--dark) 0%, #2d70b9 100%);
+    color:#fff; padding:20px 28px;
+    display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;
+  }
+  .header-left h1 { font-size:22px; font-weight:700; letter-spacing:-.3px; }
+  .header-left p  { font-size:12px; opacity:.75; margin-top:2px; }
+  .header-badge { background:rgba(83,199,214,.25); border:1px solid var(--cyan);
+    color:var(--cyan); padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600; }
+  .filters { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .filters label { font-size:12px; opacity:.7; }
+  .filters select {
+    padding:6px 10px; border:1px solid rgba(255,255,255,.25);
+    border-radius:6px; background:rgba(255,255,255,.12); color:#fff;
+    font-size:13px; cursor:pointer; outline:none;
+  }
+  .filters select option { background:#1b3a6b; color:#fff; }
+
+  /* ── Layout ── */
+  .container { max-width:1400px; margin:0 auto; padding:20px; }
+
+  /* ── KPI Row ── */
+  .kpi-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:var(--gap); margin-bottom:var(--gap); }
+  .kpi { background:var(--card); border-radius:var(--radius); padding:18px 20px;
+    box-shadow:var(--shadow); border-left:4px solid var(--blue); position:relative; overflow:hidden; }
+  .kpi::after { content:''; position:absolute; right:-20px; top:-20px;
+    width:80px; height:80px; border-radius:50%; background:var(--kpi-color,var(--blue)); opacity:.07; }
+  .kpi.kpi-cyan  { border-color:var(--cyan);  --kpi-color:var(--cyan); }
+  .kpi.kpi-red   { border-color:var(--red);   --kpi-color:var(--red); }
+  .kpi.kpi-gold  { border-color:var(--gold);  --kpi-color:var(--gold); }
+  .kpi.kpi-blue  { border-color:var(--blue);  --kpi-color:var(--blue); }
+  .kpi.kpi-green { border-color:#22c55e;       --kpi-color:#22c55e; }
+  .kpi.kpi-pink  { border-color:#ec4899;       --kpi-color:#ec4899; }
+  .kpi-label { font-size:11px; color:var(--sub); text-transform:uppercase; letter-spacing:.6px; font-weight:600; }
+  .kpi-val   { font-size:30px; font-weight:800; color:var(--text); margin:6px 0 2px; line-height:1; }
+  .kpi-sub   { font-size:12px; color:var(--sub); }
+  .kpi-badge { display:inline-block; font-size:11px; font-weight:700; padding:2px 8px;
+    border-radius:10px; margin-top:6px; }
+  .badge-green { background:#dcfce7; color:#16a34a; }
+  .badge-red   { background:#fee2e2; color:#dc2626; }
+  .badge-blue  { background:#dbeafe; color:#2563eb; }
+  .badge-gold  { background:#fef9c3; color:#854d0e; }
+
+  /* ── Charts Grid ── */
+  .chart-grid-3 { display:grid; grid-template-columns:2fr 1fr; gap:var(--gap); margin-bottom:var(--gap); }
+  .chart-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:var(--gap); margin-bottom:var(--gap); }
+  .chart-grid-3h{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:var(--gap); margin-bottom:var(--gap); }
+
+  .card { background:var(--card); border-radius:var(--radius); padding:20px 22px; box-shadow:var(--shadow); }
+  .card-title { font-size:13px; font-weight:700; color:var(--text); margin-bottom:14px;
+    display:flex; align-items:center; gap:8px; }
+  .card-title .icon { font-size:16px; }
+  .card canvas { max-height:280px; }
+
+  /* ── Section titles ── */
+  .section-title { font-size:11px; font-weight:700; color:var(--sub); text-transform:uppercase;
+    letter-spacing:.8px; margin:20px 0 12px; padding-left:4px; border-left:3px solid var(--cyan); padding-left:10px; }
+
+  /* ── Direction Table ── */
+  .dir-table { width:100%; border-collapse:collapse; font-size:13px; }
+  .dir-table th { text-align:left; padding:9px 12px; border-bottom:2px solid var(--border);
+    color:var(--sub); font-size:11px; text-transform:uppercase; letter-spacing:.5px; font-weight:700; white-space:nowrap; }
+  .dir-table td { padding:9px 12px; border-bottom:1px solid var(--border); }
+  .dir-table tr:hover td { background:#f8faff; }
+  .dir-table tr:last-child td { border:none; }
+  .pill { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:700; }
+  .pill-green  { background:#dcfce7; color:#15803d; }
+  .pill-yellow { background:#fef9c3; color:#92400e; }
+  .pill-red    { background:#fee2e2; color:#b91c1c; }
+  .bar-wrap { display:flex; align-items:center; gap:8px; }
+  .bar-bg { flex:1; background:#f1f5f9; border-radius:4px; height:8px; overflow:hidden; }
+  .bar-fill { height:100%; border-radius:4px; transition:width .3s; }
+
+  /* ── KPI Spec Table ── */
+  .spec-table { width:100%; border-collapse:collapse; font-size:13px; }
+  .spec-table th { text-align:left; padding:8px 12px; background:#f8faff; color:var(--sub);
+    font-size:11px; text-transform:uppercase; letter-spacing:.4px; }
+  .spec-table td { padding:8px 12px; border-bottom:1px solid var(--border); vertical-align:top; }
+  .spec-table tr:last-child td { border:none; }
+  .formula { background:#f1f5f9; border-radius:4px; padding:2px 8px; font-family:monospace; font-size:12px; color:var(--dark); }
+
+  /* ── Commission Bars ── */
+  .comm-item { display:flex; align-items:center; gap:12px; padding:7px 0; border-bottom:1px solid var(--border); }
+  .comm-item:last-child { border:none; }
+  .comm-name { flex:1; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .comm-bar { width:120px; height:10px; background:#f1f5f9; border-radius:5px; overflow:hidden; }
+  .comm-fill { height:100%; border-radius:5px; background:linear-gradient(90deg,var(--blue),var(--cyan)); }
+  .comm-pct { font-size:13px; font-weight:700; color:var(--dark); width:40px; text-align:right; }
+
+  /* ── Hotel Stats ── */
+  .stat-row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border); }
+  .stat-row:last-child { border:none; }
+  .stat-key { color:var(--sub); font-size:13px; }
+  .stat-val { font-weight:700; font-size:13px; }
+
+  /* ── Footer ── */
+  .footer { text-align:center; color:var(--sub); font-size:12px; padding:24px 0 16px; }
+
+  /* ── Responsive ── */
+  @media(max-width:900px){
+    .chart-grid-3,.chart-grid-2,.chart-grid-3h{ grid-template-columns:1fr; }
+  }
+  @media(max-width:600px){
+    .kpi-row{ grid-template-columns:1fr 1fr; }
+    .kpi-val{ font-size:24px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══ HEADER ═══ -->
+<div class="header">
+  <div class="header-left">
+    <h1>📊 Eurotrips — BI Дашборд Керівника</h1>
+    <p>Реальні дані: ET Tour Calendar 2026 | AGcomission | Hotel Database</p>
+  </div>
+  <div class="header-badge">Версія для Dashboard.tsx</div>
+</div>
+
+<div class="container">
+
+<!-- ═══ KPI CARDS ═══ -->
+<p class="section-title">Ключові показники ефективності (2026)</p>
+<div class="kpi-row">
+  <div class="kpi kpi-blue">
+    <div class="kpi-label">Всього турів 2026</div>
+    <div class="kpi-val">495</div>
+    <div class="kpi-sub">249 активних + 60 завершено</div>
+    <span class="kpi-badge badge-blue">+∞ від Zoho</span>
+  </div>
+  <div class="kpi kpi-cyan">
+    <div class="kpi-label">Середня ціна туру</div>
+    <div class="kpi-val">268€</div>
+    <div class="kpi-sub">Діапазон: 20 — 999 €/особу</div>
+    <span class="kpi-badge badge-blue">Early bird — знижка</span>
+  </div>
+  <div class="kpi kpi-green">
+    <div class="kpi-label">Заповненість (план/факт)</div>
+    <div class="kpi-val">98.8%</div>
+    <div class="kpi-sub">249 турів при ≥95% capacity</div>
+    <span class="kpi-badge badge-green">Відмінний показник</span>
+  </div>
+  <div class="kpi kpi-gold">
+    <div class="kpi-label">Середня маржа</div>
+    <div class="kpi-val">7.9%</div>
+    <div class="kpi-sub">Польща 36.8% • Іспанія 36.6%</div>
+    <span class="kpi-badge badge-gold">Варіює по напрямках</span>
+  </div>
+  <div class="kpi kpi-pink">
+    <div class="kpi-label">Середня комісія агенту</div>
+    <div class="kpi-val">16.4%</div>
+    <div class="kpi-sub">Діапазон: 10% — 30%</div>
+    <span class="kpi-badge badge-blue">406 турів в БД агентів</span>
+  </div>
+  <div class="kpi kpi-red">
+    <div class="kpi-label">Середній розмір групи</div>
+    <div class="kpi-val">50</div>
+    <div class="kpi-sub">Автобус. тури = 488/495 (98.6%)</div>
+    <span class="kpi-badge badge-red">Факт готелю: ~27 чол</span>
+  </div>
+</div>
+
+<!-- ═══ ROW 1: Seasonality + Transport Cost ═══ -->
+<p class="section-title">Сезонність та операційні витрати</p>
+<div class="chart-grid-3">
+  <div class="card">
+    <div class="card-title"><span class="icon">📅</span>Кількість виїздів по місяцях 2026</div>
+    <canvas id="seasonChart"></canvas>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="icon">🚌</span>Середня вартість транспорту</div>
+    <canvas id="transportChart"></canvas>
+  </div>
+</div>
+
+<!-- ═══ ROW 2: Top Directions + Margin ═══ -->
+<p class="section-title">Топ-10 напрямків — виїзди, маржа та комісія агентів</p>
+<div class="card" style="margin-bottom:var(--gap)">
+  <div class="card-title"><span class="icon">🗺️</span>Аналіз по напрямках 2026 (реальні дані)</div>
+  <table class="dir-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Напрямок</th>
+        <th>Виїздів</th>
+        <th>Серед. собівартість</th>
+        <th>Серед. ціна сайту</th>
+        <th>Маржа</th>
+        <th>Комісія агенту</th>
+        <th>Серед. тривалість</th>
+        <th>Транспорт на тур</th>
+      </tr>
+    </thead>
+    <tbody id="dirTableBody"></tbody>
+  </table>
+</div>
+
+<!-- ═══ ROW 3: Margin Bar + Commission ═══ -->
+<div class="chart-grid-2">
+  <div class="card">
+    <div class="card-title"><span class="icon">💹</span>Маржа по напрямках (% від ціни)</div>
+    <canvas id="marginChart"></canvas>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="icon">🤝</span>Комісія агентам по продукту</div>
+    <div id="commissionBars"></div>
+  </div>
+</div>
+
+<!-- ═══ ROW 4: Price Tiers + Hotel Stats ═══ -->
+<p class="section-title">Ціноутворення та готельна база</p>
+<div class="chart-grid-3h">
+  <div class="card">
+    <div class="card-title"><span class="icon">💰</span>Розподіл турів по ціновому сегменту</div>
+    <canvas id="priceTierChart"></canvas>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="icon">⭐</span>Розподіл готелів по зірках (563 готелі)</div>
+    <canvas id="starsChart"></canvas>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="icon">🏨</span>Статистика готельної бази</div>
+    <div class="stat-row"><span class="stat-key">Всього готелів в БД</span><span class="stat-val">563</span></div>
+    <div class="stat-row"><span class="stat-key">Верифіковані (Yes/TRUE)</span><span class="stat-val">263 (46.7%)</span></div>
+    <div class="stat-row"><span class="stat-key">Середній рейтинг відгуків</span><span class="stat-val">8.98 / 10</span></div>
+    <div class="stat-row"><span class="stat-key">Готелів з ціною квітень</span><span class="stat-val">93 | avg 158€/ніч</span></div>
+    <div class="stat-row"><span class="stat-key">Готелів з ціною жовтень</span><span class="stat-val">238 | avg 141€/ніч</span></div>
+    <div class="stat-row"><span class="stat-key">Основна країна (Італія)</span><span class="stat-val">443 з 563 (78.7%)</span></div>
+    <div class="stat-row"><span class="stat-key">Тип TWIN кімнат (найпопул.)</span><span class="stat-val">649 / 719 бронів 2026</span></div>
+    <div class="stat-row"><span class="stat-key">Серед. ніч у готелі на групу</span><span class="stat-val">103 EUR</span></div>
+  </div>
+</div>
+
+<!-- ═══ ROW 5: KPI Spec for Dashboard.tsx ═══ -->
+<p class="section-title">🔧 Специфікація KPI для Dashboard.tsx (Frontend)</p>
+<div class="card" style="margin-bottom:var(--gap)">
+  <div class="card-title"><span class="icon">⚙️</span>KPI метрики — формули, джерела даних, порогові значення</div>
+  <table class="spec-table">
+    <thead>
+      <tr>
+        <th>KPI</th>
+        <th>Назва (UK)</th>
+        <th>Формула</th>
+        <th>API endpoint</th>
+        <th>Threshold (🟢/🟡/🔴)</th>
+        <th>Тип візуалізації</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>1. Tour Fill Rate</strong></td>
+        <td>Заповненість туру</td>
+        <td><code class="formula">booked_seats / total_seats × 100</code></td>
+        <td><code class="formula">GET /tours/:id/stats</code></td>
+        <td>🟢 ≥85% · 🟡 60–84% · 🔴 &lt;60%</td>
+        <td>Progress bar + % числом</td>
+      </tr>
+      <tr>
+        <td><strong>2. Lead Conversion</strong></td>
+        <td>Конверсія лідів</td>
+        <td><code class="formula">leads_converted / total_leads × 100</code></td>
+        <td><code class="formula">GET /leads/stats</code></td>
+        <td>🟢 ≥35% · 🟡 20–34% · 🔴 &lt;20%</td>
+        <td>Gauge chart / велика цифра</td>
+      </tr>
+      <tr>
+        <td><strong>3. Avg Check (EUR)</strong></td>
+        <td>Середній чек</td>
+        <td><code class="formula">total_revenue / confirmed_bookings</code></td>
+        <td><code class="formula">GET /bookings/stats</code></td>
+        <td>🟢 ≥280€ · 🟡 200–279€ · 🔴 &lt;200€</td>
+        <td>KPI card + trend sparkline</td>
+      </tr>
+      <tr>
+        <td><strong>4. Revenue by Channel</strong></td>
+        <td>Дохід по каналу</td>
+        <td><code class="formula">SUM(booking.price) GROUP BY source_channel</code></td>
+        <td><code class="formula">GET /analytics/revenue</code></td>
+        <td>Ціль: agent ≥30% від total</td>
+        <td>Doughnut chart (direct/agent/corp)</td>
+      </tr>
+      <tr>
+        <td><strong>5. Net Margin %</strong></td>
+        <td>Маржа туру</td>
+        <td><code class="formula">(price - cost_price) / price × 100</code></td>
+        <td><code class="formula">GET /tours/:id/finance</code> (admin only)</td>
+        <td>🟢 ≥15% · 🟡 8–14% · 🔴 &lt;8%</td>
+        <td>Bar chart (по напрямках)</td>
+      </tr>
+      <tr>
+        <td><strong>6. Active Bookings</strong></td>
+        <td>Активних бронювань</td>
+        <td><code class="formula">COUNT WHERE status IN (confirmed, awaiting_payment, partial)</code></td>
+        <td><code class="formula">GET /bookings?status=active</code></td>
+        <td>Динамічний — без жорсткого порогу</td>
+        <td>KPI card + зміна за тиждень</td>
+      </tr>
+      <tr>
+        <td><strong>7. Agent Commission Pool</strong></td>
+        <td>Нараховано комісій</td>
+        <td><code class="formula">SUM(booking.price × commission_rate) WHERE status=confirmed</code></td>
+        <td><code class="formula">GET /finance/commissions</code></td>
+        <td>Інформаційний KPI</td>
+        <td>KPI card (тільки для admin/director)</td>
+      </tr>
+      <tr>
+        <td><strong>8. Tours Ready to Depart</strong></td>
+        <td>Готових до виїзду</td>
+        <td><code class="formula">COUNT WHERE status=ready_to_depart AND depart_date ≤ now+7d</code></td>
+        <td><code class="formula">GET /tours/upcoming</code></td>
+        <td>🔴 якщо &lt;72год і не ready</td>
+        <td>Alert list / countdown</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══ FOOTER ═══ -->
+<div class="footer">
+  📊 Eurotrips BI Dashboard v1.0 · Джерело: ET_Tour_Calendar_2025 + AGcomission.csv + Hotel_Database.csv
+  · Дата аналізу: Червень 2026 · Підготовлено: Data Analyst role
+</div>
+
+</div><!-- /container -->
+
+<script>
+// ─── DATA (embedded from CSV analysis) ───────────────────────────────────────
+
+const DIRECTIONS = [
+  { dir:"Італія",      n:111, cost:231, price:261, margin:11.2, comm:13.8, days:6,  transport:4465 },
+  { dir:"Угорщина",    n:64,  cost:86,  price:100, margin:14.5, comm:29.6, days:4,  transport:1804 },
+  { dir:"Франція",     n:61,  cost:324, price:351, margin:7.6,  comm:12.6, days:7,  transport:5777 },
+  { dir:"Греція",      n:36,  cost:426, price:458, margin:7.0,  comm:10.0, days:10, transport:5281 },
+  { dir:"Чехія",       n:34,  cost:160, price:178, margin:10.0, comm:19.1, days:4,  transport:2712 },
+  { dir:"Польща",      n:32,  cost:86,  price:137, margin:36.8, comm:20.8, days:3,  transport:1217 },
+  { dir:"Туреччина",   n:22,  cost:164, price:179, margin:8.4,  comm:12.0, days:5,  transport:4199 },
+  { dir:"Румунія",     n:21,  cost:88,  price:132, margin:33.9, comm:27.1, days:4,  transport:1761 },
+  { dir:"Австрія",     n:21,  cost:194, price:209, margin:7.5,  comm:18.1, days:5,  transport:3393 },
+  { dir:"Іспанія",     n:19,  cost:366, price:577, margin:36.6, comm:10.1, days:10, transport:7344 },
+];
+
+const MONTHS = [
+  {m:"Січ",n:17},{m:"Лют",n:9},{m:"Бер",n:43},{m:"Кві",n:50},
+  {m:"Тра",n:38},{m:"Чер",n:60},{m:"Лип",n:63},{m:"Сер",n:54},
+  {m:"Вер",n:52},{m:"Жов",n:47},{m:"Лис",n:17},{m:"Гру",n:45},
+];
+
+const COMMISSIONS = [
+  {name:"Будапешт + Відень",   pct:30.0},
+  {name:"Відень + Зальцбург",  pct:17.0},
+  {name:"Прага + Дрезден",     pct:20.0},
+  {name:"Адріатика + Доломіти",pct:14.0},
+  {name:"Швейцарія",           pct:14.0},
+  {name:"Мілан - Комо - Альпи",pct:13.0},
+  {name:"Париж + Нормандія",   pct:13.0},
+  {name:"Стамбул",             pct:12.0},
+  {name:"Греція (Asteris)",    pct:10.0},
+  {name:"Морська Італія",      pct:10.0},
+];
+
+const PRICE_TIERS = [
+  {label:"Економ (<200€)",    value:153, color:"#22c55e"},
+  {label:"Середній (200-400€)",value:181, color:"#53c7d6"},
+  {label:"Преміум (400€+)",   value:54,  color:"#f9c01d"},
+];
+
+const STARS = [
+  {label:"★★ (2 зірки)", value:8,  color:"#94a3b8"},
+  {label:"★★★ (3 зірки)",value:93, color:"#53c7d6"},
+  {label:"★★★★ (4 зірки)",value:48, color:"#f9c01d"},
+];
+
+const TRANSPORT = DIRECTIONS.slice(0,8);
+
+// ─── COLORS ──────────────────────────────────────────────────────────────────
+const COLORS = ["#2d70b9","#53c7d6","#f9c01d","#f0366d","#22c55e","#a78bfa","#fb923c","#14b8a6","#e879f9","#60a5fa"];
+
+// ─── DIRECTION TABLE ─────────────────────────────────────────────────────────
+function buildDirTable() {
+  const tbody = document.getElementById("dirTableBody");
+  const maxN = Math.max(...DIRECTIONS.map(d=>d.n));
+  DIRECTIONS.forEach((d, i) => {
+    const marginPill = d.margin >= 20
+      ? `<span class="pill pill-green">${d.margin.toFixed(1)}%</span>`
+      : d.margin >= 10
+      ? `<span class="pill pill-yellow">${d.margin.toFixed(1)}%</span>`
+      : `<span class="pill pill-red">${d.margin.toFixed(1)}%</span>`;
+
+    const commPill = d.comm >= 20
+      ? `<span class="pill pill-green">${d.comm.toFixed(1)}%</span>`
+      : `<span class="pill pill-yellow">${d.comm.toFixed(1)}%</span>`;
+
+    const barW = Math.round(d.n / maxN * 100);
+    const barColor = COLORS[i % COLORS.length];
+
+    tbody.innerHTML += `<tr>
+      <td style="color:var(--sub);font-weight:700">${i+1}</td>
+      <td><strong>${d.dir}</strong></td>
+      <td>
+        <div class="bar-wrap">
+          <div class="bar-bg"><div class="bar-fill" style="width:${barW}%;background:${barColor}"></div></div>
+          <span style="font-weight:700;font-size:13px">${d.n}</span>
+        </div>
+      </td>
+      <td style="color:var(--sub)">${d.cost}€</td>
+      <td style="font-weight:700">${d.price}€</td>
+      <td>${marginPill}</td>
+      <td>${commPill}</td>
+      <td>${d.days} дн.</td>
+      <td style="color:var(--sub)">${d.transport.toLocaleString()}€</td>
+    </tr>`;
+  });
+}
+
+// ─── CHART: Seasonality ───────────────────────────────────────────────────────
+function buildSeasonChart() {
+  const ctx = document.getElementById("seasonChart").getContext("2d");
+  const peak = [5,6,7,8,9];
+  const backgroundColors = MONTHS.map((m,i) =>
+    peak.includes(i) ? "#53c7d6" : "#2d70b9");
+  new Chart(ctx, {
+    type:"bar",
+    data:{
+      labels: MONTHS.map(m=>m.m),
+      datasets:[{
+        label:"Виїздів",
+        data: MONTHS.map(m=>m.n),
+        backgroundColor: backgroundColors,
+        borderRadius:6,
+      }]
+    },
+    options:{
+      responsive:true, animation:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{ callbacks:{ label: c => ` ${c.raw} виїздів` } }
+      },
+      scales:{
+        y:{ beginAtZero:true, grid:{color:"#f0f4f8"}, ticks:{font:{size:11}} },
+        x:{ grid:{display:false}, ticks:{font:{size:11}} }
+      }
+    }
+  });
+}
+
+// ─── CHART: Transport cost ─────────────────────────────────────────────────────
+function buildTransportChart() {
+  const ctx = document.getElementById("transportChart").getContext("2d");
+  const sorted = [...TRANSPORT].sort((a,b)=>a.transport-b.transport);
+  new Chart(ctx, {
+    type:"bar",
+    data:{
+      labels: sorted.map(d=>d.dir),
+      datasets:[{
+        label:"Транспорт EUR",
+        data: sorted.map(d=>d.transport),
+        backgroundColor: sorted.map((_,i)=>COLORS[i]),
+        borderRadius:4,
+      }]
+    },
+    options:{
+      indexAxis:"y", responsive:true, animation:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{ callbacks:{ label: c => ` ${c.raw.toLocaleString()} EUR/тур` } }
+      },
+      scales:{
+        x:{ beginAtZero:true, grid:{color:"#f0f4f8"}, ticks:{font:{size:11}, callback:v=>`${(v/1000).toFixed(0)}k€`} },
+        y:{ grid:{display:false}, ticks:{font:{size:11}} }
+      }
+    }
+  });
+}
+
+// ─── CHART: Margin by direction ────────────────────────────────────────────────
+function buildMarginChart() {
+  const ctx = document.getElementById("marginChart").getContext("2d");
+  const sorted = [...DIRECTIONS].sort((a,b)=>b.margin-a.margin);
+  new Chart(ctx, {
+    type:"bar",
+    data:{
+      labels: sorted.map(d=>d.dir),
+      datasets:[{
+        label:"Маржа %",
+        data: sorted.map(d=>d.margin),
+        backgroundColor: sorted.map(d=>
+          d.margin>=20 ? "#22c55e" : d.margin>=10 ? "#f9c01d" : "#f0366d"),
+        borderRadius:5,
+      }]
+    },
+    options:{
+      responsive:true, animation:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{ callbacks:{ label: c => ` ${c.raw.toFixed(1)}%` } }
+      },
+      scales:{
+        y:{ beginAtZero:true, grid:{color:"#f0f4f8"}, ticks:{font:{size:11}, callback:v=>`${v}%`} },
+        x:{ grid:{display:false}, ticks:{font:{size:10}, maxRotation:30} }
+      }
+    }
+  });
+}
+
+// ─── COMMISSION BARS ─────────────────────────────────────────────────────────
+function buildCommissionBars() {
+  const container = document.getElementById("commissionBars");
+  const maxPct = Math.max(...COMMISSIONS.map(c=>c.pct));
+  COMMISSIONS.forEach(c => {
+    const w = Math.round(c.pct / maxPct * 100);
+    const color = c.pct >= 20 ? "#22c55e" : c.pct >= 15 ? "#53c7d6" : "#2d70b9";
+    container.innerHTML += `<div class="comm-item">
+      <div class="comm-name">${c.name}</div>
+      <div class="comm-bar"><div class="comm-fill" style="width:${w}%;background:${color}"></div></div>
+      <div class="comm-pct">${c.pct.toFixed(0)}%</div>
+    </div>`;
+  });
+}
+
+// ─── CHART: Price Tiers ────────────────────────────────────────────────────────
+function buildPriceTierChart() {
+  const ctx = document.getElementById("priceTierChart").getContext("2d");
+  new Chart(ctx, {
+    type:"doughnut",
+    data:{
+      labels: PRICE_TIERS.map(p=>p.label),
+      datasets:[{ data: PRICE_TIERS.map(p=>p.value), backgroundColor: PRICE_TIERS.map(p=>p.color), borderWidth:2, borderColor:"#fff" }]
+    },
+    options:{
+      responsive:true, animation:false, cutout:"65%",
+      plugins:{
+        legend:{ position:"bottom", labels:{ font:{size:11}, padding:12, usePointStyle:true } },
+        tooltip:{ callbacks:{ label: c => ` ${c.raw} турів (${Math.round(c.raw/388*100)}%)` } }
+      }
+    }
+  });
+}
+
+// ─── CHART: Stars ─────────────────────────────────────────────────────────────
+function buildStarsChart() {
+  const ctx = document.getElementById("starsChart").getContext("2d");
+  new Chart(ctx, {
+    type:"doughnut",
+    data:{
+      labels: STARS.map(s=>s.label),
+      datasets:[{ data: STARS.map(s=>s.value), backgroundColor: STARS.map(s=>s.color), borderWidth:2, borderColor:"#fff" }]
+    },
+    options:{
+      responsive:true, animation:false, cutout:"65%",
+      plugins:{
+        legend:{ position:"bottom", labels:{ font:{size:11}, padding:12, usePointStyle:true } },
+        tooltip:{ callbacks:{ label: c => ` ${c.raw} готелів` } }
+      }
+    }
+  });
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+buildDirTable();
+buildSeasonChart();
+buildTransportChart();
+buildMarginChart();
+buildCommissionBars();
+buildPriceTierChart();
+buildStarsChart();
+</script>
+</body>
+</html>
