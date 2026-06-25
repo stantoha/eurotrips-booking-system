@@ -19,6 +19,8 @@ import {
 import { requireAuth } from '../../shared/guards/jwt.guard';
 import { requireRoles } from '../../shared/guards/rbac.guard';
 import { getCurrentUser } from '../../shared/guards/jwt.guard';
+import { z } from 'zod';
+import prisma from '../../shared/database/prisma';
 
 const ID_PARAM = {
   type: 'object',
@@ -107,6 +109,102 @@ export async function bookingRoutes(app: FastifyInstance) {
     const dto  = AddPaymentSchema.parse(req.body);
     const user = getCurrentUser(req);
     return reply.code(201).send({ data: await service.addPayment(req.params.id, dto, user) });
+  });
+
+  // ── GET /bookings/:id/insurance (ADR-003 INS-01) ───────────────────────────
+  app.get<{ Params: { id: string } }>('/:id/insurance', {
+    preHandler: [requireAuth, requireRoles('admin', 'manager', 'ops')],
+    schema: {
+      summary: 'Страховки по бронюванню (ADR-003)',
+      description: 'RBAC: ops, manager, admin. Агент → 403.',
+      tags: ['Bookings'], security: [{ bearerAuth: [] }], params: ID_PARAM,
+    },
+  }, async (req, reply) => {
+    const booking = await prisma.booking.findUnique({ where: { id: req.params.id } });
+    if (!booking) return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Бронювання не знайдено' } });
+    const insurances = await prisma.touristInsurance.findMany({
+      where: { bookingId: req.params.id },
+      include: { tourist: { select: { firstName: true, lastName: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+    return reply.send({ data: insurances });
+  });
+
+  // ── POST /bookings/:id/insurance (ADR-003 INS-01) ──────────────────────────
+  const AddInsuranceSchema = z.object({
+    touristId:        z.string().uuid(),
+    insurer:          z.string().min(1).max(100),
+    insuranceType:    z.string().min(1).max(50),
+    coverageAmount:   z.number().positive(),
+    coverageCurrency: z.string().length(3).default('USD'),
+    startDate:        z.string().datetime(),
+    endDate:          z.string().datetime(),
+    costEur:          z.number().positive(),
+    policyNumber:     z.string().max(50).optional(),
+  });
+  app.post<{ Params: { id: string } }>('/:id/insurance', {
+    preHandler: [requireAuth, requireRoles('admin', 'manager', 'ops')],
+    schema: {
+      summary: 'Додати страхування туристу (ADR-003 INS-01)',
+      tags: ['Bookings'], security: [{ bearerAuth: [] }], params: ID_PARAM,
+    },
+  }, async (req, reply) => {
+    const body = AddInsuranceSchema.parse(req.body);
+    const booking = await prisma.booking.findUnique({ where: { id: req.params.id } });
+    if (!booking) return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Бронювання не знайдено' } });
+    const insurance = await prisma.touristInsurance.create({
+      data: {
+        bookingId:        req.params.id,
+        touristId:        body.touristId,
+        insurer:          body.insurer,
+        insuranceType:    body.insuranceType,
+        coverageAmount:   body.coverageAmount,
+        coverageCurrency: body.coverageCurrency,
+        startDate:        new Date(body.startDate),
+        endDate:          new Date(body.endDate),
+        costEur:          body.costEur,
+        policyNumber:     body.policyNumber,
+        status:           'active',
+      },
+    });
+    return reply.code(201).send({ data: insurance });
+  });
+
+  // ── PATCH /bookings/:id/insurance/:insuranceId (ADR-003 INS-03) ────────────
+  const INSURANCE_ID_PARAMS = {
+    type: 'object',
+    properties: {
+      id:          { type: 'string', format: 'uuid' },
+      insuranceId: { type: 'string', format: 'uuid' },
+    },
+    required: ['id', 'insuranceId'],
+  } as const;
+  const PatchInsuranceSchema = z.object({
+    status:       z.enum(['active', 'confirmed', 'cancelled']).optional(),
+    policyNumber: z.string().max(50).optional(),
+    documentPath: z.string().optional(),
+  });
+  app.patch<{ Params: { id: string; insuranceId: string } }>('/:id/insurance/:insuranceId', {
+    preHandler: [requireAuth, requireRoles('admin', 'manager', 'ops')],
+    schema: {
+      summary: 'Оновити страховку (ADR-003 INS-03)',
+      tags: ['Bookings'], security: [{ bearerAuth: [] }], params: INSURANCE_ID_PARAMS,
+    },
+  }, async (req, reply) => {
+    const body = PatchInsuranceSchema.parse(req.body);
+    const existing = await prisma.touristInsurance.findFirst({
+      where: { id: req.params.insuranceId, bookingId: req.params.id },
+    });
+    if (!existing) return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Страховку не знайдено' } });
+    const updated = await prisma.touristInsurance.update({
+      where: { id: req.params.insuranceId },
+      data: {
+        ...(body.status       !== undefined && { status:       body.status }),
+        ...(body.policyNumber !== undefined && { policyNumber: body.policyNumber }),
+        ...(body.documentPath !== undefined && { documentPath: body.documentPath }),
+      },
+    });
+    return reply.send({ data: updated });
   });
 
   // ── POST /bookings/:id/cancel (BR-08) ──────────────────────────────────────

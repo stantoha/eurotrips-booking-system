@@ -35,6 +35,17 @@ export function useTours(filters?: TourListQueryDto) {
   })
 }
 
+export function useTour(id: string) {
+  return useQuery({
+    queryKey: tourKeys.detail(id),
+    queryFn:  async () => {
+      const res = await api.get<{ data: Tour }>(`/tours/${id}`)
+      return res.data.data
+    },
+    enabled: !!id,
+  })
+}
+
 // Convenience hook returning Tour[] directly (used by AgentCabinet)
 export function useTourList(filters?: TourListQueryDto) {
   return useQuery({

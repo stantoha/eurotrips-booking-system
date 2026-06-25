@@ -498,6 +498,28 @@ async function main() {
     },
   });
 
+  // booking3: direct booking, status='new' — для QA тестів базового флоу
+  await prisma.booking.upsert({
+    where: { bookingNumber: 'ET-2025-04523' },
+    update: {},
+    create: {
+      bookingNumber:   'ET-2025-04523',
+      tourId:          tourAdriatic.id,
+      bookingType:     'direct',
+      contactTouristId: touristMaria.id,
+      managerId:       managerOlena.id,
+      personsCount:    1,
+      totalAmount:     840,
+      depositAmount:   168,
+      depositPaid:     0,
+      balanceAmount:   672,
+      balancePaid:     0,
+      paymentStatus:   'unpaid',
+      status:          'new',
+      sourceChannel:   'site',
+    },
+  });
+
   // ── 9. AGENT COMMISSIONS ─────────────────────────────────────────────────
   await prisma.agentCommission.upsert({
     where: {

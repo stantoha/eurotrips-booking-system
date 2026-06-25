@@ -26,6 +26,7 @@ import { financeRoutes }      from './modules/finance/finance.routes';
 import { leadRoutes }         from './modules/leads/leads.routes';
 import { agentRoutes }        from './modules/agents/agents.routes';
 import { zohoWebhookRoutes }  from './modules/integrations/zoho/zoho.webhook';
+import { liqPayRoutes }       from './modules/payments/liqpay.routes';
 
 export async function buildApp(app: FastifyInstance) {
 
@@ -153,6 +154,7 @@ export async function buildApp(app: FastifyInstance) {
 
   // ── 8b. Публічні вебхуки (без JWT) ─────────────────────────────────────
   await app.register(zohoWebhookRoutes, { prefix: '/webhooks/zoho' });
+  await app.register(liqPayRoutes,      { prefix: '/webhooks/liqpay' });
 
   // ── 9. Prisma — декоруємо app для використання в хуках ─────────────────
   app.decorate('prisma', (await import('./shared/database/prisma')).default);

@@ -215,17 +215,11 @@ export function useUpdateBookingStatus() {
           `Дозволені: ${allowed.join(', ')}`
         );
       }
-      // TODO: розкоментувати після появи API
-      // const { data } = await api.patch<ApiResponse<Booking>>(
-      //   `/bookings/${payload.bookingId}/status`,
-      //   payload.dto,
-      // );
-      // return data.data;
-
-      // Заглушка — повертаємо мок з оновленим статусом
-      const found = MOCK_BOOKINGS.find((b) => b.id === payload.bookingId);
-      if (!found) throw new Error('Booking not found');
-      return { ...found, status: payload.dto.status };
+      const { data } = await api.patch<{ data: Booking }>(
+        `/bookings/${payload.bookingId}/status`,
+        payload.dto,
+      );
+      return data.data;
     },
     onSuccess: (updated) => {
       // Оновлюємо кеш бронювання
@@ -264,25 +258,11 @@ export function useCancelBooking() {
       bookingId: string;
       dto:       CancelBookingDto;
     }): Promise<CancelBookingResult> => {
-      // TODO: розкоментувати після появи API
-      // const { data } = await api.post<ApiResponse<CancelBookingResult>>(
-      //   `/bookings/${payload.bookingId}/cancel`,
-      //   payload.dto,
-      // );
-      // return data.data;
-
-      // Заглушка для dev
-      const found = MOCK_BOOKINGS.find((b) => b.id === payload.bookingId);
-      if (!found) throw new Error('Booking not found');
-      const penaltyPct = payload.dto.initiated_by === 'operator' ? 0 : 20;
-      const penalty    = Math.round(found.total_price * penaltyPct / 100);
-      return {
-        booking:        { ...found, status: payload.dto.initiated_by === 'client' ? 'cancelled_client' : 'cancelled_operator' },
-        penalty_amount: penalty,
-        refund_amount:  found.amount_paid - penalty,
-        penalty_pct:    penaltyPct,
-        policy_applied: 'standard_30d',
-      };
+      const { data } = await api.post<{ data: CancelBookingResult }>(
+        `/bookings/${payload.bookingId}/cancel`,
+        payload.dto,
+      );
+      return data.data;
     },
     onSuccess: (result) => {
       qc.setQueryData(bookingKeys.detail(result.booking.id), result.booking);

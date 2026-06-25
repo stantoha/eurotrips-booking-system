@@ -16,6 +16,7 @@ const Dashboard       = React.lazy(() => import('./pages/Dashboard'));
 const ToursPage       = React.lazy(() => import('./pages/Tours'));
 const BookingsPage    = React.lazy(() => import('./pages/Bookings'));
 const BookingDetail   = React.lazy(() => import('./pages/BookingDetail'));
+const LeadsList       = React.lazy(() => import('./pages/LeadsList'));
 const AgentCabinet    = React.lazy(() => import('./pages/agent/AgentCabinet'));
 const FinancePage     = React.lazy(() => import('./pages/Finance'));
 const OperationsPage  = React.lazy(() => import('./pages/Operations'));
@@ -82,6 +83,11 @@ export const App: React.FC = () => (
             <Route path="/tours"         element={<ToursPage />} />
             <Route path="/bookings"      element={<BookingsPage />} />
             <Route path="/operations"    element={<OperationsPage />} />
+          </Route>
+
+          {/* ── CRM / Leads — admin, director, manager ─────── */}
+          <Route element={<ProtectedRoute allowedRoles={['admin', 'director', 'manager']} />}>
+            <Route path="/leads" element={<LeadsList />} />
           </Route>
 
           {/* ── Booking detail — всі ролі, RBAC на рівні API ── */}
