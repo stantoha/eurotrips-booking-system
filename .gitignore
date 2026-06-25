@@ -10,6 +10,8 @@ build/
 .env
 .env.local
 .env.*.local
+.env.production
+.secrets.generated
 !.env.example
 
 # Prisma
