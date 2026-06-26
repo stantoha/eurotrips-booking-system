@@ -23,23 +23,29 @@ async function redisPlugin(app: FastifyInstance) {
   }
 
   const redis = new Redis(config.REDIS_URL, {
-    maxRetriesPerRequest: 3,
+    maxRetriesPerRequest: 1,
     lazyConnect: true,
     enableReadyCheck: true,
+    retryStrategy: (times) => (times >= 2 ? null : Math.min(times * 200, 1000)),
+    enableOfflineQueue: false,
   });
 
   redis.on('connect', () => app.log.info('✅ Redis підключено'));
-  redis.on('error', (err) => app.log.error({ err }, '❌ Redis помилка'));
+  redis.on('error', (err) => app.log.warn({ err }, '⚠️ Redis помилка'));
   redis.on('reconnecting', () => app.log.warn('🔄 Redis перепідключення...'));
 
-  await redis.connect();
-
-  app.decorate('redis', redis);
-
-  app.addHook('onClose', async () => {
-    await redis.quit();
-    app.log.info('Redis з\'єднання закрито');
-  });
+  try {
+    await redis.connect();
+    app.decorate('redis', redis);
+    app.addHook('onClose', async () => {
+      await redis.quit();
+      app.log.info('Redis з\'єднання закрито');
+    });
+  } catch (err) {
+    app.log.warn({ err }, '⚠️ Redis недоступний — вимикаємо (MVP mode)');
+    redis.disconnect();
+    app.decorate('redis', null);
+  }
 }
 
 export default fp(redisPlugin, {
