@@ -139,11 +139,11 @@ export async function financeRoutes(app: FastifyInstance) {
         }),
         prisma.agentCommission.aggregate({
           where: { booking: { tourId: id }, status: { in: ['to_pay', 'paid'] } },
-          _sum: { amount: true },
+          _sum: { agentAmount: true },
         }),
         prisma.tourExtra.aggregate({
           where: { tourId: id },
-          _sum: { costEur: true },
+          _sum: { totalCost: true },
         }),
       ]);
 
@@ -152,8 +152,8 @@ export async function financeRoutes(app: FastifyInstance) {
       const bookingsCount    = revenueAgg._count.id;
       const hotelCosts       = Number(tour.costPrice ?? 0) * bookingsCount;
       const transportCosts   = 0; // TODO: transport_bookings aggregate
-      const extrasCosts      = Number(extrasAgg._sum.costEur ?? 0);
-      const commissionsPaid  = Number(commissionsAgg._sum.amount ?? 0);
+      const extrasCosts      = Number(extrasAgg._sum?.totalCost ?? 0);
+      const commissionsPaid  = Number(commissionsAgg._sum?.agentAmount ?? 0);
       const grossProfit      = revenue - hotelCosts - transportCosts - extrasCosts;
       const netProfit        = grossProfit - commissionsPaid;
       const marginPct        = revenue > 0 ? Math.round((netProfit / revenue) * 10000) / 100 : 0;

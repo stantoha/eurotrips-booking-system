@@ -6,3 +6,4 @@
 
 export const MOCK_TOURS: unknown[] = [];
 export const MOCK_BOOKINGS: unknown[] = [];
+export const MOCK_LEADS: unknown[] = [];

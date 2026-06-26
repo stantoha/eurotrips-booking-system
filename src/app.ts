@@ -25,8 +25,8 @@ import { bookingRoutes }      from './modules/bookings/bookings.routes';
 import { financeRoutes }      from './modules/finance/finance.routes';
 import { leadRoutes }         from './modules/leads/leads.routes';
 import { agentRoutes }        from './modules/agents/agents.routes';
-import { zohoWebhookRoutes }  from './modules/integrations/zoho/zoho.webhook';
-import { liqPayRoutes }       from './modules/payments/liqpay.routes';
+// import { zohoWebhookRoutes }  from './modules/integrations/zoho/zoho.webhook';
+// import { liqPayRoutes }       from './modules/payments/liqpay.routes';
 
 export async function buildApp(app: FastifyInstance) {
 
@@ -36,7 +36,20 @@ export async function buildApp(app: FastifyInstance) {
   });
 
   await app.register(fastifyCors, {
-    origin: [config.FRONTEND_URL],
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true); // curl, Postman, server-to-server
+      const allowed = [
+        'http://localhost:5173',
+        'http://localhost:3000',
+        config.FRONTEND_URL,
+        process.env.CORS_ORIGIN,
+      ].filter(Boolean) as string[];
+      if (allowed.some(u => origin.startsWith(u))) {
+        cb(null, true);
+      } else {
+        cb(new Error(`CORS blocked: ${origin}`), false);
+      }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   });
@@ -115,15 +128,17 @@ export async function buildApp(app: FastifyInstance) {
   // ── 7. Health check ─────────────────────────────────────────────────────
   app.get('/health', { schema: { hide: true } }, async (_req, reply) => {
     try {
-      // Перевіряємо БД
       await app.prisma.$queryRaw`SELECT 1`;
-      // Перевіряємо Redis
-      await app.redis.ping();
+
+      let redisStatus: string = config.REDIS_URL ? 'ok' : 'disabled';
+      if (app.redis) {
+        await app.redis.ping();
+      }
 
       return reply.code(200).send({
         status: 'ok',
         timestamp: new Date().toISOString(),
-        services: { database: 'ok', redis: 'ok' },
+        services: { database: 'ok', redis: redisStatus },
       });
     } catch (err) {
       return reply.code(503).send({
@@ -132,6 +147,13 @@ export async function buildApp(app: FastifyInstance) {
       });
     }
   });
+
+  app.get('/api/v1/health', { schema: { hide: true } }, async () => ({
+    status: 'ok',
+    db: 'connected',
+    redis: config.REDIS_URL ? 'connected' : 'disabled',
+    ts: new Date().toISOString(),
+  }));
 
   // ── 8. API Routes ────────────────────────────────────────────────────────
   await app.register(
@@ -152,9 +174,9 @@ export async function buildApp(app: FastifyInstance) {
     { prefix: '/api/v1' }
   );
 
-  // ── 8b. Публічні вебхуки (без JWT) ─────────────────────────────────────
-  await app.register(zohoWebhookRoutes, { prefix: '/webhooks/zoho' });
-  await app.register(liqPayRoutes,      { prefix: '/webhooks/liqpay' });
+  // ── 8b. Публічні вебхуки (без JWT) — disabled for MVP ──────────────────
+  // await app.register(zohoWebhookRoutes, { prefix: '/webhooks/zoho' });
+  // await app.register(liqPayRoutes,      { prefix: '/webhooks/liqpay' });
 
   // ── 9. Prisma — декоруємо app для використання в хуках ─────────────────
   app.decorate('prisma', (await import('./shared/database/prisma')).default);

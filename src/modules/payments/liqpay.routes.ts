@@ -11,6 +11,8 @@
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify';
 import { z } from 'zod';
 import { LiqPayService } from './liqpay.service';
+import { requireAuth } from '../../shared/guards/jwt.guard';
+import type { JwtPayload } from '../auth/auth.types';
 
 // Zod-схема для вхідних даних webhook
 const LiqPayWebhookSchema = z.object({
@@ -95,7 +97,7 @@ export async function liqPayRoutes(
   }>(
     '/api/v1/bookings/:bookingId/payment/liqpay',
     {
-      onRequest: [fastify.authenticate],
+      onRequest: [requireAuth],
       schema: {
         description: 'Ініціювати LiqPay платіж для бронювання',
         tags: ['payments', 'bookings'],
@@ -134,7 +136,7 @@ export async function liqPayRoutes(
     async (request, reply) => {
       const { bookingId } = request.params;
       const { amount, type } = request.body;
-      const user = request.user;
+      const user = request.user as JwtPayload;
 
       // Завантажуємо бронювання з туром для опису
       const booking = await fastify.prisma.booking.findUnique({
@@ -146,8 +148,8 @@ export async function liqPayRoutes(
         return reply.code(404).send({ error: { code: 'BOOKING_NOT_FOUND', message: 'Бронювання не знайдено' } });
       }
 
-      // RBAC: tourist бачить тільки своє бронювання
-      if (user.role === 'tourist' && booking.touristId !== user.touristId) {
+      // RBAC: agent бачить тільки своє бронювання
+      if (user.role === 'agent' && booking.agentId !== user.agentId) {
         return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Доступ заборонено' } });
       }
 

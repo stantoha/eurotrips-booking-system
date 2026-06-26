@@ -1,6 +1,7 @@
 // =============================================================================
 // EUROTRIPS — Redis Client (Fastify Plugin)
 // Декорує app.redis для використання в сервісах
+// Опціональний: якщо REDIS_URL не задано — app.redis = null (MVP mode)
 // =============================================================================
 
 import fp from 'fastify-plugin';
@@ -10,11 +11,17 @@ import { config } from '../../config';
 
 declare module 'fastify' {
   interface FastifyInstance {
-    redis: Redis;
+    redis: Redis | null;
   }
 }
 
 async function redisPlugin(app: FastifyInstance) {
+  if (!config.REDIS_URL) {
+    app.log.warn('⚠️ REDIS_URL не задано — Redis вимкнено (MVP mode)');
+    app.decorate('redis', null);
+    return;
+  }
+
   const redis = new Redis(config.REDIS_URL, {
     maxRetriesPerRequest: 3,
     lazyConnect: true,

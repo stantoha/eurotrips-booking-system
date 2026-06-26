@@ -87,20 +87,27 @@ const DEFAULT_JOB_OPTIONS = {
  *   // У Fastify plugin або модулі ініціалізації:
  *   export const emailQueue = createEmailQueue();
  */
-export function createEmailQueue(connection?: IORedis) {
+export type EmailQueue = Queue<EmailJobData, void, string>;
+
+export function createEmailQueue(connection?: IORedis): EmailQueue {
   const conn = connection ?? createRedisConnection();
 
-  return new Queue<EmailJobData, void, EmailJobName>('email-notifications', {
-    connection:        conn,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return new Queue<EmailJobData, void, string>('email-notifications', {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    connection:        conn as any,
     defaultJobOptions: DEFAULT_JOB_OPTIONS,
-  });
+  }) as EmailQueue;
 }
 
 // ─── Singleton (для використання поза Fastify контекстом) ────
 
-let _emailQueue: ReturnType<typeof createEmailQueue> | null = null;
+let _emailQueue: EmailQueue | null = null;
 
-export function getEmailQueue(): ReturnType<typeof createEmailQueue> {
+export function getEmailQueue(): EmailQueue | null {
+  if (!process.env.REDIS_URL) {
+    return null;
+  }
   if (!_emailQueue) {
     _emailQueue = createEmailQueue();
   }
@@ -122,7 +129,8 @@ export function attachEmailQueueEvents(
   connection: IORedis,
   logger: { info: (msg: string, meta?: object) => void; error: (msg: string, meta?: object) => void; warn: (msg: string, meta?: object) => void },
 ): QueueEvents {
-  const events = new QueueEvents('email-notifications', { connection });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const events = new QueueEvents('email-notifications', { connection: connection as any });
 
   events.on('completed', ({ jobId }) => {
     logger.info(`Email job completed`, { jobId });
@@ -149,7 +157,7 @@ export function attachEmailQueueEvents(
  *   await schedulePaymentReminders(emailQueue, bookingId, paymentDeadline);
  */
 export async function schedulePaymentReminders(
-  queue: ReturnType<typeof createEmailQueue>,
+  queue: EmailQueue,
   bookingId: string,
   paymentDeadline: Date,
 ): Promise<void> {
@@ -183,7 +191,7 @@ export async function schedulePaymentReminders(
  *   await schedulePreDepartureEmail(emailQueue, bookingId, departureDate);
  */
 export async function schedulePreDepartureEmail(
-  queue: ReturnType<typeof createEmailQueue>,
+  queue: EmailQueue,
   bookingId: string,
   departureDate: Date,
 ): Promise<void> {
@@ -213,7 +221,7 @@ export async function schedulePreDepartureEmail(
  *   await cancelBookingEmailJobs(emailQueue, bookingId);
  */
 export async function cancelBookingEmailJobs(
-  queue: ReturnType<typeof createEmailQueue>,
+  queue: EmailQueue,
   bookingId: string,
 ): Promise<void> {
   const jobIds = [

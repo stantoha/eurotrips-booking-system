@@ -336,6 +336,7 @@ export class BookingsService {
     booking: { balanceDeadline: Date | null; tour: { departureDate: Date } | null }
   ) {
     const queue = getEmailQueue();
+    if (!queue) return; // Redis не задано — email-тригери вимкнені для MVP
 
     if (newStatus === BookingStatus.confirmed) {
       await queue.add('booking:confirmed', { bookingId });

@@ -1,6 +1,6 @@
 // TODO: підключити GET /tours/:id/availability → реальні дані з БД
 import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '../services/api';
+import { api } from '../services/api';
 
 interface TourAvailability {
   availableSeats:  number;
@@ -27,11 +27,15 @@ export function useTourAvailability(
   return useQuery<TourAvailability>({
     queryKey: ['tour-availability', tourId],
     queryFn: async () => {
-      const res = await apiClient.get(`/tours/${tourId}/availability`);
+      const res = await api.get(`/tours/${tourId}/availability`);
       return res.data;
     },
     enabled: options.enabled !== false && !!tourId,
     staleTime: 30_000,
     refetchInterval: 60_000,
   });
+}
+
+export function invalidateTourAvailability(_tourId: string) {
+  // Placeholder — invalidation handled via queryClient in components
 }

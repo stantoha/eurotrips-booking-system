@@ -95,11 +95,13 @@ export class AuthService {
       throw new AppError('INVALID_REFRESH_TOKEN', 'Недійсний або прострочений refresh token', 401);
     }
 
-    // Перевіряємо чи є в Redis
+    // Перевіряємо чи є в Redis (якщо Redis доступний)
     const redisKey = `${REFRESH_TOKEN_PREFIX}${payload.sub}`;
-    const storedToken = await this.app.redis.get(redisKey);
-    if (!storedToken || storedToken !== refreshToken) {
-      throw new AppError('REFRESH_TOKEN_REVOKED', 'Refresh token відкликано', 401);
+    if (this.app.redis) {
+      const storedToken = await this.app.redis.get(redisKey);
+      if (!storedToken || storedToken !== refreshToken) {
+        throw new AppError('REFRESH_TOKEN_REVOKED', 'Refresh token відкликано', 401);
+      }
     }
 
     // Завантажуємо актуального юзера
@@ -113,7 +115,7 @@ export class AuthService {
     }
 
     // Ротація refresh token (видаляємо старий, видаємо новий)
-    await this.app.redis.del(redisKey);
+    if (this.app.redis) await this.app.redis.del(redisKey);
     const authUser = this.toAuthUser(user);
     const tokens = await this.generateTokens(authUser);
     const newRefreshToken = await this.createRefreshToken(user.id);
@@ -124,15 +126,17 @@ export class AuthService {
   // ── LOGOUT ───────────────────────────────────────────────────────────────
   // TC-AUTH-015: після logout старий access token має повертати 401
   async logout(userId: string): Promise<void> {
-    // 1. Видаляємо refresh token
-    await this.app.redis.del(`${REFRESH_TOKEN_PREFIX}${userId}`);
-    // 2. Записуємо blacklist: всі токени видані ДО цього timestamp → недійсні
-    //    TTL = 15хв (час життя access token)
-    await this.app.redis.setex(
-      `jwt:blacklist:${userId}`,
-      15 * 60,
-      String(Math.floor(Date.now() / 1000)) // поточний unix timestamp
-    );
+    if (this.app.redis) {
+      // 1. Видаляємо refresh token
+      await this.app.redis.del(`${REFRESH_TOKEN_PREFIX}${userId}`);
+      // 2. Записуємо blacklist: всі токени видані ДО цього timestamp → недійсні
+      //    TTL = 15хв (час життя access token)
+      await this.app.redis.setex(
+        `jwt:blacklist:${userId}`,
+        15 * 60,
+        String(Math.floor(Date.now() / 1000))
+      );
+    }
   }
 
   // ── ME ───────────────────────────────────────────────────────────────────
@@ -208,11 +212,13 @@ export class AuthService {
       { expiresIn: config.JWT_REFRESH_EXPIRES, key: config.JWT_REFRESH_SECRET }
     );
 
-    await this.app.redis.setex(
-      `${REFRESH_TOKEN_PREFIX}${userId}`,
-      REFRESH_TOKEN_TTL_SECONDS,
-      token
-    );
+    if (this.app.redis) {
+      await this.app.redis.setex(
+        `${REFRESH_TOKEN_PREFIX}${userId}`,
+        REFRESH_TOKEN_TTL_SECONDS,
+        token
+      );
+    }
 
     return token;
   }
