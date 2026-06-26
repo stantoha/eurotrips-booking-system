@@ -23,27 +23,28 @@ async function redisPlugin(app: FastifyInstance) {
   }
 
   const redis = new Redis(config.REDIS_URL, {
-    maxRetriesPerRequest: 1,
     lazyConnect: true,
-    enableReadyCheck: true,
-    retryStrategy: (times) => (times >= 2 ? null : Math.min(times * 200, 1000)),
-    enableOfflineQueue: false,
+    enableReadyCheck: false,   // без auto-ping: інакше unhandled rejection при drop
+    maxRetriesPerRequest: null,
+    retryStrategy: (times) => (times >= 5 ? null : Math.min(times * 500, 3000)),
   });
 
-  redis.on('connect', () => app.log.info('✅ Redis підключено'));
   redis.on('error', (err) => app.log.warn({ err }, '⚠️ Redis помилка'));
+  redis.on('connect', () => app.log.info('✅ Redis підключено'));
   redis.on('reconnecting', () => app.log.warn('🔄 Redis перепідключення...'));
 
   try {
     await redis.connect();
+    await redis.ping();       // ручна перевірка що з'єднання справді живе
+    app.log.info('✅ Redis готовий');
     app.decorate('redis', redis);
     app.addHook('onClose', async () => {
-      await redis.quit();
-      app.log.info('Redis з\'єднання закрито');
+      redis.disconnect();
+      app.log.info("Redis з'єднання закрито");
     });
   } catch (err) {
-    app.log.warn({ err }, '⚠️ Redis недоступний — вимикаємо (MVP mode)');
-    redis.disconnect();
+    app.log.warn({ err }, "⚠️ Redis недоступний — вимикаємо (MVP mode)");
+    try { redis.disconnect(); } catch { /* ігноруємо */ }
     app.decorate('redis', null);
   }
 }
