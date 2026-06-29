@@ -1,0 +1,5 @@
+# nixpacks.toml — Railway Nixpacks build configuration
+# Installs OpenSSL so Prisma can detect the correct engine binary at build + runtime
+
+[phases.setup]
+nixPkgs = ["openssl"]

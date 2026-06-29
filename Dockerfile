@@ -2,22 +2,23 @@
 # EUROTRIPS — Dockerfile (Multi-stage)
 # =============================================================================
 
-# ── Stage 1: Builder (all deps + compile + generate) ──────────────────────
+# ── Stage 1: Builder ───────────────────────────────────────────────────────
 FROM node:20-alpine AS builder
 WORKDIR /app
+
+# openssl required for Prisma to detect OpenSSL version during prisma generate
+RUN apk add --no-cache openssl
 
 COPY package*.json ./
 COPY tsconfig*.json ./
 COPY prisma ./prisma/
 
-# Install all deps (including devDeps) so prisma CLI is available
+# Full install (devDeps included) — postinstall runs prisma generate
 RUN npm ci
 
 COPY src ./src
 
-# Generate Prisma client, then compile TypeScript
-RUN npx prisma generate && \
-    npm run build
+RUN npm run build
 
 # ── Stage 2: Production ────────────────────────────────────────────────────
 FROM node:20-alpine AS production
@@ -25,13 +26,14 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-RUN apk add --no-cache dumb-init chromium && \
+# openssl required for Prisma engine detection at runtime
+RUN apk add --no-cache dumb-init openssl chromium && \
     echo "PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser" >> /etc/environment
 
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# Install only production deps; postinstall triggers prisma generate
+# postinstall triggers prisma generate — openssl present → correct linux-musl-openssl-3.0.x binary
 RUN npm ci --omit=dev
 
 COPY --from=builder /app/dist ./dist
