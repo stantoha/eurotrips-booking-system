@@ -93,10 +93,13 @@ const AgentCabinet: React.FC = () => {
   const myBookings = bookingsData?.data ?? [];
 
   // ── Доступні тури ─────────────────────────────────────────────
-  const { data: availTours = [], isLoading: toursLoading } = useTourList({
-    status: ['open', 'active', 'almost_full'],
-    limit:  5,
-  });
+  // Бекенд /tours приймає лише один status (не масив) — фільтруємо на клієнті,
+  // інакше повертаються тури будь-якого статусу, включно з завершеними.
+  const { data: allTours = [], isLoading: toursLoading } = useTourList({ limit: 50 });
+  const bookableTourStatuses = new Set(['open', 'active', 'almost_full']);
+  const availTours = allTours
+    .filter((t) => bookableTourStatuses.has(t.status) && t.available_seats > 0)
+    .slice(0, 5);
 
   // ── Реальні нараховані комісії (GET /agents/:id/commissions) ──────────────
   // Список бронювань не містить комісійних полів — рахувати з нього завжди
