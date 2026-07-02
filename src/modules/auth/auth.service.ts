@@ -90,7 +90,7 @@ export class AuthService {
     // Верифікуємо refresh token
     let payload: { sub: string };
     try {
-      payload = this.app.jwt.verify<{ sub: string }>(refreshToken);
+      payload = this.app.jwt.verify<{ sub: string }>(refreshToken, { key: config.JWT_REFRESH_SECRET });
     } catch {
       throw new AppError('INVALID_REFRESH_TOKEN', 'Недійсний або прострочений refresh token', 401);
     }
