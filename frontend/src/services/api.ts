@@ -9,6 +9,7 @@ import axios, {
   AxiosError,
   InternalAxiosRequestConfig,
 } from 'axios';
+import { useAuthStore } from '../store/authStore';
 
 // ─── BASE URL ────────────────────────────────────────────────
 // Vite env: VITE_API_URL=https://api.eurotrips.ua
@@ -130,10 +131,6 @@ type AuthActions = {
 };
 
 function getAuthActions(): AuthActions {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { useAuthStore } = require('../store/authStore') as {
-    useAuthStore: { getState: () => AuthActions & { accessToken: string | null } };
-  };
   const state = useAuthStore.getState();
   return {
     getAccessToken: () => state.accessToken,
