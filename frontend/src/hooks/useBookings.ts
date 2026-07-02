@@ -82,15 +82,99 @@ export const bookingKeys = {
   detail: (id: string)  => ['bookings', 'detail', id] as const,
 };
 
+// ─── RAW API SHAPES ───────────────────────────────────────────
+// Реальна відповідь бекенду відрізняється від Booking (вкладені
+// tour/contact_tourist/agent, інші назви полів) — мапимо в одному місці.
+
+interface RawBookingListItem {
+  id:              string;
+  booking_number:  string;
+  booking_type:    string;
+  persons_count:   number;
+  total_amount:    number;
+  deposit_paid:    number;
+  balance_paid:    number;
+  payment_status:  string;
+  status:          string;
+  agent_id:        string | null;
+  manager_id:      string;
+  created_at:      string;
+  updated_at:      string;
+  tour:            { id: string; code: string; name: string; departure_date: string };
+  contact_tourist: { id: string; first_name: string; last_name: string; phone?: string };
+  agent:           { id: string; agency_name: string } | null;
+}
+
+interface RawBookingDetail extends RawBookingListItem {
+  deposit_amount?:          number;
+  balance_amount?:          number;
+  balance_deadline?:        string;
+  deposit_deadline?:        string;
+  currency?:                string;
+  agent_commission_rate?:   number;
+  agent_commission_amount?: number;
+  commission_status?:       string;
+  comment?:                 string;
+  manager?: { id: string; first_name: string; last_name: string };
+}
+
+function mapListItem(raw: RawBookingListItem): Booking {
+  const amountPaid = raw.deposit_paid + raw.balance_paid;
+  return {
+    id:                  raw.id,
+    booking_number:      raw.booking_number,
+    tour_id:             raw.tour.id,
+    tour_name:           raw.tour.name,
+    tour_date:           raw.tour.departure_date,
+    booking_type:        raw.booking_type as Booking['booking_type'],
+    pax_count:           raw.persons_count,
+    contact_tourist_id:  raw.contact_tourist.id,
+    contact_name:        `${raw.contact_tourist.first_name} ${raw.contact_tourist.last_name}`,
+    contact_phone:       raw.contact_tourist.phone,
+    manager_id:          raw.manager_id,
+    manager_name:        '—', // список не повертає ім'я менеджера, лише manager_id
+    agent_id:            raw.agent_id ?? undefined,
+    agent_name:          raw.agent?.agency_name,
+    total_price:         raw.total_amount,
+    currency:            'EUR',
+    prepayment_rate:     0,
+    prepayment_amount:   raw.deposit_paid,
+    amount_paid:         amountPaid,
+    balance_due:         raw.total_amount - amountPaid,
+    payment_deadline:    '',
+    payment_status:      raw.payment_status as Booking['payment_status'],
+    status:              raw.status as BookingStatus,
+    created_at:          raw.created_at,
+    updated_at:          raw.updated_at,
+  };
+}
+
+function mapDetail(raw: RawBookingDetail): Booking {
+  const amountPaid = raw.deposit_paid + raw.balance_paid;
+  return {
+    ...mapListItem(raw),
+    manager_name:             raw.manager ? `${raw.manager.first_name} ${raw.manager.last_name}` : '—',
+    currency:                 raw.currency ?? 'EUR',
+    prepayment_amount:        raw.deposit_paid,
+    amount_paid:              amountPaid,
+    balance_due:              (raw.balance_amount ?? raw.total_amount) - amountPaid,
+    payment_deadline:         raw.balance_deadline ?? raw.deposit_deadline ?? '',
+    agent_commission_rate:    raw.agent_commission_rate,
+    agent_commission_amount:  raw.agent_commission_amount,
+    commission_status:        raw.commission_status as Booking['commission_status'],
+    notes:                    raw.comment,
+  };
+}
+
 // ─── FETCHER ──────────────────────────────────────────────────
 
 async function fetchBookings(
   params?: BookingListQueryDto,
 ): Promise<{ data: Booking[]; meta: BookingListMeta }> {
-  const { data } = await api.get<{ data: Booking[]; meta: BookingListMeta }>(
+  const { data } = await api.get<{ data: RawBookingListItem[]; meta: BookingListMeta }>(
     '/bookings', { params },
   );
-  return data;
+  return { data: data.data.map(mapListItem), meta: data.meta };
 }
 
 /** Dev fallback — повертає відфільтровані MOCK_BOOKINGS коли API недоступний */
@@ -171,8 +255,8 @@ export function useBooking(
     queryKey: bookingKeys.detail(id ?? ''),
     queryFn: async () => {
       try {
-        const { data } = await api.get<{ data: Booking }>(`/bookings/${id}`);
-        return data.data;
+        const { data } = await api.get<{ data: RawBookingDetail }>(`/bookings/${id}`);
+        return mapDetail(data.data);
       } catch (err) {
         if (import.meta.env.DEV) {
           const found = MOCK_BOOKINGS.find(b => b.id === id);
