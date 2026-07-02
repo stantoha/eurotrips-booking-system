@@ -21,6 +21,12 @@ export function toSnakeCase<T = unknown>(value: unknown): T {
   }
 
   if (value !== null && typeof value === 'object') {
+    // Prisma.Decimal (decimal.js) — власні внутрішні поля {s,e,d}.
+    // Без цієї перевірки рекурсія пройде по них замість реального значення.
+    if (typeof (value as { toNumber?: unknown }).toNumber === 'function') {
+      return (value as { toNumber: () => number }).toNumber() as unknown as T;
+    }
+
     const result: Record<string, unknown> = {};
     for (const [key, val] of Object.entries(value)) {
       result[camelKeyToSnake(key)] = toSnakeCase(val);

@@ -25,31 +25,31 @@ import { api }     from '../services/api';
 // ─── TYPES ───────────────────────────────────────────────────
 
 interface FinanceSummary {
-  totalBookings:     number;
-  confirmedBookings: number;
-  totalRevenue:      number;
-  collectedRevenue:  number;
-  currency:          string;
-  generatedAt:       string;
+  total_bookings:     number;
+  confirmed_bookings: number;
+  total_revenue:      number;
+  collected_revenue:  number;
+  currency:           string;
+  generated_at:       string;
 }
 
 interface RecentBooking {
-  id:            string;
-  bookingNumber: string;
-  status:        string;
-  totalAmount:   number;
-  createdAt:     string;
-  contactTourist?: { firstName: string; lastName: string };
-  tour?:           { name: string; departureDate: string };
+  id:             string;
+  booking_number: string;
+  status:         string;
+  total_amount:   number;
+  created_at:     string;
+  contact_tourist?: { first_name: string; last_name: string };
+  tour?:            { name: string; departure_date: string };
 }
 
 interface ActiveTour {
-  id:             string;
-  name:           string;
-  departureDate:  string;
-  availableSeats: number;
-  totalSeats:     number;
-  status:         string;
+  id:              string;
+  name:            string;
+  departure_date:  string;
+  available_seats: number;
+  total_seats:     number;
+  status:          string;
 }
 
 // ─── KPI CARD ─────────────────────────────────────────────────
@@ -132,7 +132,7 @@ const Dashboard: React.FC = () => {
   useEffect(() => { load(); }, []);
 
   const debt = summary
-    ? summary.totalRevenue - summary.collectedRevenue
+    ? summary.total_revenue - summary.collected_revenue
     : 0;
 
   return (
@@ -143,7 +143,8 @@ const Dashboard: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">Дашборд</h1>
           <p className="text-sm text-slate-500 mt-0.5">
-            Вітаємо, {user?.first_name ?? 'Користувач'} · {new Date().toLocaleDateString('uk-UA', { weekday: 'long', day: 'numeric', month: 'long' })}
+            Вітаємо, {user?.first_name ?? 'Користувач'} · {' '}
+            {new Date().toLocaleDateString('uk-UA', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
         </div>
         <button
@@ -167,20 +168,20 @@ const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <KpiCard
           title="Всього бронювань"
-          value={summary?.totalBookings ?? '—'}
+          value={summary?.total_bookings ?? '—'}
           icon={<Users className="w-5 h-5 text-blue-600" />}
           color="bg-blue-50"
         />
         <KpiCard
           title="Підтверджено"
-          value={summary?.confirmedBookings ?? '—'}
+          value={summary?.confirmed_bookings ?? '—'}
           sub="зараз в роботі"
           icon={<BarChart2 className="w-5 h-5 text-green-600" />}
           color="bg-green-50"
         />
         <KpiCard
           title="Загальний дохід"
-          value={summary ? `€ ${summary.totalRevenue.toLocaleString('uk-UA')}` : '—'}
+          value={summary ? `€ ${summary.total_revenue.toLocaleString('uk-UA')}` : '—'}
           sub={summary?.currency}
           icon={<TrendingUp className="w-5 h-5 text-emerald-600" />}
           color="bg-emerald-50"
@@ -213,17 +214,17 @@ const Dashboard: React.FC = () => {
               {recentBookings.map((b) => (
                 <div key={b.id} className="px-5 py-3 flex items-center justify-between gap-3 hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors">
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-slate-800 dark:text-slate-100 font-mono">{b.bookingNumber}</p>
-                    {b.contactTourist && (
+                    <p className="text-sm font-medium text-slate-800 dark:text-slate-100 font-mono">{b.booking_number}</p>
+                    {b.contact_tourist && (
                       <p className="text-xs text-slate-500 truncate">
-                        {b.contactTourist.firstName} {b.contactTourist.lastName}
+                        {b.contact_tourist.first_name} {b.contact_tourist.last_name}
                       </p>
                     )}
                   </div>
                   <div className="flex items-center gap-3 flex-shrink-0">
                     <StatusPill status={b.status} />
                     <span className="text-sm font-semibold text-slate-700 dark:text-slate-200 w-20 text-right">
-                      € {Number(b.totalAmount).toLocaleString('uk-UA', { minimumFractionDigits: 0 })}
+                      € {Number(b.total_amount).toLocaleString('uk-UA', { minimumFractionDigits: 0 })}
                     </span>
                   </div>
                 </div>
@@ -246,8 +247,8 @@ const Dashboard: React.FC = () => {
           ) : (
             <div className="divide-y divide-slate-100 dark:divide-slate-700">
               {activeTours.map((t) => {
-                const occupancy = t.totalSeats > 0
-                  ? Math.round(((t.totalSeats - t.availableSeats) / t.totalSeats) * 100)
+                const occupancy = t.total_seats > 0
+                  ? Math.round(((t.total_seats - t.available_seats) / t.total_seats) * 100)
                   : 0;
 
                 return (
@@ -257,14 +258,14 @@ const Dashboard: React.FC = () => {
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-slate-800 dark:text-slate-100 leading-tight truncate">{t.name}</p>
                         <p className="text-xs text-slate-400">
-                          {new Date(t.departureDate).toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' })}
+                          {new Date(t.departure_date).toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' })}
                         </p>
                       </div>
                     </div>
                     {/* Прогрес заповненості */}
                     <div className="mt-2">
                       <div className="flex justify-between text-xs text-slate-500 mb-1">
-                        <span>{t.totalSeats - t.availableSeats} / {t.totalSeats} місць</span>
+                        <span>{t.total_seats - t.available_seats} / {t.total_seats} місць</span>
                         <span>{occupancy}%</span>
                       </div>
                       <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
