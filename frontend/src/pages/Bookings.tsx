@@ -15,6 +15,7 @@
 // ============================================================
 
 import React, { useState, useMemo, useCallback, Fragment } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Plus, Search, Download, ChevronDown, ChevronUp,
   User, Building2, CreditCard, Coins, X,
@@ -168,8 +169,11 @@ const BRow: React.FC<{
 // ─── MAIN PAGE ────────────────────────────────────────────────
 
 const BookingsPage: React.FC = () => {
-  const { isAdmin, isDirector, isManager, isOpsManager, canSeeAllAgents } = useAuth();
-  const canCreate = isAdmin || isManager || isOpsManager;
+  const navigate = useNavigate();
+  const { isAdmin, isDirector, isManager, canSeeAllAgents } = useAuth();
+  // На цій сторінці бувають тільки internal-ролі (ops/accountant теж),
+  // але POST /bookings на бекенді дозволено лише admin/manager — узгоджено
+  const canCreate = isAdmin || isManager;
   const canExport = isAdmin || isDirector || isManager;
 
   // ── Filter state ───────────────────────────────────────────
@@ -271,7 +275,10 @@ const BookingsPage: React.FC = () => {
             </button>
           )}
           {canCreate && (
-            <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-slate-900 text-white hover:bg-slate-700 dark:bg-slate-100 dark:text-slate-900 transition-colors">
+            <button
+              onClick={() => navigate('/bookings/new')}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-slate-900 text-white hover:bg-slate-700 dark:bg-slate-100 dark:text-slate-900 transition-colors"
+            >
               <Plus size={14} aria-hidden="true" /> Нове бронювання
             </button>
           )}

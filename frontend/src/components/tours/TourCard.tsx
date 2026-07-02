@@ -83,7 +83,10 @@ const TourCardGrid: React.FC<TourCardProps> = ({
   const isFull = tour.available_seats === 0;
 
   return (
-    <article className="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-4 hover:border-slate-300 dark:hover:border-slate-600 hover:shadow-sm transition-all duration-200 cursor-pointer flex flex-col">
+    <article
+      onClick={() => onView?.(tour.id)}
+      className="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-4 hover:border-slate-300 dark:hover:border-slate-600 hover:shadow-sm transition-all duration-200 cursor-pointer flex flex-col"
+    >
       {/* Header */}
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="flex-1 min-w-0">
@@ -174,7 +177,7 @@ const TourCardGrid: React.FC<TourCardProps> = ({
       {/* Action button */}
       {showBookButton && (
         <button
-          onClick={() => !isFull && onBook?.(tour.id)}
+          onClick={(e) => { e.stopPropagation(); if (!isFull) onBook?.(tour.id); }}
           disabled={isFull}
           className={`
             mt-auto w-full py-2 px-4 rounded-pill text-sm font-semibold

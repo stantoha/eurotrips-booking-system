@@ -15,7 +15,9 @@ import { useAuth } from './hooks/useAuth';
 
 const Dashboard       = React.lazy(() => import('./pages/Dashboard'));
 const ToursPage       = React.lazy(() => import('./pages/Tours'));
+const TourDetail      = React.lazy(() => import('./pages/TourDetail'));
 const BookingsPage    = React.lazy(() => import('./pages/Bookings'));
+const BookingNew      = React.lazy(() => import('./pages/BookingNew'));
 const BookingDetail   = React.lazy(() => import('./pages/BookingDetail'));
 const LeadsList       = React.lazy(() => import('./pages/LeadsList'));
 const AgentCabinet    = React.lazy(() => import('./pages/agent/AgentCabinet'));
@@ -90,6 +92,7 @@ export const App: React.FC = () => (
           <Route element={<ProtectedRoute allowedRoles={['admin', 'director', 'manager', 'ops', 'accountant']} />}>
             <Route path="/dashboard"     element={<Dashboard />} />
             <Route path="/tours"         element={<ToursPage />} />
+            <Route path="/tours/:id"     element={<TourDetail />} />
             <Route path="/bookings"      element={<BookingsPage />} />
             <Route path="/operations"    element={<OperationsPage />} />
           </Route>
@@ -97,6 +100,11 @@ export const App: React.FC = () => (
           {/* ── CRM / Leads — admin, director, manager ─────── */}
           <Route element={<ProtectedRoute allowedRoles={['admin', 'director', 'manager']} />}>
             <Route path="/leads" element={<LeadsList />} />
+          </Route>
+
+          {/* ── Нове бронювання — той самий доступ, що й POST /bookings ── */}
+          <Route element={<ProtectedRoute allowedRoles={['admin', 'manager', 'agent']} />}>
+            <Route path="/bookings/new" element={<BookingNew />} />
           </Route>
 
           {/* ── Booking detail — всі ролі, RBAC на рівні API ── */}

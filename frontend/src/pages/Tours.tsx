@@ -18,6 +18,7 @@
 // ============================================================
 
 import React, { useState, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Grid3X3, List, SlidersHorizontal, X } from 'lucide-react';
 
 import { TourCard }   from '../components/tours/TourCard';
@@ -90,10 +91,14 @@ const TourListRow: React.FC<{
   tour: Tour;
   showCost: boolean;
   onBook: (id: string) => void;
-}> = ({ tour, showCost, onBook }) => {
+  onView: (id: string) => void;
+}> = ({ tour, showCost, onBook, onView }) => {
   const occ = occupancy(tour);
   return (
-    <div className="flex items-center gap-4 px-4 py-3 border-b border-slate-100 dark:border-slate-800 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+    <div
+      onClick={() => onView(tour.id)}
+      className="flex items-center gap-4 px-4 py-3 border-b border-slate-100 dark:border-slate-800 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer"
+    >
 
       {/* ID + назва */}
       <div className="flex-1 min-w-0">
@@ -140,7 +145,7 @@ const TourListRow: React.FC<{
       </div>
 
       <button
-        onClick={() => onBook(tour.id)}
+        onClick={(e) => { e.stopPropagation(); onBook(tour.id); }}
         disabled={tour.available_seats === 0}
         className="flex-shrink-0 px-3 py-1.5 rounded-pill text-xs font-semibold bg-brand-red text-white hover:bg-brand-red-dark disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
       >
@@ -153,6 +158,7 @@ const TourListRow: React.FC<{
 // ─── MAIN PAGE ────────────────────────────────────────────────
 
 const ToursPage: React.FC = () => {
+  const navigate = useNavigate();
   const { isAdmin, isDirector, isManager, isAccountant, canSeeMargin } = useAuth();
   const canCreate = isAdmin || isManager;
 
@@ -198,10 +204,8 @@ const ToursPage: React.FC = () => {
   const handleStatus = useCallback((v: string)              => { setStatusF(v as TourStatus | 'all'); resetPage(); }, [resetPage]);
   const handleType   = useCallback((v: string)              => { setTypeF(v as TourType | 'all'); resetPage(); }, [resetPage]);
   const handleMonth  = useCallback((v: string)              => { setMonthF(v);  resetPage(); }, [resetPage]);
-  const handleBook   = useCallback((id: string) => {
-    // TODO: navigate(`/bookings/new?tour=${id}`)
-    console.log('[Tours] Book tour:', id);
-  }, []);
+  const handleView   = useCallback((id: string) => navigate(`/tours/${id}`), [navigate]);
+  const handleBook   = useCallback((id: string) => navigate(`/bookings/new?tour=${id}`), [navigate]);
 
   const clearFilters = () => { setQuery(''); setStatusF('all'); setTypeF('all'); setMonthF('all'); setPage(1); };
   const hasFilters   = query || statusF !== 'all' || typeF !== 'all' || monthF !== 'all';
@@ -324,6 +328,7 @@ const ToursPage: React.FC = () => {
                 userRole={canSeeMargin ? 'manager' : 'agent'}
                 variant="grid"
                 onBook={handleBook}
+                onView={handleView}
               />
             ))}
           </div>
@@ -335,6 +340,7 @@ const ToursPage: React.FC = () => {
                 tour={tour}
                 showCost={canSeeMargin}
                 onBook={handleBook}
+                onView={handleView}
               />
             ))}
           </div>
