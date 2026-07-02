@@ -3,7 +3,7 @@
 // 15 статусів бронювання згідно ТЗ-скелету розділ 5.1
 // ============================================================
 
-import { BookingStatus, TourStatus, LeadStatus, PaymentStatus } from '../types';
+import { BookingStatus, TourStatus, LeadStatus, PaymentStatus, CommissionStatus } from '../types';
 
 // Кольорові групи для Tailwind CSS (light + dark mode)
 export type StatusColorVariant =
@@ -194,8 +194,6 @@ export const LEAD_STATUS_CONFIG: Record<LeadStatus, StatusConfig> = {
 };
 
 // ─── COMMISSION STATUSES ─────────────────────────────────────
-
-import { CommissionStatus } from '../types';
 
 export const COMMISSION_STATUS_CONFIG: Record<CommissionStatus, StatusConfig> = {
   pending:   { label: 'Нараховано',     icon: 'Clock',         colorVariant: 'warning' },

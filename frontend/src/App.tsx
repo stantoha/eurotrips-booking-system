@@ -4,9 +4,10 @@
 // ============================================================
 
 import React, { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useParams, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { LoginForm } from './components/auth/LoginForm';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { useAuth } from './hooks/useAuth';
 
 // ─── LAZY PAGES ───────────────────────────────────────────────
@@ -20,6 +21,7 @@ const LeadsList       = React.lazy(() => import('./pages/LeadsList'));
 const AgentCabinet    = React.lazy(() => import('./pages/agent/AgentCabinet'));
 const FinancePage     = React.lazy(() => import('./pages/Finance'));
 const OperationsPage  = React.lazy(() => import('./pages/Operations'));
+const NotFoundPage    = React.lazy(() => import('./pages/errors/NotFound'));
 
 // Wrapper — дістає :id з URL та передає пропсами в BookingDetail
 const BookingDetailRoute: React.FC = () => {
@@ -37,14 +39,20 @@ const BookingDetailRoute: React.FC = () => {
 
 const LoginPage: React.FC = () => {
   const { isAuthenticated } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Куди повернутись після логіну — сторінка, з якої ProtectedRoute
+  // скинув неавторизованого користувача (state.from), або /dashboard
+  const from = (location.state as { from?: string } | null)?.from ?? '/dashboard';
 
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to={from} replace />;
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 px-4">
-      <LoginForm onSuccess={() => window.location.replace('/dashboard')} />
+      <LoginForm onSuccess={() => navigate(from, { replace: true })} />
     </div>
   );
 };
@@ -66,6 +74,7 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
 export const App: React.FC = () => (
   <BrowserRouter>
+    <ErrorBoundary>
     <AppInitializer>
       <React.Suspense fallback={<div className="h-screen flex items-center justify-center"><div className="animate-spin w-8 h-8 border-2 border-slate-300 border-t-blue-500 rounded-full" /></div>}>
         <Routes>
@@ -101,11 +110,12 @@ export const App: React.FC = () => (
           </Route>
 
           {/* ── Redirects ──────────────────────────────────── */}
-          <Route path="/"    element={<Navigate to="/dashboard" replace />} />
-          <Route path="*"    element={<Navigate to="/dashboard" replace />} />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </React.Suspense>
     </AppInitializer>
+    </ErrorBoundary>
   </BrowserRouter>
 );
 

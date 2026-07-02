@@ -128,8 +128,9 @@ export function useAuth(): UseAuthReturn {
   // Мережевий агент має royalty_pct > 0 (ADR-001 §3.4)
   const isNetworkAgent = isAgent && user?.agent_type === 'network';
 
-  // BR-04: Собівартість та маржа — тільки для внутрішніх ролей
-  const canSeeMargin = isAdmin || isDirector || isAccountant;
+  // BR-04: Собівартість та маржа — заборонено ТІЛЬКИ агентам і туристам,
+  // усі внутрішні ролі (включно з manager/ops) мають бачити маржу
+  const canSeeMargin = !isAgent && !isTourist;
 
   // Бачити заявки інших агентів
   const canSeeAllAgents = isAdmin || isDirector || isManager || isAccountant;

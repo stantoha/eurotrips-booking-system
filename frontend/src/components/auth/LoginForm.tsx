@@ -69,8 +69,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
     <div className="w-full max-w-sm mx-auto">
       {/* Logo */}
       <div className="flex items-center gap-2 justify-center mb-8">
-        <div className="w-8 h-8 bg-slate-900 dark:bg-slate-100 rounded-lg flex items-center justify-center">
-          <MapPin size={16} className="text-white dark:text-slate-900" />
+        <div className="w-8 h-8 bg-brand-cyan rounded-lg flex items-center justify-center">
+          <MapPin size={16} className="text-white" aria-hidden="true" />
         </div>
         <span className="text-lg font-semibold text-slate-900 dark:text-slate-100">
           Eurotrips
@@ -202,15 +202,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
           disabled={disabled}
           aria-busy={disabled}
           className="
-            w-full mt-2 py-2.5 px-4 rounded-lg font-medium text-sm
-            bg-slate-900 text-white
-            hover:bg-slate-700
-            dark:bg-slate-100 dark:text-slate-900
-            dark:hover:bg-white
+            w-full mt-2 py-2.5 px-4 rounded-pill font-semibold text-sm
+            bg-brand-red text-white
+            hover:bg-brand-red-dark
             disabled:opacity-50 disabled:cursor-not-allowed
             flex items-center justify-center gap-2
             transition-colors duration-150
-            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+            focus:outline-none focus:ring-2 focus:ring-brand-red focus:ring-offset-2
           "
         >
           {disabled ? (

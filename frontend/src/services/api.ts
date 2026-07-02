@@ -115,7 +115,7 @@ api.interceptors.response.use(
       // initialize() там же, refresh знов провалюється (нема кукі — це
       // нормально для нового відвідувача) і виходить нескінченний reload-цикл.
       if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
-        window.location.href = '/login';
+        window.location.replace('/login');
       }
       return Promise.reject(refreshError);
     } finally {

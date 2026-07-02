@@ -9,6 +9,7 @@ import React from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { Loader2, ShieldOff } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import { Layout } from '../layout/Layout';
 import type { UserRole } from '../../types';
 
 // ─── PROPS ───────────────────────────────────────────────────
@@ -96,8 +97,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <ForbiddenScreen />;
   }
 
-  // 4. Авторизований + правильна роль → рендеримо дочірні маршрути
-  return children ? <>{children}</> : <Outlet />;
+  // 4. Авторизований + правильна роль → рендеримо дочірні маршрути в шеллі навігації
+  return <Layout>{children ? children : <Outlet />}</Layout>;
 };
 
 // ─── USAGE EXAMPLES ──────────────────────────────────────────
