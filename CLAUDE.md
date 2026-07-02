@@ -396,3 +396,66 @@ Frontend CLAUDE.md: `../frontend/CLAUDE.md`
 | ТЗ-скелет | `01. Product & Strategy/ТЗ-скелет/` |
 | QA Strategy | `06. QA & Testing/` |
 | CSV-дані (тури, готелі, транспорт) | `08. Operational Data/` |
+
+---
+
+## 13. Робота кількох Claude-сесій паралельно
+
+**Над цим репо одночасно працює кілька окремих Claude Code чатів** (за ролями: Backend, Frontend, QA, Integration API, UX/UI, DevOps, BA, Tech Writer, Архітектор, Data Analyst/BI, PM, Фінансова логіка, Управління агентами, Security review, Аналітика продажів). Кожна сесія комітить у ту саму гілку `develop` незалежно, без координації між собою.
+
+**Наслідок:** різні частини кодової бази можуть відображати різні, несумісні припущення (напр. Dashboard.tsx довгий час використовував camelCase-типи, тоді як Tours.tsx/Bookings.tsx — snake_case; `Booking` тип у `types/index.ts` не збігався з реальною формою відповіді `/bookings`). **Не вважай, що весь код узгоджений між собою** — перед тим як покладатись на існуючий тип/контракт, звіряй з реальною відповіддю API (curl/Network tab), а не тільки з TypeScript-типом.
+
+---
+
+## 14. Продакшн-конфігурація та відомі технічні деталі
+
+- **Числа в API:** Prisma `Decimal` серіалізується як `{s,e,d}` (внутрішня структура decimal.js), якщо просто рекурсивно копіювати ключі об'єкта. `src/shared/utils/case-transform.ts` вже обробляє це через `.toNumber()` — якщо додаєш нову рекурсивну трансформацію відповіді, враховуй це.
+- **snake_case контракт:** Бекенд (`preSerialization` хук в `app.ts`) конвертує ВСІ відповіді API з camelCase (Prisma) в snake_case — фронтенд (типи в `types/index.ts`, ADR-001) побудований під snake_case. Вхідні тіла запитів (POST/PATCH body) конвертації НЕ мають — бекенд Zod-схеми очікують camelCase, як є в Prisma-моделях.
+- **JWT payload:** реальні поля — `sub, email, role, agentId, agentType, networkId` (camelCase, не `full_name`/`agent_code`).
+- **nixpacks.toml:** `nixPkgs: ["nodejs_20", "openssl"]` — НЕ видаляти жодне з двох (nodejs_20 дає npm, openssl потрібен Prisma).
+- **railway.json:** `buildCommand` НЕ повинен дублювати `npm ci` (Nixpacks вже сам ставить залежності в install-фазі) — інакше конфлікт cache-mount (EBUSY).
+- **liqPayRoutes і zohoWebhookRoutes** в `app.ts` — свідомо закоментовані через відомі баги (невідповідність полів Prisma-схемі). Не розкоментовувати без окремого дослідження.
+- **Тестові акаунти (`prisma/seed.ts`, пароль `test1234`):** `admin@eurotrips.ua`, `manager@eurotrips.ua`, `a.sych@eurotrips.ua` (другий менеджер), `ops@eurotrips.ua`, `finance@eurotrips.ua` (роль `accountant`), `agent@agency.ua`, `agent2@agency.ua`. Ролей `tourist` в seed НЕМАЄ і маршруту для `tourist` в `App.tsx` теж немає (відкрите питання, потребує WF5-дизайну кабінету туриста).
+
+---
+
+## 15. Фінансова модель (каскад ціноутворення)
+
+```text
+Собівартість (СВ) = Розміщення + Транспорт + Персонал + Гіди + ДОПи в СВ + Непрямі
+Базова ціна        = СВ + Маржа оператора
+Ціна клієнта (gross) = Базова ціна + Доплати − Знижки
+Агентська комісія   = gross_price × commissionPct (10–30%, диференційовано по продукту)
+Маржа оператора (net) = gross − СВ − AG_commission − Роялті − Непрямі
+```
+
+ДОПи (додаткові послуги) — продаються під час туру, не входять в базову ціну, комісія агента на них НЕ нараховується, мають власний P&L.
+
+**Відома знахідка:** тур Budapest+Vienna — комісія агента 30% при маржі оператора 14.5% → потенційний негативний P&L. Задокументовано для фінансового модуля, ще не вирішено.
+
+---
+
+## 16. Roadmap релізів
+
+- **Реліз 1 (MVP, зараз):** каталог турів · бронювання · CRM/ліди · кабінет менеджера · кабінет агента · базові статуси · оплати · документи · базові повідомлення · базова аналітика
+- **Реліз 2:** групові запити · корпоративні сценарії · розширені фінанси · автоматизація нагадувань · розсадка (rooming, OPS-01..03) · BI-дашборди · WayForPay · Departure як окрема сутність (ADR-003, зараз `Tour = Departure`)
+- **Реліз 3:** мобільна версія · глибокі інтеграції · прогнозування · advanced analytics
+
+---
+
+## 17. Zoho CRM — інтеграція (webhook закоментовано, план готовий)
+
+Zoho залишається основним CRM для менеджерів з продажу (двостороння синхронізація, вебхук на `POST /webhooks/zoho`, події `Deals.edit/add`, `Leads.edit`, `Contacts.edit`). Мапінг: Products→tours, Accounts→agents, Contacts→tourists, Leads→leads, Deals→bookings, Travel→UPDATE bookings, CustomModule3→payments.
+
+Відкриті питання до клієнта (не вирішені): що таке `field2/field3/field5` в Zoho CustomModule3 (Payments) і `field29-field56` в Agencies; хто призначає коди нових турів; чи потрібна форма бронювання на eurotrips.ua; коли потрібен WayForPay.
+
+---
+
+## 18. Security — відомі невиправлені знахідки
+
+- 🔴 **Rate limiting на `/auth/login`** — зараз тільки глобальний ліміт (200/хв), потрібен окремий `max=10 за 15хв per IP` саме на login (brute-force).
+- 🟠 **Zoho webhook** — при відсутності `ZOHO_WEBHOOK_TOKEN` перевірка обходиться замість `401`.
+- 🟠 **AuditLog** — можлива невідповідність між Prisma-моделлю і сервісом, що її пише.
+- 🟠 **Tourist role** — немає маршруту `/my/*` у фронтенді (пов'язано з п.13 вище, OPS-03).
+
+Вже підтверджено ОК: JWT blacklist при logout (Redis TTL), refresh token тільки в HttpOnly Cookie, access token in-memory (не localStorage), IDOR-захист (агент не бачить чужі бронювання), Prisma parameterized queries (без SQL-ін'єкцій), BR-04 server-side (агент не отримує costPrice в відповіді API).
