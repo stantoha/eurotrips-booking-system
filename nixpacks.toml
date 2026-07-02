@@ -2,4 +2,4 @@
 # Installs OpenSSL so Prisma can detect the correct engine binary at build + runtime
 
 [phases.setup]
-nixPkgs = ["openssl"]
+nixPkgs = ["nodejs_20", "openssl"]
