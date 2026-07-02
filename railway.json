@@ -3,7 +3,7 @@
   "build": {
     "builder": "NIXPACKS",
     "buildCommand": "npm ci && npm run build && npx prisma migrate deploy",
-    "watchPatterns": ["src/**", "prisma/**"]
+    "watchPatterns": ["src/**", "prisma/**", "package.json", "package-lock.json", "nixpacks.toml", "railway.json"]
   },
   "deploy": {
     "startCommand": "node dist/src/main.js",
