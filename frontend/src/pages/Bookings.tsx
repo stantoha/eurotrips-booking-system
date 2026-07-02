@@ -22,7 +22,7 @@ import {
 
 import { StatusBadge }   from '../components/ui/StatusBadge';
 import { useAuth }        from '../hooks/useAuth';
-import { MOCK_BOOKINGS }  from '../mocks';
+import { useBookings }    from '../hooks/useBookings';
 import {
   BOOKING_STATUS_CONFIG,
   STATUS_COLOR_CLASSES,
@@ -31,8 +31,6 @@ import {
 import type { Booking, BookingStatus } from '../types';
 
 // ─── CONSTANTS ────────────────────────────────────────────────
-
-const MANAGERS = ['Андрій Сич', 'Олена Романюк', 'Михайло Кравченко'] as const;
 
 const DATE_PRESETS = [
   { value: 'all',   label: 'Будь-яка дата'   },
@@ -182,10 +180,20 @@ const BookingsPage: React.FC = () => {
   const [page,       setPage]      = useState(1);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
+  // ── TanStack Query ─────────────────────────────────────────
+  const { data: bookingsData, isLoading, isError, refetch } = useBookings();
+  const bookings: Booking[] = bookingsData?.data ?? [];
+
+  // ── Manager options (з реальних даних, а не хардкод) ───────
+  const managerOptions = useMemo(() => {
+    const set = new Set(bookings.map((b) => b.manager_name).filter(Boolean));
+    return Array.from(set).sort();
+  }, [bookings]);
+
   // ── Filtered data ──────────────────────────────────────────
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return MOCK_BOOKINGS.filter((b: Booking) => {
+    return bookings.filter((b: Booking) => {
       // Status
       if (statusF !== 'all' && b.status !== statusF) return false;
       // Manager
@@ -200,7 +208,7 @@ const BookingsPage: React.FC = () => {
       }
       return true;
     });
-  }, [query, statusF, managerF]);
+  }, [bookings, query, statusF, managerF]);
 
   // ── Derived stats ──────────────────────────────────────────
   const totalDebt    = useMemo(() => filtered.reduce((s, b) => s + b.balance_due, 0), [filtered]);
@@ -297,7 +305,7 @@ const BookingsPage: React.FC = () => {
         {canSeeAllAgents && (
           <select value={managerF} onChange={(e) => handleMgr(e.target.value)} className={selClass}>
             <option value="all">Всі менеджери</option>
-            {MANAGERS.map((m) => <option key={m} value={m}>{m}</option>)}
+            {managerOptions.map((m) => <option key={m} value={m}>{m}</option>)}
           </select>
         )}
 
@@ -307,8 +315,28 @@ const BookingsPage: React.FC = () => {
         </select>
       </div>
 
+      {/* ── LOADING / ERROR ── */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-20 text-brand-cyan">
+          <div className="h-8 w-8 rounded-full border-2 border-brand-cyan border-t-transparent animate-spin mr-3" />
+          <span className="text-sm text-slate-500 dark:text-slate-400">Завантаження бронювань…</span>
+        </div>
+      )}
+
+      {isError && !isLoading && (
+        <div className="flex flex-col items-center justify-center py-16 gap-3">
+          <p className="text-sm text-brand-red">Не вдалося завантажити бронювання.</p>
+          <button
+            onClick={() => refetch()}
+            className="px-4 py-2 rounded-pill text-sm font-semibold bg-brand-red text-white hover:bg-brand-red-dark transition-colors"
+          >
+            Спробувати ще раз
+          </button>
+        </div>
+      )}
+
       {/* ── TABLE ── */}
-      {paged.length === 0 ? (
+      {!isLoading && !isError && (paged.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-slate-400">
           <Search size={32} className="opacity-30 mb-3" aria-hidden="true" />
           <p className="text-sm">Бронювань не знайдено.</p>
@@ -356,7 +384,7 @@ const BookingsPage: React.FC = () => {
             </tbody>
           </table>
         </div>
-      )}
+      ))}
 
       {/* ── PAGINATION ── */}
       {totalPages > 1 && (

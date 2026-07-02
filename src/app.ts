@@ -17,6 +17,7 @@ import redisPlugin from './shared/redis/redis.plugin';
 import { registerErrorHandler } from './shared/utils/errors';
 import { requireAuth } from './shared/guards/jwt.guard';
 import { requireRoles } from './shared/guards/rbac.guard';
+import { toSnakeCase } from './shared/utils/case-transform';
 
 // Маршрути
 import { authRoutes }         from './modules/auth/auth.routes';
@@ -82,6 +83,12 @@ export async function buildApp(app: FastifyInstance) {
 
   // ── 4. Redis ────────────────────────────────────────────────────────────
   await app.register(redisPlugin);
+
+  // ── 4b. Response case transform ──────────────────────────────────────────
+  // Prisma/сервіси працюють у camelCase, весь frontend (ADR-001, types/index.ts)
+  // побудований на snake_case — конвертуємо на межі серіалізації відповіді,
+  // щоб не чіпати ні Prisma-моделі, ні типи фронтенду.
+  app.addHook('preSerialization', async (_req, _reply, payload) => toSnakeCase(payload));
 
   // ── 5. Swagger (тільки не в production) ────────────────────────────────
   if (config.NODE_ENV !== 'production') {
