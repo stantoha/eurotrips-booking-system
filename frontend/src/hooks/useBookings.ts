@@ -40,15 +40,10 @@ export interface BookingListQueryDto {
 }
 
 export interface BookingListMeta {
-  total:    number;
-  page:     number;
-  per_page: number;
-}
-
-export interface BookingListResult {
-  bookings: Booking[];
-  meta:     BookingListMeta;
-  total:    number;
+  total: number;
+  page:  number;
+  limit: number;
+  pages: number;
 }
 
 // PATCH /bookings/:id/status
@@ -180,7 +175,7 @@ async function fetchBookings(
 /** Dev fallback — повертає відфільтровані MOCK_BOOKINGS коли API недоступний */
 
 /** Тимчасовий in-memory фільтр поверх MOCK_BOOKINGS */
-function filterMocks(params?: BookingListQueryDto): BookingListResult {
+function filterMocks(params?: BookingListQueryDto): { data: Booking[]; meta: BookingListMeta } {
   const q = params?.search?.toLowerCase().trim() ?? '';
   let result = MOCK_BOOKINGS.filter((b: Booking) => {
     if (params?.status) {
@@ -198,7 +193,7 @@ function filterMocks(params?: BookingListQueryDto): BookingListResult {
   const limit = params?.limit ?? 10;
   const total = result.length;
   result = result.slice((page - 1) * limit, page * limit);
-  return { bookings: result, meta: { total, page, per_page: limit }, total };
+  return { data: result, meta: { total, page, limit, pages: Math.ceil(total / limit) } };
 }
 
 // ─── HOOKS ────────────────────────────────────────────────────
