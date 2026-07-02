@@ -21,10 +21,14 @@ import {
 import { requireAuth } from '../../shared/guards/jwt.guard';
 
 const REFRESH_COOKIE = 'refresh_token';
+// Frontend (vercel.app) і backend (railway.app) — різні сайти, тож cookie
+// має бути SameSite=None (з Secure) в production, інакше браузер ніколи
+// не надішле її на cross-site /auth/refresh. Локально (localhost:5173 →
+// localhost:3000) обидва порти — той самий сайт, там 'strict' коректний.
 const COOKIE_OPTIONS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict' as const,
+  sameSite: (process.env.NODE_ENV === 'production' ? 'none' : 'strict') as 'none' | 'strict',
   path: '/api/v1/auth',
   maxAge: 30 * 24 * 60 * 60, // 30 днів у секундах
 };

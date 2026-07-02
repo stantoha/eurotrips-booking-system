@@ -110,8 +110,11 @@ api.interceptors.response.use(
     } catch (refreshError) {
       flushQueue(refreshError);
       getAuthActions().clearAuth();
-      // Редіректимо на логін (без router dependency)
-      if (typeof window !== 'undefined') {
+      // Редіректимо на логін (без router dependency).
+      // Не редіректимо, якщо вже на /login — інакше AppInitializer викликає
+      // initialize() там же, refresh знов провалюється (нема кукі — це
+      // нормально для нового відвідувача) і виходить нескінченний reload-цикл.
+      if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
         window.location.href = '/login';
       }
       return Promise.reject(refreshError);
