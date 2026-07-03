@@ -24,7 +24,6 @@ import type {
   AddPaymentDto,
   CancelBookingDto,
   BookingListQueryDto,
-  UpdateTouristPreferencesDto,
 } from './bookings.schema';
 import {
   getEmailQueue,
@@ -40,41 +39,21 @@ export class BookingsService {
     const { status, tourId, agentId, managerId, dateFrom, dateTo, search,
             page, limit, sortBy, sortOrder } = query;
 
-    // Турист без резолвленого touristId (email не збігається з жодним
-    // tourists.email) — немає що показувати, і не можна фільтрувати по
-    // NULL UUID у Prisma.
-    if (user.role === UserRole.tourist && !user.touristId) {
-      return { data: [], meta: { total: 0, page, limit, pages: 0 } };
-    }
+    // RBAC: агент бачить тільки свої (TC-RBAC-009)
+    const rbacFilter: Prisma.BookingWhereInput =
+      user.role === UserRole.agent && user.agentId
+        ? { agentId: user.agentId }
+        : {};
 
-    // RBAC — накопичуємо умови в AND, а не спред-обʼєкт: і RBAC-фільтр
-    // туриста, і search нижче використовують ключ OR, спред одного
-    // об'єкта затер би інший.
-    const conditions: Prisma.BookingWhereInput[] = [];
-
-    // Агент бачить тільки свої (TC-RBAC-009)
-    if (user.role === UserRole.agent && user.agentId) {
-      conditions.push({ agentId: user.agentId });
-    }
-
-    // Турист бачить тільки бронювання де він контакт або учасник
-    if (user.role === UserRole.tourist) {
-      conditions.push({
-        OR: [
-          { contactTouristId: user.touristId! },
-          { participants: { some: { touristId: user.touristId! } } },
-        ],
-      });
-    }
-
-    if (status)    conditions.push({ status });
-    if (tourId)    conditions.push({ tourId });
-    if (agentId && user.role !== UserRole.agent) conditions.push({ agentId });
-    if (managerId) conditions.push({ managerId });
-    if (dateFrom)  conditions.push({ tour: { departureDate: { gte: new Date(dateFrom) } } });
-    if (dateTo)    conditions.push({ tour: { departureDate: { lte: new Date(dateTo) } } });
-    if (search) {
-      conditions.push({
+    const where: Prisma.BookingWhereInput = {
+      ...rbacFilter,
+      ...(status    && { status }),
+      ...(tourId    && { tourId }),
+      ...(agentId   && user.role !== UserRole.agent && { agentId }),
+      ...(managerId && { managerId }),
+      ...(dateFrom  && { tour: { departureDate: { gte: new Date(dateFrom) } } }),
+      ...(dateTo    && { tour: { departureDate: { lte: new Date(dateTo) } } }),
+      ...(search    && {
         OR: [
           { bookingNumber: { contains: search, mode: 'insensitive' } },
           { contactTourist: {
@@ -84,10 +63,8 @@ export class BookingsService {
             ],
           }},
         ],
-      });
-    }
-
-    const where: Prisma.BookingWhereInput = conditions.length ? { AND: conditions } : {};
+      }),
+    };
 
     const orderBy = this.buildOrderBy(sortBy, sortOrder);
     const skip = (page - 1) * limit;
@@ -148,19 +125,6 @@ export class BookingsService {
     // IDOR: агент бачить тільки своє (TC-RBAC-011)
     if (user.role === UserRole.agent && booking.agentId !== user.agentId) {
       throw Errors.forbidden('Доступ до чужого бронювання заборонено');
-    }
-
-    // IDOR: турист бачить тільки бронювання де він контакт або учасник
-    if (user.role === UserRole.tourist) {
-      const isOwner = booking.contactTourist.id === user.touristId ||
-        booking.participants.some((p) => p.tourist.id === user.touristId);
-      if (!isOwner) throw Errors.forbidden('Доступ до чужого бронювання заборонено');
-
-      // Комісія агента — внутрішня фінансова інформація оператора,
-      // не стосується клієнта (аналогічно BR-04 для costPrice)
-      const { agentCommissionRate, agentCommissionAmount, commissionStatus,
-              commissions, ...touristSafe } = booking as any;
-      return touristSafe;
     }
 
     return booking;
@@ -583,138 +547,6 @@ export class BookingsService {
         penaltyAmount,
         refundAmount,
       };
-    });
-  }
-
-  // ── SEAT MAP (OPS-03) ────────────────────────────────────────────────────
-  // Схема місць в автобусі по всьому туру (не тільки поточному бронюванню —
-  // місце має бути унікальним серед усіх бронювань цього виїзду).
-  async getSeatMap(bookingId: string, user: JwtPayload) {
-    const booking = await prisma.booking.findUnique({
-      where: { id: bookingId },
-      select: {
-        id: true, tourId: true, contactTouristId: true,
-        tour: { select: { totalSeats: true } },
-        participants: { select: { touristId: true, busSeaNumber: true } },
-      },
-    });
-    if (!booking) throw Errors.notFound('Бронювання', bookingId);
-
-    if (user.role === UserRole.tourist) {
-      const isOwner = booking.contactTouristId === user.touristId ||
-        booking.participants.some((p) => p.touristId === user.touristId);
-      if (!isOwner) throw Errors.forbidden('Доступ до чужого бронювання заборонено');
-    }
-
-    const takenSeats = await prisma.bookingTourist.findMany({
-      where: {
-        booking: {
-          tourId: booking.tourId,
-          status: { notIn: ['cancelled_client', 'cancelled_operator', 'refund', 'no_show'] },
-        },
-        busSeaNumber: { not: null },
-      },
-      select: { busSeaNumber: true, touristId: true },
-    });
-
-    const occupantByeSeat = new Map(takenSeats.map((s) => [s.busSeaNumber, s.touristId]));
-    const totalSeats = booking.tour?.totalSeats ?? 0;
-
-    const seats = Array.from({ length: totalSeats }, (_, i) => {
-      const seatNumber = i + 1;
-      const occupantId = occupantByeSeat.get(seatNumber);
-      return {
-        seatNumber,
-        isOccupied: !!occupantId,
-        isMine: user.role === UserRole.tourist && !!occupantId && occupantId === user.touristId,
-      };
-    });
-
-    const mySeat = user.role === UserRole.tourist
-      ? booking.participants.find((p) => p.touristId === user.touristId)?.busSeaNumber ?? null
-      : null;
-
-    return { totalSeats, seats, mySeat };
-  }
-
-  // ── TOURIST PREFERENCES (BR-12 / OPS-03) ─────────────────────────────────
-  async updateTouristPreferences(
-    bookingId: string, touristId: string, dto: UpdateTouristPreferencesDto, user: JwtPayload
-  ) {
-    const booking = await prisma.booking.findUnique({
-      where: { id: bookingId },
-      select: {
-        id: true, tourId: true, status: true, contactTouristId: true,
-        participants: { select: { touristId: true } },
-      },
-    });
-    if (!booking) throw Errors.notFound('Бронювання', bookingId);
-
-    const isParticipant = booking.contactTouristId === touristId ||
-      booking.participants.some((p) => p.touristId === touristId);
-    if (!isParticipant) throw Errors.notFound('Учасника бронювання', touristId);
-
-    // Турист редагує тільки власні побажання; manager/ops/admin — за туриста
-    if (user.role === UserRole.tourist && user.touristId !== touristId) {
-      throw Errors.forbidden('Можна редагувати тільки власні побажання');
-    }
-
-    // BR-12: до підтвердження бронювання розсадка ще не актуальна
-    const PREFERENCES_ALLOWED_STATUSES: BookingStatus[] = [
-      BookingStatus.confirmed, BookingStatus.docs_collected,
-      BookingStatus.ready_to_depart, BookingStatus.on_trip,
-    ];
-    if (!PREFERENCES_ALLOWED_STATUSES.includes(booking.status)) {
-      throw new AppError(
-        'PREFERENCES_LOCKED',
-        'Побажання можна вказати тільки після підтвердження бронювання',
-        403
-      );
-    }
-
-    const hotelBooking = await prisma.hotelBooking.findFirst({
-      where: { tourId: booking.tourId },
-      select: { structureStatus: true, finalRoomingDone: true },
-    });
-
-    if (hotelBooking?.finalRoomingDone) {
-      throw new AppError(
-        'ROOMING_FINALIZED',
-        'Розсадку вже закрито, зміни неможливі. Зверніться до менеджера',
-        403
-      );
-    }
-
-    if (hotelBooking?.structureStatus === 'draft') {
-      return { updated: false, message: 'Розміщення ще готується. Спробуйте пізніше.' };
-    }
-
-    return await prisma.$transaction(async (tx) => {
-      // Унікальність місця в автобусі — перевіряємо по всьому туру
-      // (DB-констрейнт @@unique діє лише в межах одного бронювання).
-      if (dto.busSeatNumber != null) {
-        const conflict = await tx.bookingTourist.findFirst({
-          where: {
-            booking:   { tourId: booking.tourId },
-            busSeaNumber: dto.busSeatNumber,
-            touristId: { not: touristId },
-          },
-          select: { id: true },
-        });
-        if (conflict) throw Errors.conflict('Це місце вже зайняте');
-      }
-
-      const updated = await tx.bookingTourist.update({
-        where: { bookingId_touristId: { bookingId, touristId } },
-        data: {
-          ...(dto.preferredRoomType   !== undefined && { preferredRoomType: dto.preferredRoomType }),
-          ...(dto.busSeatNumber       !== undefined && { busSeaNumber: dto.busSeatNumber }),
-          ...(dto.roommatePreference  !== undefined && { roommatePreference: dto.roommatePreference }),
-          ...(dto.specialRequirements !== undefined && { specialRequirements: dto.specialRequirements }),
-        },
-      });
-
-      return { updated: true, preferences: updated };
     });
   }
 

@@ -23,15 +23,6 @@ export interface LoginResponse {
   // (не повертається в тілі відповіді — це навмисно)
 }
 
-export interface RegisterPayload {
-  email:     string;
-  password:  string;
-  firstName: string;
-  lastName:  string;
-  phone?:    string;
-  // role навмисно відсутній — публічна реєстрація завжди створює 'tourist' (бекенд)
-}
-
 export interface ApiError {
   message: string;
   code?: string;
@@ -73,23 +64,6 @@ export async function login(credentials: LoginCredentials): Promise<LoginRespons
  */
 export async function getMe(): Promise<User> {
   const { data } = await api.get<ApiResponse<User>>('/auth/me');
-  return data.data;
-}
-
-/**
- * POST /api/v1/auth/register
- *
- * Публічна реєстрація — завжди створює акаунт з role='tourist'.
- * Повертає одразу access_token + user (як і login).
- *
- * @throws {AxiosError} 409 — email вже зареєстрований
- * @throws {AxiosError} 422 — помилка валідації (слабкий пароль тощо)
- */
-export async function register(payload: RegisterPayload): Promise<LoginResponse> {
-  const { data } = await api.post<ApiResponse<LoginResponse>>(
-    '/auth/register',
-    payload,
-  );
   return data.data;
 }
 

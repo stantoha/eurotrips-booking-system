@@ -6,7 +6,7 @@
 
 import prisma from '../../shared/database/prisma';
 import { Errors } from '../../shared/utils/errors';
-import type { TouristListQueryDto, CreateTouristDto, UpdateTouristProfileDto } from './tourists.schema';
+import type { TouristListQueryDto, CreateTouristDto } from './tourists.schema';
 
 export class TouristsService {
 
@@ -39,31 +39,6 @@ export class TouristsService {
       data: items,
       meta: { total, page, limit, pages: Math.ceil(total / limit) },
     };
-  }
-
-  // ── GET BY ID ────────────────────────────────────────────────────────────
-  async getById(id: string) {
-    const tourist = await prisma.tourist.findUnique({ where: { id } });
-    if (!tourist) throw Errors.notFound('Турист', id);
-    return tourist;
-  }
-
-  // ── UPDATE PROFILE (self-service) ───────────────────────────────────────
-  async updateProfile(id: string, dto: UpdateTouristProfileDto) {
-    await this.getById(id); // 404 якщо не існує
-
-    return prisma.tourist.update({
-      where: { id },
-      data: {
-        ...(dto.phone               !== undefined && { phone: dto.phone }),
-        ...(dto.dateOfBirth         !== undefined && { dateOfBirth: new Date(dto.dateOfBirth) }),
-        ...(dto.passportNumber      !== undefined && { passportNumber: dto.passportNumber }),
-        ...(dto.passportExpiry      !== undefined && { passportExpiry: new Date(dto.passportExpiry) }),
-        ...(dto.nationality         !== undefined && { nationality: dto.nationality }),
-        ...(dto.allergies           !== undefined && { allergies: dto.allergies }),
-        ...(dto.dietaryRestrictions !== undefined && { dietaryRestrictions: dto.dietaryRestrictions }),
-      },
-    });
   }
 
   // ── CREATE ───────────────────────────────────────────────────────────────

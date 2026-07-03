@@ -80,19 +80,8 @@ export const CancelBookingSchema = z.object({
   reason: z.string().min(3, 'Вкажіть причину скасування').max(1000),
 });
 
-// ── Побажання туриста (BR-12 / OPS-03 self-service) ───────────────────────────
-
-export const UpdateTouristPreferencesSchema = z.object({
-  preferredRoomType:   z.nativeEnum(RoomType).optional(),
-  /** Номер місця в автобусі. null — скинути вибір. */
-  busSeatNumber:       z.number().int().min(1).max(200).nullable().optional(),
-  roommatePreference:  z.string().max(500).optional(),
-  specialRequirements: z.string().max(1000).optional(),
-});
-
 export type BookingListQueryDto  = z.infer<typeof BookingListQuerySchema>;
 export type CreateBookingDto     = z.infer<typeof CreateBookingSchema>;
 export type ChangeStatusDto      = z.infer<typeof ChangeBookingStatusSchema>;
 export type AddPaymentDto        = z.infer<typeof AddPaymentSchema>;
 export type CancelBookingDto     = z.infer<typeof CancelBookingSchema>;
-export type UpdateTouristPreferencesDto = z.infer<typeof UpdateTouristPreferencesSchema>;

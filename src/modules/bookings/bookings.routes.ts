@@ -13,10 +13,8 @@ import { BookingsService } from './bookings.service';
 import {
   BookingListQuerySchema, CreateBookingSchema,
   ChangeBookingStatusSchema, AddPaymentSchema, CancelBookingSchema,
-  UpdateTouristPreferencesSchema,
   type BookingListQueryDto, type CreateBookingDto,
   type ChangeStatusDto, type AddPaymentDto, type CancelBookingDto,
-  type UpdateTouristPreferencesDto,
 } from './bookings.schema';
 import { requireAuth } from '../../shared/guards/jwt.guard';
 import { requireRoles } from '../../shared/guards/rbac.guard';
@@ -115,28 +113,15 @@ export async function bookingRoutes(app: FastifyInstance) {
 
   // ── GET /bookings/:id/insurance (ADR-003 INS-01) ───────────────────────────
   app.get<{ Params: { id: string } }>('/:id/insurance', {
-    preHandler: [requireAuth, requireRoles('admin', 'manager', 'ops', 'tourist')],
+    preHandler: [requireAuth, requireRoles('admin', 'manager', 'ops')],
     schema: {
       summary: 'Страховки по бронюванню (ADR-003)',
-      description: 'RBAC: ops, manager, admin, турист (тільки власне бронювання).',
+      description: 'RBAC: ops, manager, admin. Агент → 403.',
       tags: ['Bookings'], security: [{ bearerAuth: [] }], params: ID_PARAM,
     },
   }, async (req, reply) => {
-    const user = getCurrentUser(req);
-    const booking = await prisma.booking.findUnique({
-      where: { id: req.params.id },
-      select: { id: true, contactTouristId: true, participants: { select: { touristId: true } } },
-    });
+    const booking = await prisma.booking.findUnique({ where: { id: req.params.id } });
     if (!booking) return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Бронювання не знайдено' } });
-
-    if (user.role === 'tourist') {
-      const isOwner = booking.contactTouristId === user.touristId ||
-        booking.participants.some((p) => p.touristId === user.touristId);
-      if (!isOwner) {
-        return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Доступ до чужого бронювання заборонено' } });
-      }
-    }
-
     const insurances = await prisma.touristInsurance.findMany({
       where: { bookingId: req.params.id },
       include: { tourist: { select: { firstName: true, lastName: true } } },
@@ -144,46 +129,6 @@ export async function bookingRoutes(app: FastifyInstance) {
     });
     return reply.send({ data: insurances });
   });
-
-  // ── GET /bookings/:id/seat-map (OPS-03) ─────────────────────────────────────
-  app.get<{ Params: { id: string } }>('/:id/seat-map', {
-    preHandler: [requireAuth, requireRoles('admin', 'director', 'manager', 'ops', 'tourist')],
-    schema: {
-      summary: 'Схема місць в автобусі (OPS-03)',
-      description: 'Турист бачить лише is_occupied/is_mine, без чужих даних.',
-      tags: ['Bookings'], security: [{ bearerAuth: [] }], params: ID_PARAM,
-    },
-  }, async (req, reply) => {
-    const user = getCurrentUser(req);
-    return reply.send({ data: await service.getSeatMap(req.params.id, user) });
-  });
-
-  // ── PATCH /bookings/:id/tourist/:touristId/preferences (BR-12/OPS-03) ──────
-  const PREFERENCES_PARAMS = {
-    type: 'object',
-    properties: {
-      id:        { type: 'string', format: 'uuid' },
-      touristId: { type: 'string', format: 'uuid' },
-    },
-    required: ['id', 'touristId'],
-  } as const;
-  app.patch<{ Params: { id: string; touristId: string }; Body: UpdateTouristPreferencesDto }>(
-    '/:id/tourist/:touristId/preferences',
-    {
-      preHandler: [requireAuth, requireRoles('tourist', 'manager', 'ops', 'admin')],
-      schema: {
-        summary: 'Self-service побажання туриста: місце, тип номеру (BR-12/OPS-03)',
-        tags: ['Bookings'], security: [{ bearerAuth: [] }], params: PREFERENCES_PARAMS,
-      },
-    },
-    async (req, reply) => {
-      const dto  = UpdateTouristPreferencesSchema.parse(req.body);
-      const user = getCurrentUser(req);
-      return reply.send({
-        data: await service.updateTouristPreferences(req.params.id, req.params.touristId, dto, user),
-      });
-    }
-  );
 
   // ── POST /bookings/:id/insurance (ADR-003 INS-01) ──────────────────────────
   const AddInsuranceSchema = z.object({

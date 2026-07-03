@@ -11,8 +11,6 @@ export interface JwtPayload {
   agentId: string | null;
   agentType: 'standard' | 'network' | null;
   networkId: string | null;
-  /** Тільки для role='tourist' — резолвиться за збігом email з tourists.email */
-  touristId: string | null;
   iat?: number;
   exp?: number;
 }
@@ -31,5 +29,4 @@ export interface AuthUser {
   agentId: string | null;
   agentType: 'standard' | 'network' | null;
   networkId: string | null;
-  touristId: string | null;
 }

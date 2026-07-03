@@ -110,13 +110,11 @@ api.interceptors.response.use(
     } catch (refreshError) {
       flushQueue(refreshError);
       getAuthActions().clearAuth();
-      // Редіректимо на логін (без router dependency), АЛЕ не з публічних
-      // сторінок — інакше AppInitializer викликає initialize() там же,
-      // refresh знов провалюється (нема кукі — це нормально для нового
-      // відвідувача, напр. на /register) і виходить hard-redirect на /login
-      // замість того щоб дати анонімному гостю побачити сторінку.
-      const PUBLIC_PATHS = ['/login', '/register'];
-      if (typeof window !== 'undefined' && !PUBLIC_PATHS.includes(window.location.pathname)) {
+      // Редіректимо на логін (без router dependency).
+      // Не редіректимо, якщо вже на /login — інакше AppInitializer викликає
+      // initialize() там же, refresh знов провалюється (нема кукі — це
+      // нормально для нового відвідувача) і виходить нескінченний reload-цикл.
+      if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
         window.location.replace('/login');
       }
       return Promise.reject(refreshError);

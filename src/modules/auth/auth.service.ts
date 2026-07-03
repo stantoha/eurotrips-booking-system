@@ -49,7 +49,7 @@ export class AuthService {
       data: { lastLoginAt: new Date() },
     });
 
-    const authUser = await this.toAuthUser(user);
+    const authUser = this.toAuthUser(user);
     const tokens = await this.generateTokens(authUser);
     const refreshToken = await this.createRefreshToken(user.id);
 
@@ -57,9 +57,6 @@ export class AuthService {
   }
 
   // ── REGISTER ─────────────────────────────────────────────────────────────
-  // Публічний, без авторизації — тому ЗАВЖДИ створює role=tourist.
-  // Внутрішні ролі (admin/manager/ops/accountant/agent) призначаються
-  // тільки адміністратором, не через self-service реєстрацію.
   async register(dto: RegisterDto): Promise<{ user: AuthUser; tokens: TokenPair; refreshToken: string }> {
     const existing = await prisma.user.findUnique({ where: { email: dto.email } });
     if (existing) {
@@ -75,13 +72,13 @@ export class AuthService {
         firstName: dto.firstName,
         lastName: dto.lastName,
         phone: dto.phone,
-        role: UserRole.tourist,
+        role: (dto.role as UserRole) ?? UserRole.tourist,
         isActive: true,
       },
       include: { agentProfile: { select: { id: true, agentType: true, networkId: true } } },
     });
 
-    const authUser = await this.toAuthUser(user);
+    const authUser = this.toAuthUser(user);
     const tokens = await this.generateTokens(authUser);
     const refreshToken = await this.createRefreshToken(user.id);
 
@@ -119,7 +116,7 @@ export class AuthService {
 
     // Ротація refresh token (видаляємо старий, видаємо новий)
     if (this.app.redis) await this.app.redis.del(redisKey);
-    const authUser = await this.toAuthUser(user);
+    const authUser = this.toAuthUser(user);
     const tokens = await this.generateTokens(authUser);
     const newRefreshToken = await this.createRefreshToken(user.id);
 
@@ -153,9 +150,8 @@ export class AuthService {
       throw new AppError('USER_NOT_FOUND', 'Користувача не знайдено', 404);
     }
 
-    return await this.toAuthUser(user);
+    return this.toAuthUser(user);
   }
-
 
   // ── CHANGE PASSWORD ──────────────────────────────────────────────────────
   async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
@@ -179,20 +175,7 @@ export class AuthService {
 
   // ── PRIVATE HELPERS ──────────────────────────────────────────────────────
 
-  // Турист не має FK на User (щоб уникнути міграції схеми в проді) — портал-акаунт
-  // зв'язується з існуючим tourists.email за збігом email. Типовий сценарій:
-  // менеджер створює Tourist під час бронювання за телефоном → пізніше клієнт
-  // самостійно реєструється на порталі тим самим email і бачить свої тури.
-  private async toAuthUser(user: any): Promise<AuthUser> {
-    let touristId: string | null = null;
-    if (user.role === UserRole.tourist) {
-      const tourist = await prisma.tourist.findUnique({
-        where: { email: user.email },
-        select: { id: true },
-      });
-      touristId = tourist?.id ?? null;
-    }
-
+  private toAuthUser(user: any): AuthUser {
     return {
       id: user.id,
       email: user.email,
@@ -202,7 +185,6 @@ export class AuthService {
       agentId: user.agentProfile?.id ?? null,
       agentType: user.agentProfile?.agentType ?? null,
       networkId: user.agentProfile?.networkId ?? null,
-      touristId,
     };
   }
 
@@ -214,7 +196,6 @@ export class AuthService {
       agentId: user.agentId,
       agentType: user.agentType,
       networkId: user.networkId,
-      touristId: user.touristId,
     };
 
     const accessToken = this.app.jwt.sign(payload, {

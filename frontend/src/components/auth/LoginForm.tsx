@@ -8,7 +8,6 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Link } from 'react-router-dom';
 import {
   Mail, Lock, Eye, EyeOff, AlertCircle, Loader2, MapPin,
 } from 'lucide-react';
@@ -223,11 +222,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
         </button>
       </div>
 
-      <p className="text-center text-sm text-slate-500 dark:text-slate-400 mt-6">
-        Ви турист і ще не маєте акаунту?{' '}
-        <Link to="/register" className="text-brand-cyan hover:underline font-medium">Зареєструватися</Link>
-      </p>
-
       {/* Role hint (dev only) */}
       {import.meta.env.DEV && (
         <details className="mt-6">
@@ -241,7 +235,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
               { role: 'ops', email: 'ops@eurotrips.ua' },
               { role: 'accountant',  email: 'finance@eurotrips.ua' },
               { role: 'agent',       email: 'agent@agency.ua' },
-              { role: 'tourist',     email: 'tourist@eurotrips.ua' },
             ].map(({ role, email }) => (
               <div key={role} className="flex justify-between font-mono">
                 <span className="text-slate-400">{role}</span>

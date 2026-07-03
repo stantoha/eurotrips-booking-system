@@ -7,44 +7,13 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { TouristsService } from './tourists.service';
 import {
-  TouristListQuerySchema, CreateTouristSchema, UpdateTouristProfileSchema,
-  type CreateTouristDto, type UpdateTouristProfileDto,
+  TouristListQuerySchema, CreateTouristSchema, type CreateTouristDto,
 } from './tourists.schema';
-import { requireAuth, getCurrentUser } from '../../shared/guards/jwt.guard';
+import { requireAuth } from '../../shared/guards/jwt.guard';
 import { requireRoles } from '../../shared/guards/rbac.guard';
-import { Errors } from '../../shared/utils/errors';
 
 export async function touristRoutes(app: FastifyInstance) {
   const service = new TouristsService();
-
-  // ── GET /tourists/me ────────────────────────────────────────────────────────
-  // Реєструємо ПЕРЕД GET /:id (якщо колись з'явиться), щоб "me" не сприймався
-  // як :id параметр.
-  app.get('/me', {
-    preHandler: [requireAuth, requireRoles('tourist')],
-    schema: {
-      summary: 'Власний профіль туриста',
-      tags: ['Tourists'], security: [{ bearerAuth: [] }],
-    },
-  }, async (req: FastifyRequest, reply: FastifyReply) => {
-    const user = getCurrentUser(req);
-    if (!user.touristId) throw Errors.notFound('Профіль туриста');
-    return reply.send({ data: await service.getById(user.touristId) });
-  });
-
-  // ── PATCH /tourists/me ──────────────────────────────────────────────────────
-  app.patch<{ Body: UpdateTouristProfileDto }>('/me', {
-    preHandler: [requireAuth, requireRoles('tourist')],
-    schema: {
-      summary: 'Оновити власний профіль туриста',
-      tags: ['Tourists'], security: [{ bearerAuth: [] }],
-    },
-  }, async (req, reply) => {
-    const user = getCurrentUser(req);
-    if (!user.touristId) throw Errors.notFound('Профіль туриста');
-    const dto = UpdateTouristProfileSchema.parse(req.body);
-    return reply.send({ data: await service.updateProfile(user.touristId, dto) });
-  });
 
   // ── GET /tourists ──────────────────────────────────────────────────────────
   app.get('/', {
