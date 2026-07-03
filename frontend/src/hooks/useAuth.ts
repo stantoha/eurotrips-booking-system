@@ -8,10 +8,12 @@ import { useCallback } from 'react';
 import { useAuthStore } from '../store/authStore';
 import {
   login,
+  register,
   getMe,
   logout as logoutApi,
   getAuthErrorMessage,
   type LoginCredentials,
+  type RegisterPayload,
 } from '../services/auth';
 import type { UserRole } from '../types';
 
@@ -26,6 +28,7 @@ export interface UseAuthReturn {
 
   // Дії
   signIn:      (creds: LoginCredentials) => Promise<SignInResult>;
+  signUp:      (payload: RegisterPayload) => Promise<SignInResult>;
   signOut:     () => Promise<void>;
   initialize:  () => Promise<void>;
 
@@ -103,6 +106,22 @@ export function useAuth(): UseAuthReturn {
     }
   }, [setAuth, setLoading]);
 
+  // ── signUp ─────────────────────────────────────────────────
+  const signUp = useCallback(async (
+    payload: RegisterPayload,
+  ): Promise<SignInResult> => {
+    setLoading(true);
+    try {
+      const { user: registeredUser, access_token } = await register(payload);
+      setAuth(registeredUser, access_token);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: getAuthErrorMessage(error) };
+    } finally {
+      setLoading(false);
+    }
+  }, [setAuth, setLoading]);
+
   // ── signOut ────────────────────────────────────────────────
   const signOut = useCallback(async () => {
     setLoading(true);
@@ -142,6 +161,7 @@ export function useAuth(): UseAuthReturn {
     isInitialized,
 
     signIn,
+    signUp,
     signOut,
     initialize,
 

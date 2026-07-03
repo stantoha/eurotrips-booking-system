@@ -72,6 +72,8 @@ export interface Tourist {
   source_channel?: LeadSource;
   is_repeat: boolean;
   notes?: string;
+  allergies?: string;
+  dietary_restrictions?: string;
   created_at: string;
   updated_at: string;
 }
@@ -305,9 +307,48 @@ export interface User {
   agent_id?: string;        // Тільки для role='agent'
   agent_type?: AgentType;   // Тільки для role='agent'
   network_id?: string;      // Тільки для network agents
+  tourist_id?: string;      // Тільки для role='tourist' (резолвиться за email)
   is_active: boolean;
   created_at: string;
   last_login?: string;
+}
+
+// ─── TOURIST CABINET (BR-12 / OPS-03) ────────────────────────
+
+export interface SeatMapSeat {
+  seat_number: number;
+  is_occupied: boolean;
+  is_mine: boolean;
+}
+
+export interface SeatMap {
+  total_seats: number;
+  seats: SeatMapSeat[];
+  my_seat: number | null;
+}
+
+export type TouristRoomType = 'twin' | 'double' | 'triple' | 'single' | 'no_preference';
+
+/** PATCH request body — camelCase (бекенд Zod-схеми для body НЕ конвертуються, на відміну від відповідей) */
+export interface TouristPreferencesDto {
+  preferredRoomType?: TouristRoomType;
+  busSeatNumber?: number | null;
+  roommatePreference?: string;
+  specialRequirements?: string;
+}
+
+export interface TouristPreferencesResult {
+  updated: boolean;
+  message?: string;
+  preferences?: {
+    id: string;
+    booking_id: string;
+    tourist_id: string;
+    preferred_room_type: TouristRoomType | null;
+    bus_seat_number: number | null;
+    roommate_preference: string | null;
+    special_requirements: string | null;
+  };
 }
 
 export interface AuthToken {

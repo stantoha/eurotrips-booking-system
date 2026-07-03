@@ -41,6 +41,12 @@ function getProgressColor(status: string, pct: number): string {
   return 'bg-slate-300 dark:bg-slate-600';
 }
 
+function formatDeadline(deadline: string): string {
+  if (!deadline) return '—';
+  const d = new Date(deadline);
+  return isNaN(d.getTime()) ? deadline : d.toLocaleDateString('uk-UA', { day: '2-digit', month: 'long', year: 'numeric' });
+}
+
 function getDaysUntilDeadline(deadline: string): number {
   const today = new Date();
   const due = new Date(deadline);
@@ -182,7 +188,7 @@ export const PaymentBlock: React.FC<PaymentBlockProps> = ({
             <Calendar size={11} /> Дедлайн оплати
           </p>
           <p className={`font-medium ${deadlineColor}`}>
-            {payment.payment_deadline}
+            {formatDeadline(payment.payment_deadline)}
             {!isFullyPaid && daysUntil > 0 && (
               <span className="text-xs ml-1 font-normal">({daysUntil}д)</span>
             )}

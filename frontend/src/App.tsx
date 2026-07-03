@@ -7,6 +7,7 @@ import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { LoginForm } from './components/auth/LoginForm';
+import { RegisterForm } from './components/auth/RegisterForm';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useAuth } from './hooks/useAuth';
 import { useAuthStore } from './store/authStore';
@@ -23,6 +24,7 @@ const BookingNew      = React.lazy(() => import('./pages/BookingNew'));
 const BookingDetail   = React.lazy(() => import('./pages/BookingDetail'));
 const LeadsList       = React.lazy(() => import('./pages/LeadsList'));
 const AgentCabinet    = React.lazy(() => import('./pages/agent/AgentCabinet'));
+const TouristCabinet  = React.lazy(() => import('./pages/tourist/TouristCabinet'));
 const FinancePage     = React.lazy(() => import('./pages/Finance'));
 const OperationsPage  = React.lazy(() => import('./pages/Operations'));
 const NotFoundPage    = React.lazy(() => import('./pages/errors/NotFound'));
@@ -45,6 +47,7 @@ const BookingDetailRoute: React.FC = () => {
 // бо не всі ролі мають доступ до /dashboard (agent → ForbiddenScreen).
 const roleHome = (role?: UserRole): string => {
   if (role === 'agent') return '/agent';
+  if (role === 'tourist') return '/my';
   return '/dashboard';
 };
 
@@ -75,6 +78,23 @@ const LoginPage: React.FC = () => {
   );
 };
 
+// ─── REGISTER PAGE (публічна, тільки тур туриста) ──────────────
+
+const RegisterPage: React.FC = () => {
+  const { isAuthenticated, user } = useAuth();
+  const navigate = useNavigate();
+
+  if (isAuthenticated) {
+    return <Navigate to={roleHome(user?.role)} replace />;
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 px-4 py-8">
+      <RegisterForm onSuccess={() => navigate('/my', { replace: true })} />
+    </div>
+  );
+};
+
 // ─── APP INIT ─────────────────────────────────────────────────
 
 const AppInitializer: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -98,6 +118,7 @@ export const App: React.FC = () => (
         <Routes>
           {/* ── Public ─────────────────────────────────────── */}
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
 
           {/* ── Admin / Director ───────────────────────────── */}
           <Route element={<ProtectedRoute allowedRoles={['admin', 'director']} />}>
@@ -131,6 +152,11 @@ export const App: React.FC = () => (
           {/* ── Agent cabinet ──────────────────────────────── */}
           <Route element={<ProtectedRoute allowedRoles={['agent']} />}>
             <Route path="/agent/*" element={<AgentCabinet />} />
+          </Route>
+
+          {/* ── Tourist cabinet ────────────────────────────── */}
+          <Route element={<ProtectedRoute allowedRoles={['tourist']} />}>
+            <Route path="/my/*" element={<TouristCabinet />} />
           </Route>
 
           {/* ── Redirects ──────────────────────────────────── */}

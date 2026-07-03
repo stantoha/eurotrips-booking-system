@@ -34,7 +34,9 @@ export const RegisterSchema = z.object({
     .min(2, 'Прізвище занадто коротке')
     .max(100),
   phone: z.string().optional(),
-  role: z.enum(['manager', 'ops', 'accountant', 'agent', 'tourist']).optional(),
+  // Публічна реєстрація завжди створює role='tourist' (див. auth.service.ts).
+  // Внутрішні ролі призначає тільки адміністратор — поле тут навмисно відсутнє,
+  // щоб анонімний запит не міг самопризначити собі manager/agent/тощо.
 });
 
 export const ChangePasswordSchema = z

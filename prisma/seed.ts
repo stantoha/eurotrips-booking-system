@@ -360,6 +360,23 @@ async function main() {
     },
   });
 
+  // tourist@eurotrips.ua / test1234 → name: "Оксана Захарченко"
+  // Портал самообслуговування туриста: User(role=tourist) + Tourist з тим самим
+  // email — auth.service.ts резолвить touristId за збігом email при логіні.
+  const touristPortalAccount = await prisma.user.upsert({
+    where: { email: 'tourist@eurotrips.ua' },
+    update: { passwordHash: await hashPassword(SEED_PASSWORD) },
+    create: {
+      email: 'tourist@eurotrips.ua',
+      passwordHash: await hashPassword(SEED_PASSWORD),
+      role: UserRole.tourist,
+      firstName: 'Оксана',
+      lastName: 'Захарченко',
+      phone: '+380631234567',
+      isActive: true,
+    },
+  });
+
   // ── 5. AGENT NETWORK ──────────────────────────────────────────────────────
   const networkUkrTour = await prisma.agentNetwork.upsert({
     where: { id: '00000000-0000-0000-0002-000000000001' },
@@ -443,6 +460,21 @@ async function main() {
     },
   });
 
+  // Турист-власник порталу самообслуговування (email збігається з touristPortalAccount)
+  const touristOksana = await prisma.tourist.upsert({
+    where: { email: 'tourist@eurotrips.ua' },
+    update: {},
+    create: {
+      firstName: 'Оксана',
+      lastName: 'Захарченко',
+      email: 'tourist@eurotrips.ua',
+      phone: '+380631234567',
+      nationality: 'Українка',
+      sourceChannel: 'site',
+      isRepeat: false,
+    },
+  });
+
   // ── 8. BOOKINGS ──────────────────────────────────────────────────────────
   // booking1: belongs to agent@agency.ua (agentStandard)
   const booking1 = await prisma.booking.upsert({
@@ -520,6 +552,45 @@ async function main() {
     },
   });
 
+  // booking4: direct booking для порталу туриста (tourist@eurotrips.ua) —
+  // підтверджене бронювання на автобусному турі, щоб було що показати
+  // в кабінеті туриста (оплата, вибір місця, seat-map).
+  const booking4 = await prisma.booking.upsert({
+    where: { bookingNumber: 'ET-2025-04524' },
+    update: {},
+    create: {
+      bookingNumber:    'ET-2025-04524',
+      tourId:           tourAdriaticAug.id,
+      bookingType:      'direct',
+      contactTouristId: touristOksana.id,
+      managerId:        managerOlena.id,
+      personsCount:     1,
+      totalAmount:      890,
+      depositAmount:    178,
+      depositPaid:      178,
+      depositDeadline:  new Date('2026-08-08'),
+      balanceAmount:    712,
+      balancePaid:      0,
+      balanceDeadline:  new Date('2026-08-18'),
+      paymentStatus:    'deposit_paid',
+      status:           'confirmed',
+      sourceChannel:    'site',
+      comment:          'Тестове бронювання для порталу самообслуговування туриста',
+    },
+  });
+
+  // Без цього рядка self-service (preferences/seat-map) не спрацює —
+  // ці ендпоінти працюють через booking_tourists, а не тільки contactTouristId.
+  await prisma.bookingTourist.upsert({
+    where: { bookingId_touristId: { bookingId: booking4.id, touristId: touristOksana.id } },
+    update: {},
+    create: {
+      bookingId: booking4.id,
+      touristId: touristOksana.id,
+      role:      'contact',
+    },
+  });
+
   // ── 9. AGENT COMMISSIONS ─────────────────────────────────────────────────
   await prisma.agentCommission.upsert({
     where: {
@@ -556,10 +627,13 @@ async function main() {
 
   console.log('✅ Seed завершено успішно!');
   console.log('');
-  console.log('👤 Тестові акаунти:');
-  console.log('   Admin:   admin@eurotrips.ua / admin123!');
-  console.log('   Manager: a.sych@eurotrips.ua / manager123!');
-  console.log('   Agent:   i.koval@ta-mriia.ua / agent123!');
+  console.log('👤 Тестові акаунти (пароль: test1234):');
+  console.log('   Admin:    admin@eurotrips.ua');
+  console.log('   Manager:  manager@eurotrips.ua, a.sych@eurotrips.ua');
+  console.log('   Ops:      ops@eurotrips.ua');
+  console.log('   Finance:  finance@eurotrips.ua');
+  console.log('   Agent:    agent@agency.ua (standard), agent2@agency.ua (network)');
+  console.log('   Tourist:  tourist@eurotrips.ua');
   console.log('');
   console.log('🗺️  Тури (5 реальних турів з CSV):');
   console.log('   VD26070301 — Адріатика + Доломіти (active, 03.07.2026)  ← МАЙБУТНІЙ');
