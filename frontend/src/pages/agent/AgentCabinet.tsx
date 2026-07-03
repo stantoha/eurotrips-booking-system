@@ -26,6 +26,7 @@ import { useAuth }         from '../../hooks/useAuth';
 import { useBookings }     from '../../hooks/useBookings';
 import { useTourList }     from '../../hooks/useTours';
 import { useAgentCommissions } from '../../hooks/useAgentCommissions';
+import { useAgentRoyalty } from '../../hooks/useAgentRoyalty';
 import type { CommissionInfo, PaymentInfo } from '../../types';
 
 // ─── HELPERS ──────────────────────────────────────────────────
@@ -105,6 +106,7 @@ const AgentCabinet: React.FC = () => {
   // Список бронювань не містить комісійних полів — рахувати з нього завжди
   // виходило 0. Комісія — окремий ресурс.
   const { data: commissions, isLoading: commissionsLoading } = useAgentCommissions(user?.agent_id);
+  const { data: royalty, isLoading: royaltyLoading } = useAgentRoyalty(user?.agent_id, isNetworkAgent);
   const totalSales      = myBookings.reduce((s, b) => s + b.total_price, 0);
   const totalDebt       = myBookings.reduce((s, b) => s + b.balance_due, 0);
   const totalCommission = (commissions ?? []).reduce((s, c) => s + c.agent_amount, 0);
@@ -227,7 +229,7 @@ const AgentCabinet: React.FC = () => {
         {isNetworkAgent && (
           <StatBox
             label="Роялті мережі"
-            value="—"
+            value={royaltyLoading ? '…' : `${fmtEur(royalty?.summary.pending_royalty ?? 0)} EUR`}
             sub="після виплати субагентам"
             colorClass="text-blue-600 dark:text-blue-400"
           />
@@ -305,10 +307,15 @@ const AgentCabinet: React.FC = () => {
                   </div>
                   <div className="flex items-baseline justify-between">
                     <span className="text-lg font-medium text-blue-700 dark:text-blue-300">
-                      — EUR
+                      {royaltyLoading ? '…' : `${fmtEur(royalty?.summary.pending_royalty ?? 0)} EUR`}
                     </span>
                     <StatusBadge status="pending" domain="commission" size="xs" />
                   </div>
+                  {!royaltyLoading && royalty && royalty.summary.paid_royalty > 0 && (
+                    <p className="text-xs text-blue-500 dark:text-blue-400 mt-2">
+                      Виплачено: {fmtEur(royalty.summary.paid_royalty)} EUR
+                    </p>
+                  )}
                 </div>
               </div>
             </div>

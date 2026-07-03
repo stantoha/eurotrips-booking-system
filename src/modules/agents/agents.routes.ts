@@ -92,13 +92,14 @@ export async function agentRoutes(app: FastifyInstance) {
 
   // ── GET /agents/:id/royalty ──────────────────────────────────────────────
   app.get<{ Params: { id: string } }>('/:id/royalty', {
-    preHandler: [requireAuth, requireRoles('admin', 'director')],
+    preHandler: [requireAuth, requireRoles('admin', 'director', 'agent')],
     schema: {
-      summary: 'Роялті мережевого агента (BR-07: тільки network)',
+      summary: 'Роялті мережевого агента (BR-07: тільки network; агент бачить тільки своє)',
       tags: ['Agents'], security: [{ bearerAuth: [] }],
       params: ID_PARAM,
     },
   }, async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
-    return reply.send({ data: await service.getAgentRoyalty(req.params.id) });
+    const user = getCurrentUser(req);
+    return reply.send({ data: await service.getAgentRoyalty(req.params.id, user) });
   });
 }

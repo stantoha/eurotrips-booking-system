@@ -9,6 +9,8 @@ import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { LoginForm } from './components/auth/LoginForm';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useAuth } from './hooks/useAuth';
+import { useAuthStore } from './store/authStore';
+import type { UserRole } from './types';
 
 // ─── LAZY PAGES ───────────────────────────────────────────────
 // Завантажуємо сторінки ліниво для кращої продуктивності
@@ -39,22 +41,36 @@ const BookingDetailRoute: React.FC = () => {
 
 // ─── LOGIN PAGE ───────────────────────────────────────────────
 
+// Дефолтна "домашня" сторінка після логіну — залежить від ролі,
+// бо не всі ролі мають доступ до /dashboard (agent → ForbiddenScreen).
+const roleHome = (role?: UserRole): string => {
+  if (role === 'agent') return '/agent';
+  return '/dashboard';
+};
+
 const LoginPage: React.FC = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
   // Куди повернутись після логіну — сторінка, з якої ProtectedRoute
-  // скинув неавторизованого користувача (state.from), або /dashboard
-  const from = (location.state as { from?: string } | null)?.from ?? '/dashboard';
+  // скинув неавторизованого користувача (state.from), інакше — домівка ролі
+  const explicitFrom = (location.state as { from?: string } | null)?.from;
 
   if (isAuthenticated) {
-    return <Navigate to={from} replace />;
+    return <Navigate to={explicitFrom ?? roleHome(user?.role)} replace />;
   }
+
+  const handleSuccess = () => {
+    // Читаємо роль напряму зі store — signIn() щойно оновив її,
+    // а замикання цього рендеру могло лишитись зі старим user=null
+    const role = useAuthStore.getState().user?.role;
+    navigate(explicitFrom ?? roleHome(role), { replace: true });
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 px-4">
-      <LoginForm onSuccess={() => navigate(from, { replace: true })} />
+      <LoginForm onSuccess={handleSuccess} />
     </div>
   );
 };

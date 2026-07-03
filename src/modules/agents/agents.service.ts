@@ -174,7 +174,12 @@ export class AgentsService {
   }
 
   // ── ROYALTY (BR-07: тільки network) ──────────────────────────────────────
-  async getAgentRoyalty(agentId: string) {
+  async getAgentRoyalty(agentId: string, user: JwtPayload) {
+    // Агент бачить тільки своє роялті (RBAC, аналогічно getAgentCommissions)
+    if (user.role === UserRole.agent && user.agentId !== agentId) {
+      throw Errors.forbidden('Доступ до роялті іншого агента заборонено');
+    }
+
     const agent = await prisma.agent.findUnique({
       where: { id: agentId },
       select: {
