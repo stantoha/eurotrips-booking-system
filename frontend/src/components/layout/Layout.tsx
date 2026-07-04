@@ -8,9 +8,10 @@ import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, MapPinned, ClipboardList, Users2,
-  Wallet, Wrench, UserCircle2, LogOut, Menu, X, MapPin,
+  Wallet, Wrench, UserCircle2, LogOut, Menu, X
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+
 
 // ─── NAV ITEMS ────────────────────────────────────────────────
 
@@ -67,7 +68,11 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       {/* Logo */}
       <div className="flex items-center gap-2 px-4 h-16 border-b border-slate-100 dark:border-slate-800 flex-shrink-0">
         <div className="w-8 h-8 bg-brand-cyan rounded-lg flex items-center justify-center flex-shrink-0">
-          <MapPin size={16} className="text-white" aria-hidden="true" />
+          <img
+            src="/ET_logo_white.svg"
+            alt="Eurotrips"
+            className="w-8 h-8 object-contain"
+          />
         </div>
         <span className="text-base font-semibold text-slate-900 dark:text-slate-100">Eurotrips</span>
       </div>
@@ -115,7 +120,11 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       <div className="md:hidden fixed top-0 inset-x-0 z-40 flex items-center justify-between h-14 px-4 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 bg-brand-cyan rounded-lg flex items-center justify-center">
-            <MapPin size={14} className="text-white" aria-hidden="true" />
+            <img
+              src="/ET_logo_white.svg"
+              alt="Eurotrips"
+              className="w-7 h-7 object-contain"
+            />
           </div>
           <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">Eurotrips</span>
         </div>
