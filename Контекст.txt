@@ -1,0 +1,520 @@
+﻿EUROTRIPS BOOKING SYSTEM — Повний контекст для Claude Code
+1. КОМПАНІЯ ТА ПРОДУКТ
+Eurotrips (eurotrips.ua) — український туроператор. Продає автобусні та авіатури по Європі та світу через прямі продажі та агентську мережу. Система будується на заміну 1С-системі бронювання. Zoho CRM залишається — менеджери продовжують в ній працювати.
+Що зберігається:
+* Сайт eurotrips.ua — не чіпаємо, система інтегрується з ним
+* Zoho CRM — двостороння синхронізація через webhook
+* Існуюча агентська мережа — сотні агентів з різними комісіями
+Мова системи: Тільки українська. Весь UI, повідомлення, назви турів, коментарі в коді.
+________________
+
+
+2. РЕПОЗИТОРІЙ
+GitHub: github.com/stantoha/eurotrips-booking-system
+Гілка: develop
+Локально: C:/EUROTRIPS/eurotrips-booking-system/
+Важлива особливість структури: backend IS the root — немає окремої backend/ папки. Файли src/, prisma/, package.json лежать прямо в корені. Frontend в frontend/.
+eurotrips-booking-system/
+├── src/
+│   ├── main.ts           ← точка входу (компілюється в dist/src/main.js)
+│   ├── app.ts            ← реєстрація всіх routes і плагінів
+│   ├── modules/
+│   │   ├── auth/
+│   │   ├── tours/
+│   │   ├── bookings/
+│   │   ├── leads/
+│   │   ├── finance/
+│   │   ├── agents/
+│   │   └── integrations/
+│   │       ├── zoho/     ← zoho-migration.ts, zoho.webhook.ts, zoho-verify.ts
+│   │       └── liqpay/   ← liqpay.service.ts, liqpay.routes.ts
+│   └── shared/
+│       ├── database/     ← Prisma singleton
+│       ├── redis/        ← redis.plugin.ts (вже опціональний з graceful degradation)
+│       ├── queue/        ← BullMQ workers (умовні, якщо redis є)
+│       └── guards/       ← JWT guard, RBAC guard
+├── prisma/
+│   ├── schema.prisma     ← 20 моделей — єдине джерело правди
+│   └── seed.ts           ← 9 тестових users + тури
+├── frontend/
+│   └── src/
+│       ├── pages/        ← Dashboard, Tours, Bookings, BookingDetail,
+│       │   │               LeadsList, Finance(stub), Operations(stub)
+│       │   └── agent/    ← AgentCabinet
+│       ├── components/
+│       ├── hooks/        ← useAuth, useBookings, useTours, useTourAvailability
+│       ├── constants/    ← statuses.ts, bookingTransitions.ts, brand.ts
+│       └── styles/       ← globals.css (CSS vars вже є)
+├── railway.json          ← builder: NIXPACKS, startCommand: node dist/src/main.js
+├── nixpacks.toml         ← [phases.setup] nixPkgs: openssl (для Prisma)
+├── CLAUDE.md             ← frontend контекст для AI
+└── CLAUDE_backend.md     ← backend контекст + бізнес-правила BR-01..BR-08
+________________
+
+
+3. ТЕХНІЧНИЙ СТЕК
+Шар
+	Технологія
+	Runtime
+	Node.js 20 LTS
+	Framework
+	Fastify 4
+	ORM
+	Prisma 5
+	Database
+	PostgreSQL 16
+	Cache/Queue
+	Redis 7 + BullMQ (опціональні)
+	Frontend
+	React 18 + Vite + TypeScript + TanStack Query v5
+	State
+	Zustand
+	Styles
+	Tailwind CSS
+	Auth
+	JWT (access 15хв) + Refresh Token (30д, HttpOnly cookie)
+	Email
+	Brevo (transactional) / MailHog (dev)
+	Payments
+	LiqPay (MVP)
+	CRM
+	Zoho CRM (залишається, двостороння синхронізація)
+	Tests
+	Playwright E2E
+	________________
+
+
+4. ПРОДАКШН СЕРЕДОВИЩЕ (поточне MVP)
+Frontend:  Vercel (автодеплой з develop)
+Backend:   Railway (builder: NIXPACKS, NIX: nodejs_20 + openssl)
+Database:  Neon.tech PostgreSQL
+Redis:     Upstash Redis (TLS)
+
+
+Credentials (вже налаштовані в Railway):
+DATABASE_URL = postgresql://neondb_owner:npg_Y4OpvWq8zMZQ@ep-twilight-snow-as5dqil4-pooler.c-4.eu-central-1.aws.neon.tech/eurotrips_booking?sslmode=require&channel_binding=require
+REDIS_URL = rediss://default:AZZgAAIgcDFhZTRhYWUzM2VjNDY0MGM5YTc4OGQwMTBmMGI5ZGZjYg@beloved-whippet-38496.upstash.io:6379
+
+
+Майбутній production: Hetzner CX32 (~22 EUR/міс) — скрипти готові
+________________
+
+
+5. ТЕСТОВІ АКАУНТИ (seed.ts, пароль: test1234)
+admin@eurotrips.ua      → Адміністратор (повний доступ)
+director@eurotrips.ua   → Директор (звіти, фінанси)
+manager@eurotrips.ua    → Менеджер з продажу
+ops@eurotrips.ua        → Операційний менеджер
+accountant@eurotrips.ua → Бухгалтер
+agent@eurotrips.ua      → Агент standard (бачить тільки своє)
+agent2@eurotrips.ua     → Агент network (+ роялті від субагентів)
+tourist@eurotrips.ua    → Турист
+tourist2@eurotrips.ua   → Турист 2
+________________
+
+
+6. БІЗНЕС-ПРАВИЛА (критично — не порушувати)
+BR-01: Місця тільки через транзакцію
+typescript
+// НІКОЛИ не UPDATE available_seats напряму
+// ЗАВЖДИ через prisma.$transaction з перевіркою >=
+await prisma.$transaction(async (tx) => {
+  const tour = await tx.tour.findFirst({
+    where: { id: tourId, availableSeats: { gte: count } }
+  });
+  if (!tour) throw new AppError('SEATS_UNAVAILABLE', 'Недостатньо місць', 409);
+  await tx.tour.update({ where:{id:tourId}, data:{availableSeats:{decrement:count}} });
+});
+BR-02: Комісія агента — тільки від базової ціни
+typescript
+commission = tour.basePrice * personsCount * agent.commissionPct
+// НЕ від totalAmount (не включає ДОПи, доплати, страховку)
+BR-03: Виплата комісії — тільки після завершення туру
+CommissionStatus → 'to_pay' тільки якщо:
+  booking.status === 'completed' AND tour.status === 'completed'
+BR-04: Агент НІКОЛИ не бачить собівартість
+typescript
+// При будь-якому API response для role === 'agent':
+// ВИДАЛЯТИ: costPrice, margin, netProfit, internalNotes, costPriceTotal
+// Менеджер і вище — БАЧИТЬ ці поля (це виправлено після C-02)
+// canSeeMargin = role !== 'agent' && role !== 'tourist'
+BR-05: Два типи агентів
+typescript
+// standard:
+agentPayout = basePrice * personsCount * commissionPct
+
+
+// network (складніша формула):
+grossCommission = basePrice * personsCount * commissionPct
+agentPayout     = grossCommission - coAmount - royaltyAmount
+coAmount        = grossCommission * (coCommissionPct / commissionPct)
+royaltyAmount   = grossCommission * (royaltyPct / commissionPct)
+BR-06: Статусна машина бронювань (FSM — не можна пропускати кроки)
+new → in_work | cancelled_operator
+in_work → needs_clarification | pre_booked | awaiting_payment | cancelled_operator
+pre_booked → awaiting_payment | cancelled_client | cancelled_operator
+awaiting_payment → partially_paid | confirmed | cancelled_client
+partially_paid → confirmed | cancelled_client
+confirmed → docs_collected
+docs_collected → ready_to_depart
+ready_to_depart → on_trip
+on_trip → completed | no_show
+completed → [термінальний]
+cancelled_* → refund (якщо були платежі)
+no_show → [термінальний]
+refund → [термінальний]
+BR-07: Роялті мережі — тільки після виплати всім субагентам
+typescript
+// AgentCommission.status → 'to_pay' для network тільки якщо
+// всі субагенти мережі мають status === 'paid'
+BR-08: Скасування оператором — повне повернення
+typescript
+// booking.status → 'cancelled_operator':
+// Автоматично: Payment { type: 'refund', amount: totalPaid }
+// CommissionStatus → 'cancelled'
+// Штраф: 0 (незалежно від cancellation_policy)
+BR-09: Авіатур → страховка обов'язкова до ready_to_depart
+typescript
+// Перед переходом в ready_to_depart для авіатурів:
+// Перевірити що КОЖЕН турист має TouristInsurance.status === 'active'
+________________
+
+
+7. ФІНАНСОВА МОДЕЛЬ
+Каскад ціноутворення:
+Собівартість (СВ) = Розміщення + Транспорт + Персонал + Гіди + ДОПи в СВ + Непрямі
+Базова ціна = СВ + Маржа оператора
+Ціна клієнта (gross) = Базова ціна + Доплати − Знижки
+Агентська комісія = gross_price × commissionPct (10–30%)
+Маржа оператора (net) = gross − СВ − AG_commission − Роялті − Непрямі
+ДОПи (додаткові послуги):
+* Продаються під час туру, не входять в базову ціну
+* Комісія агента на ДОПи НЕ нараховується
+* Мають власний P&L: СВ_ДОП = Гід + км + прямі витрати
+Агентська комісія по CSV-даних (406 турів):
+* Діапазон: 10% — 30%
+* Budapest+Vienna: 30% комісія при 14.5% маржі = ризик негативного P&L
+* Комісія диференційована по продукту, не однакова для всіх
+________________
+
+
+8. АРХІТЕКТУРНІ РІШЕННЯ (ADR)
+ADR-003: Departure Entity — Варіант A прийнятий
+Проблема: стара 1С система має Tour → Departure → Booking. Нова схема: Tour → Booking (Tour містить дату виїзду).
+Рішення (ПРИЙНЯТО для MVP): Tour = Departure. Кожен виїзд = окремий Tour запис.
+* Код туру кодує продукт+дату: LP26010301 = Лапландія 2026-01-03
+* Поле product_code = групування виїздів одного продукту (LP, PN тощо)
+* @@index([product_code, departure_date]) для запитів "всі дати Лапландії"
+Реліз 2: Departure як окрема сутність (еволюційно, без breaking changes)
+Реліз 3: Повноцінна міграція Tour+Departure
+________________
+
+
+9. ZOHO CRM ІНТЕГРАЦІЯ
+Що залишається: Zoho як основний CRM для менеджерів з продажу.
+22 модулі змаплено, пріоритет міграції:
+1. Products → tours (externalId = 'zoho_product_{id}')
+2. Accounts → agents (field29-56 в metadata.zoho_fields JSONB)
+3. Contacts → tourists
+4. Leads → leads
+5. Deals → bookings (TOUR_AGC, UTM поля, adults/children count)
+6. Travel → UPDATE bookings (pickupPoint, specialRequirements, exchangeRate)
+7. CustomModule3 → payments (field2/field3/field5 потребують уточнення у клієнта)
+Відкриті питання (Q-01..Q-05):
+* field2/field3/field5 в CustomModule3 (Payments) — зберігати в metadata.zoho_fields до уточнення
+* field29-field56 в Agencies — аналогічно
+Webhook (двостороння синхронізація):
+* POST /webhooks/zoho (без JWT, з X-Zoho-Webhook-Token)
+* Events: Deals.edit, Leads.edit, Contacts.edit, Deals.add
+* liqPayRoutes та zohoWebhookRoutes СВІДОМО закоментовані через відомі баги — НЕ розкоментовувати без перевірки
+________________
+
+
+10. BRAND DESIGN
+Верифіковано з PDF брендбуку Eurotrips:
+typescript
+// frontend/src/constants/brand.ts (вже є в репо)
+colors: {
+  cyan:     '#53c7d6',  // PRIMARY: лого, nav, active states
+  cyanDark: '#3fb4c3',
+  red:      '#f0366d',  // CTA: "Забронювати", "Докладніше"
+  redDark:  '#d42b5f',
+  gold:     '#f9c01d',  // Highlights, акценти
+  goldDark: '#e0aa10',
+  blue:     '#2d70b9',  // System buttons
+  blueDark: '#245d9c',
+  dark:     '#1a1a2e',  // Заголовки, body text
+  white:    '#ffffff',
+  pink:     '#f7c5d0',
+}
+
+
+// CSS змінні в frontend/src/styles/globals.css (вже є)
+// --et-cyan, --et-red, --et-gold, --et-blue, --et-dark
+
+
+// Шрифти:
+heading: 'Montserrat' // fallback для комерційного Druk Text
+body:    'IBM Plex Sans' // fallback для комерційного Proxima Nova
+mono:    'IBM Plex Mono' // для ID кодів ET-YYYY-NNNNN
+
+
+// UI патерни:
+// Кнопки CTA: rounded-pill (9999px) + bg-brand-red
+// Tour card overlay: знизу-зліва, 55% ширина
+// .tour-overlay--cyan/red/blue/gold
+Увага: brand.blue в tailwind.config.ts = #2d70b9 (НЕ старий #1B4F9C). Кнопка логіну — brand-cyan/brand-red, не сірий.
+________________
+
+
+11. ПОТОЧНИЙ СТАН РЕАЛІЗАЦІЇ
+Backend:
+✅ Auth (JWT + refresh, login/logout/me)
+✅ Tours (CRUD, availability, BR-04)
+✅ Bookings (15 статусів, BR-01/06/08)
+✅ Leads (7 статусів, конвертація в booking)
+✅ Finance (summary для admin/director/manager/accountant)
+✅ Agents (BR-05/07, standard/network)
+⚠️ liqPayRoutes — закоментовано (баги)
+⚠️ zohoWebhookRoutes — закоментовано (баги)
+❌ Insurance endpoints (модель в schema є, endpoints відсутні)
+
+
+Frontend:
+✅ Login (auth flow виправлений: login→setToken→getMe→setAuth)
+✅ Dashboard (виправлено: snake_case types, Decimal баг, canSeeMargin)
+✅ Tours
+✅ Bookings
+✅ BookingDetail (/bookings/:id)
+✅ AgentCabinet
+✅ LeadsList (/leads)
+✅ Finance (stub)
+✅ Operations (stub)
+✅ Sidebar навігація з рольовими посиланнями
+✅ ErrorBoundary навколо routes
+✅ 404 сторінка
+
+
+Виправлено нещодавно (C-02, C-03, I-02..I-07):
+✅ canSeeMargin = менеджер БАЧИТЬ маржу (виправлено порушення BR-04)
+✅ Логін зберігає state.from redirect
+✅ Кнопка логіну brand-cyan/red (не сірий)
+✅ window.location.href → .replace()
+________________
+
+
+12. НОМЕРИ БРОНЮВАНЬ
+Формат: ET-YYYY-NNNNN (наприклад ET-2026-00123)
+Генерація в src/shared/utils/booking-number.ts
+________________
+
+
+13. АРС ПРАВИЛ ДОСТУПУ (RBAC)
+typescript
+type UserRole = 
+  | 'admin'         // повний доступ
+  | 'director'      // звіти, фінанси, всі перегляди
+  | 'manager'       // ліди, бронювання, клієнти, БАЧИТЬ маржу (BR-04 виправлено)
+  | 'ops_manager'   // тури, списки, документи, виїзди
+  | 'accountant'    // фінанси, оплати, звіти
+  | 'agent'         // тільки своє, НЕ бачить маржу (BR-04)
+  | 'tourist';      // тільки своє бронювання
+
+
+// JWT payload містить:
+{ sub, email, role, full_name, agentId, agentType, networkId, agent_code }
+________________
+
+
+14. ЛОКАЛЬНА РОЗРОБКА
+bash
+docker-compose up
+# → postgres:5432 + redis:6379 + backend:3000 + frontend:5173 + nginx:80
+
+
+# Seed:
+docker-compose exec backend npm run db:seed
+
+
+# Prisma Studio:
+docker-compose exec backend npm run db:studio
+# → http://localhost:5555
+
+
+# MailHog (email preview):
+http://localhost:8025
+
+
+# Zoho міграція (після налаштування credentials):
+npm run migrate:zoho
+
+
+# Verify prod (після деплою):
+bash scripts/verify-prod.sh
+________________
+
+
+15. КОМАНДА ПРОЕКТУ (15 спеціалістів)
+Всі ведуть окремі Claude чати. Результати їх роботи потрапляють в репо.
+Backend · Frontend · QA тестування · Інтеграція API · UX/UI дизайн · DevOps · Business Analyst · Tech Writer (Оновлення документації) · Архітектор (Система бронювань: рекомендації) · Data Analyst/BI · Product Manager · Фінансова логіка · Управління агентами та онбординг · Security review · Аналітика туристичних продажів та дашборди
+________________
+
+
+16. ЩО РОБИТИ З ШЛЯХАМИ ДО ФАЙЛІВ
+Критично важливо: перед редагуванням будь-якого файлу — знаходь його реальний шлях:
+powershell
+# Не припускай шляхи — перевіряй:
+Get-ChildItem C:\EUROTRIPS -Recurse -Filter "app.ts" | Select FullName
+Get-ChildItem C:\EUROTRIPS -Recurse -Filter "*.routes.ts" | Select FullName
+Файли можуть лежати глибше за очікуване. Структура вже перевірена:
+* app.ts → C:\EUROTRIPS\eurotrips-booking-system\src\app.ts
+* main.ts → C:\EUROTRIPS\eurotrips-booking-system\src\main.ts
+* railway.json → корінь репо (не в backend/ — такої папки немає)
+* vercel.json → frontend/vercel.json
+* seed.ts → prisma/seed.ts
+________________
+
+
+17. ВІДКРИТІ ПИТАННЯ ДО КЛІЄНТА
+* Q-01: Що таке field2/field3/field5 в Zoho CustomModule3 (Payments)?
+* Q-02: Що таке field29-field56 в Zoho Agencies?
+* Q-03: Коди нових турів після запуску — хто призначає: система чи менеджер?
+* Q-04: Чи потрібна інтеграція з сайтом eurotrips.ua (форма бронювання)?
+* Q-05: WayForPay — коли потрібен (Реліз 2)?
+Продовжуй
+Orchestrated comprehensive documentation assembly for technical specifications
+Orchestrated comprehensive documentation assembly for technical specifications
+Тепер маю повний контекст. Продовжую документ.
+________________
+
+
+18. ПОВНЕ ТЗ — МОДУЛІ (скорочено для Claude Code)
+Джерело правди: CLAUDE.md і CLAUDE_backend.md в репо + ТЗ-скелет вище.
+Що ОБОВ'ЯЗКОВО в Релізі 1 (зараз):
+каталог турів · бронювання · CRM/ліди · кабінет менеджера · кабінет агента · базові статуси · оплати · документи · базові повідомлення · базова аналітика
+Що в Релізі 2 (після MVP):
+групові запити · корпоративні сценарії · розширені фінанси · автоматизація нагадувань · розсадка · BI-дашборди · WayForPay · Departure entity
+Що в Релізі 3:
+мобільна версія · глибокі інтеграції · прогнозування · advanced analytics
+________________
+
+
+19. UX/CJM РІШЕННЯ (з wireframe документу)
+Два ключових сценарії задокументовані:
+Сценарій A — Агент бронює тур (7 кроків):
+1. Логін → автовизначення типу агента (standard/network)
+2. Пошук → показати нетто-ціну одразу + розбивка комісії
+3. Перевірка місць → live-лічильник (оновлення кожні 30 сек)
+4. Дані клієнта → збережені клієнти агента (вибір зі списку)
+5. Підтвердження → Summary сторінка перед відправкою
+6. Статус → email/Telegram при кожній зміні статусу
+7. Документи → share-link + можливість брендингу агентства
+Сценарій B — Менеджер веде лід до оплати (7 кроків):
+1. Лід → єдина черга з маркером джерела
+2. Призначення → round-robin + override
+3. Консультація → CRM нотатки + задачі
+4. Бронювання → швидка форма з pre-fill з ліда
+5. Рахунок → автогенерація PDF
+6. Передоплата → LiqPay посилання в один клік
+7. Підтвердження → автоматичний email клієнту
+Wireframes розроблені (є в репо):
+* WF1: Список бронювань
+* WF2: Картка бронювання
+* WF3: Кабінет агента
+* WF4: Дашборд менеджера
+________________
+
+
+20. SECURITY AUDIT — ПОТОЧНИЙ СТАН
+Аудит проведено 22.06.2025. 10 знахідок.
+Що вже виправлено (до останнього коміту):
+* ✅ SEC-005: canSeeMargin — менеджер тепер БАЧИТЬ маржу (BR-04 порушення виправлено)
+* ✅ SEC-009: state.from redirect після логіну виправлено
+* ✅ SEC-010: require() → import
+Що ще НЕ виправлено:
+SEC-001 🔴 КРИТИЧНИЙ:
+Rate limiting на POST /auth/login — тільки глобальний (200/хв)
+Потрібно: max=10 спроб за 15 хвилин per IP
+Приклад:
+  app.register(rateLimit, {
+    max: 10,
+    timeWindow: '15 minutes',
+    keyGenerator: (req) => req.ip,
+    // тільки для /auth/login
+  })
+
+
+SEC-002 🟠 ВИСОКИЙ:
+Zoho webhook — if (ZOHO_WEBHOOK_TOKEN) — обхід при відсутності env
+Має бути: кидати 401 завжди якщо токен відсутній або невірний
+
+
+SEC-004 🟠 ВИСОКИЙ:
+AuditLog schema mismatch — невідповідність між моделлю і сервісом
+
+
+SEC-006 🟠 ВИСОКИЙ:
+Tourist role — маршрут /my/* відсутній в App.tsx
+Що підтверджено ОК:
+* ✅ JWT blacklist при logout (Redis SET з TTL)
+* ✅ Refresh token HttpOnly Cookie
+* ✅ Access token in-memory (не localStorage)
+* ✅ IDOR: агент не читає чужі бронювання (TC-RBAC-011)
+* ✅ LiqPay SHA1 з crypto.timingSafeEqual
+* ✅ BR-04 server-side (TourPublicDto без costPrice)
+* ✅ SQL ін'єкції: Prisma parameterized queries
+* ✅ AuditLog таблиця в schema
+________________
+
+
+21. ДАНІ З РЕАЛЬНИХ ФАЙЛІВ EUROTRIPS 2025
+В репо є реальні дані (CSV) які використовуються для seed і аналітики:
+ET_Tour_Calendar_2025_Blessed__собівартість_NEW.csv  — 335 турів з собівартістю
+ET_Tour_Calendar_2025_Blessed__AGcomission.csv       — 406 турів, комісії 10-30%
+ET_Tour_Calendar_2025_Blessed__Календар.csv          — 335 виїздів 2025
+Final_Hotel_Database__Sheet1.csv                     — 563 готелі
+ET_Tour_Calendar_2025_Blessed__Розміщення.csv        — румінг по містах
+ET_Tour_Calendar_2025_Blessed__Транспорт.csv         — маршрути і перевізники
+Формат коду туру: LP26010301
+* LP = продукт (Лапландія)
+* 26 = рік 2026
+* 01 = місяць (січень)
+* 03 = день (3-тє)
+* 01 = порядковий номер виїзду
+Готелі: переважно Італія, Іспанія, Австрія, Чехія. Ціни в EUR.
+Критична знахідка по маржі:
+ Budapest+Vienna тур: комісія агента 30%, маржа оператора 14.5% → потенційний негативний P&L. Задокументовано для фінансового модуля.
+________________
+
+
+22. ROADMAP РЕЛІЗІВ
+Реліз 1 (MVP — зараз):
+  Каталог · Бронювання · CRM · Агент кабінет · Фінанси · Документи
+  Zoho sync · LiqPay · Email (Brevo)
+  Deploy: Railway + Vercel + Neon + Upstash (безкоштовно)
+
+
+Реліз 2 (Q4 2025, ~21-25 люд/тижнів):
+  Departure entity · Insurance module · GroupBookings
+  WayForPay · BI-дашборди · AutoRoyalty · DeepZoho
+
+
+Реліз 3 (2026, ~40-55 люд/тижнів):
+  Mobile apps (iOS/Android) · LiqPay online · AI features
+  GDPR compliance · Advanced BI · Корпоративний канал
+________________
+
+
+23. ВАЖЛИВІ ТЕХНІЧНІ ДЕТАЛІ
+Числа в API: Prisma Decimal повертає {s,e,d} об'єкт. Є case-transform хук який ламав Decimal — виправлено. Завжди перевіряй що total_amount, deposit_paid etc приходять як числа, не як об'єкти.
+snake_case vs camelCase: Backend повертає snake_case (PostgreSQL конвенція). Frontend перетворює через хук. JWT payload — snake_case (agent_code, full_name).
+Booking number: Генерується автоматично в src/shared/utils/booking-number.ts. Формат ET-YYYY-NNNNN. НІКОЛИ не приймати від клієнта.
+Amounts: Всі суми в EUR. Відображення: toLocaleString('uk-UA', {style:'currency', currency:'EUR'}).
+liqPayRoutes і zohoWebhookRoutes: Свідомо закоментовані через відомі баги. Не розкоментовувати без окремого дослідження і фіксу.
+nixpacks.toml: nixPkgs: ["nodejs_20", "openssl"]. nodejs_20 включає npm. openssl потрібен для Prisma. НЕ видаляти openssl.
+Vercel: Root Directory = frontend/. vercel.json вже там. SPA rewrite /(.*) → /index.html.
+Railway: Root Directory = порожній (backend IS root). startCommand: node dist/src/main.js. Builder: NIXPACKS.
+________________
+
+
+Це повний контекст проекту поза репозиторієм. Скопіюй це в перше повідомлення до Claude Code разом з конкретним завданням.
