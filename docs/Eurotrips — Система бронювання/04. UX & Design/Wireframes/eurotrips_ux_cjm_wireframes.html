@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eurotrips · OPS Модуль · UX Wireframes · Part C</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --c:#53c7d6;--c10:rgba(83,199,214,.12);--c25:rgba(83,199,214,.25);
+  --r:#f0366d;--r10:rgba(240,54,109,.1);--r25:rgba(240,54,109,.22);
+  --b:#2d70b9;--b10:rgba(45,112,185,.12);--b25:rgba(45,112,185,.22);
+  --g:#f9c01d;--g10:rgba(249,192,29,.12);--g25:rgba(249,192,29,.25);
+  --k:#1a1a2e;--ok:#16a34a;--ok10:rgba(22,163,74,.1);
+  --warn:#ca8a04;--err:#dc2626;
+  --bg:#f5f7fb;--bg2:#eef1f7;--white:#fff;
+  --border:#dde3ef;
+  --text:#1a1a2e;--text2:#4a5578;--text3:#8b98b5;
+  --mono:'IBM Plex Mono',monospace;--sans:'Montserrat',sans-serif;
+  --sh:0 1px 3px rgba(26,26,46,.06),0 4px 16px rgba(26,26,46,.04);
+  --shh:0 4px 20px rgba(26,26,46,.1),0 8px 32px rgba(26,26,46,.06);
+}
+*,::before,::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);font-size:13px;line-height:1.5}
+button{font-family:var(--sans);cursor:pointer}
+/* DOC HEADER */
+.dh{background:var(--k);padding:22px 40px;display:flex;align-items:center;gap:16px}
+.dh-logo{background:var(--c);border-radius:7px;padding:6px 12px;font-weight:900;font-size:13px;color:var(--k);letter-spacing:1.5px}
+.dh-t h1{font-size:18px;font-weight:700;color:#fff;margin-bottom:2px}
+.dh-t p{font-size:11px;color:rgba(255,255,255,.4);font-family:var(--mono)}
+.dh-badge{margin-left:auto;padding:5px 14px;border-radius:20px;font-size:11px;font-weight:600;background:var(--c10);border:1px solid var(--c25);color:var(--c);font-family:var(--mono)}
+/* NAV */
+.main-nav{background:#fff;border-bottom:1px solid var(--border);padding:0 40px;display:flex;overflow-x:auto}
+.mn-tab{padding:13px 20px;font-size:12px;font-weight:600;cursor:pointer;color:var(--text3);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;transition:all .18s}
+.mn-tab:hover{color:var(--text)}
+.mn-tab.on{color:var(--c);border-bottom-color:var(--c)}
+/* SECTIONS */
+.sec{display:none;padding:30px 40px;max-width:1400px;margin:0 auto}
+.sec.on{display:block}
+.eyebrow{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;font-family:var(--mono);margin-bottom:6px}
+.sec-hdr{margin-bottom:22px}
+.sec-hdr h2{font-size:20px;font-weight:700;margin-bottom:4px}
+.sec-hdr p{font-size:13px;color:var(--text2)}
+.note{background:var(--c10);border:1px solid var(--c25);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--text2);margin-bottom:18px;display:flex;gap:8px}
+.note-warn{background:var(--g10);border-color:var(--g25)}
+/* SCREEN MAP */
+.sm-wrap{display:grid;grid-template-columns:270px 1fr;gap:18px}
+.sm-tree{background:#fff;border:1px solid var(--border);border-radius:11px;padding:14px;box-shadow:var(--sh)}
+.sm-tree h3{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;font-family:var(--mono)}
+.ti{padding:5px 10px;border-radius:6px;cursor:pointer;border-left:2px solid transparent;font-size:12px;font-weight:500;color:var(--text2);margin:1px 0;transition:all .15s}
+.ti:hover,.ti.on{background:var(--c10);color:var(--c);border-left-color:var(--c)}
+.ti.on{font-weight:600}
+.tc{padding:4px 10px 4px 24px;border-radius:6px;cursor:pointer;border-left:2px solid transparent;font-size:11px;color:var(--text3);margin:1px 0;transition:all .15s}
+.tc:hover,.tc.on{background:var(--b10);color:var(--b);border-left-color:var(--b)}
+.tc.on{font-weight:600}
+.sm-panel{display:none}
+.sm-panel.on{display:block}
+.sm-desc{background:#fff;border:1px solid var(--border);border-radius:11px;padding:20px;box-shadow:var(--sh)}
+.sm-desc h2{font-size:15px;font-weight:700;margin-bottom:6px}
+.spath{font-family:var(--mono);font-size:11px;color:var(--c);background:var(--c10);padding:3px 10px;border-radius:4px;display:inline-block;margin-bottom:12px}
+.sm-desc p{font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:12px}
+.roles{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px}
+.role{font-size:10px;padding:2px 9px;border-radius:10px;font-family:var(--mono);font-weight:600}
+.ro{background:var(--c10);color:var(--c);border:1px solid var(--c25)}
+.rm{background:var(--b10);color:var(--b);border:1px solid var(--b25)}
+.sm-fields{background:var(--bg);border-radius:8px;padding:11px 13px}
+.sm-fields h4{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}
+.sfield{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);font-size:11px}
+.sfield:last-child{border-bottom:none}
+.sf-n{color:var(--text2)}
+.sf-t{font-family:var(--mono);font-size:10px;color:var(--text3)}
+/* WIREFRAMES */
+.wf-nav{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+.wf-btn{padding:7px 14px;border-radius:8px;border:1.5px solid var(--border);background:#fff;font-size:12px;font-weight:600;color:var(--text2);transition:all .15s;display:flex;align-items:center;gap:6px}
+.wf-btn:hover{border-color:var(--c);color:var(--c)}
+.wf-btn.on{background:var(--c);border-color:var(--c);color:#fff}
+.wf-n{background:rgba(255,255,255,.25);border-radius:4px;padding:0 5px;font-size:10px;font-family:var(--mono)}
+.wf-frame{background:#fff;border:1.5px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--sh)}
+.wf-frame.hide{display:none}
+/* APP CHROME */
+.topbar{background:var(--k);padding:0 20px;height:46px;display:flex;align-items:center;gap:12px;flex-shrink:0}
+.tb-logo{background:var(--c);border-radius:5px;padding:3px 9px;font-weight:900;font-size:11px;color:var(--k);letter-spacing:1px}
+.tb-title{font-size:11px;color:rgba(255,255,255,.45)}
+.tb-sp{flex:1}
+.tb-av{width:26px;height:26px;border-radius:50%;background:var(--c);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--k)}
+.tab-bar{background:#fff;border-bottom:1px solid var(--border);padding:0 16px;display:flex;overflow-x:auto;flex-shrink:0}
+.tab{padding:10px 13px;font-size:11px;font-weight:600;cursor:pointer;color:var(--text3);border-bottom:2px solid transparent;white-space:nowrap;margin-bottom:-1px}
+.tab.on{color:var(--c);border-bottom-color:var(--c)}
+.filter-bar{display:flex;gap:8px;padding:9px 16px;background:var(--bg);border-bottom:1px solid var(--border);flex-wrap:wrap;align-items:center;flex-shrink:0}
+.fsel{padding:5px 8px;border-radius:7px;border:1.5px solid var(--border);background:#fff;font-size:11px;font-family:var(--sans);color:var(--text2)}
+.fsearch{padding:5px 10px;border-radius:7px;border:1.5px solid var(--border);background:#fff;font-size:11px;font-family:var(--sans);flex:1;min-width:130px;color:var(--text2)}
+.vtog{display:flex;background:var(--bg2);border-radius:7px;padding:3px;gap:2px}
+.vb{padding:4px 10px;border-radius:5px;border:none;font-size:11px;font-weight:600;cursor:pointer;color:var(--text3);background:transparent;transition:all .15s}
+.vb.on{background:#fff;color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.ph{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0;background:#fff}
+.ph-title{font-size:15px;font-weight:700;flex:1}
+.ph-sub{font-size:10px;color:var(--text3);margin-top:1px;font-family:var(--mono)}
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:7px;font-size:11px;font-weight:600;border:none;cursor:pointer;font-family:var(--sans);transition:all .15s}
+.bp{background:var(--c);color:#fff}
+.bs{background:#fff;color:var(--text);border:1.5px solid var(--border)}
+.bs:hover{border-color:var(--c);color:var(--c)}
+.br{background:var(--r);color:#fff}
+.bsm{padding:5px 10px;font-size:11px}
+.bxs{padding:3px 8px;font-size:10px;border-radius:5px}
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;font-family:var(--mono)}
+.bc{background:var(--c10);color:var(--c);border:1px solid var(--c25)}
+.bb2{background:var(--b10);color:var(--b);border:1px solid var(--b25)}
+.bg{background:var(--g10);color:var(--warn);border:1px solid var(--g25)}
+.brd{background:var(--r10);color:var(--r);border:1px solid var(--r25)}
+.bok{background:var(--ok10);color:var(--ok);border:1px solid rgba(22,163,74,.2)}
+.bgr{background:var(--bg2);color:var(--text3);border:1px solid var(--border)}
+/* TABLE */
+.wt{width:100%;border-collapse:collapse;font-size:11px}
+.wt th{background:var(--bg);padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.7px;text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap}
+.wt td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:middle;color:var(--text2)}
+.wt tr:last-child td{border-bottom:none}
+.wt tr:hover td{background:rgba(83,199,214,.03)}
+.wt td.bold{font-weight:600;color:var(--text)}
+.wt .mono{font-family:var(--mono);font-size:10px}
+/* STATUS */
+.st{display:inline-flex;align-items:center;padding:2px 7px;border-radius:5px;font-size:10px;font-weight:600;font-family:var(--mono)}
+.ss{background:#f0f4ff;color:#3b5bdb;border:1px solid #c5cffc}
+.sop{background:var(--g10);color:var(--warn);border:1px solid var(--g25)}
+.sc{background:var(--b10);color:var(--b);border:1px solid var(--b25)}
+.sd{background:var(--c10);color:var(--c);border:1px solid var(--c25)}
+.spd{background:var(--ok10);color:var(--ok);border:1px solid rgba(22,163,74,.2)}
+.sw{background:var(--r10);color:var(--r);border:1px solid var(--r25)}
+/* DEADLINE */
+.dl{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-family:var(--mono);font-weight:600}
+.dlo{color:var(--ok)}.dlw{color:var(--warn)}.dle{color:var(--r)}
+/* PROGRESS */
+.pbar{display:flex;align-items:center;gap:7px}
+.pb-bg{flex:1;height:5px;background:var(--bg2);border-radius:3px;overflow:hidden}
+.pb-fill{height:100%;border-radius:3px}
+.pf-ok{background:var(--ok)}.pf-w{background:var(--g)}.pf-e{background:var(--r)}.pf-c{background:var(--c)}
+.pb-n{font-size:10px;font-weight:700;font-family:var(--mono);width:30px;text-align:right}
+/* ALERT */
+.alert{padding:8px 16px;font-size:11px;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.alert-r{background:var(--r10);border-bottom:1px solid var(--r25);color:var(--r)}
+/* DEPT CARD */
+.dc{background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:13px;cursor:pointer;transition:all .18s;box-shadow:var(--sh)}
+.dc:hover{border-color:var(--c);box-shadow:var(--shh);transform:translateY(-1px)}
+.dc-id{font-family:var(--mono);font-size:10px;color:var(--text3);margin-bottom:2px}
+.dc-name{font-size:13px;font-weight:700;color:var(--text)}
+.dc-date{font-size:11px;color:var(--text2);margin-top:2px}
+.dc-meta{display:flex;gap:10px;margin:8px 0}
+.dc-m{font-size:11px;color:var(--text3);display:flex;align-items:center;gap:3px}
+.dc-m strong{color:var(--text2);font-weight:600}
+.dc-act{display:flex;gap:6px;margin-top:9px;padding-top:9px;border-top:1px solid var(--border)}
+/* KPI */
+.kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.kpi{background:var(--bg);border-radius:8px;padding:10px 13px;border-left:3px solid var(--c)}
+.kpi-v{font-size:17px;font-weight:700;font-family:var(--mono)}
+.kpi-l{font-size:10px;color:var(--text3);margin-top:2px}
+/* ROOM TAG */
+.rt{font-size:10px;font-family:var(--mono);padding:2px 6px;border-radius:4px;border:1px solid var(--border);background:#fff;color:var(--text2)}
+/* TIMELINE */
+.tl{position:relative;padding-left:20px}
+.tl::before{content:'';position:absolute;left:6px;top:0;bottom:0;width:2px;background:var(--border)}
+.tl-day{margin-bottom:22px}
+.tl-dot{width:13px;height:13px;border-radius:50%;background:var(--c);border:2px solid #fff;box-shadow:0 0 0 2px var(--c);position:absolute;left:0}
+.tl-date{font-size:12px;font-weight:700;color:var(--text)}
+.tl-city{font-size:10px;color:var(--text3);font-family:var(--mono)}
+.tl-acts{display:flex;flex-direction:column;gap:7px;margin-top:9px}
+.tl-act{background:#fff;border:1px solid var(--border);border-radius:7px;padding:10px 12px;display:flex;align-items:center;gap:10px}
+.act-m{border-left:3px solid var(--c)}
+.act-d{border-left:3px solid var(--g)}
+.at-m{background:var(--c10);color:var(--c)}
+.at-d{background:var(--g10);color:var(--warn)}
+.atag{font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;font-family:var(--mono)}
+.ai{flex:1}
+.ai-name{font-size:12px;font-weight:600;color:var(--text);margin-bottom:2px}
+.ai-meta{font-size:10px;color:var(--text3);display:flex;gap:10px}
+/* ROOMING */
+.rm-wrap{display:flex;height:100%;overflow:hidden;flex:1}
+.rm-l{width:270px;flex-shrink:0;border-right:1px solid var(--border);display:flex;flex-direction:column;background:#fff}
+.rm-r{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.rm-ph{padding:9px 12px;border-bottom:1px solid var(--border);font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.8px;text-transform:uppercase;font-family:var(--mono);display:flex;align-items:center;justify-content:space-between;background:var(--bg);flex-shrink:0}
+.rm-list{overflow-y:auto;flex:1}
+.rm-item{display:flex;align-items:center;gap:8px;padding:7px 11px;border-bottom:1px solid var(--border);cursor:pointer;transition:all .12s}
+.rm-item:hover{background:var(--c10)}
+.rm-item.una{background:var(--r10)}
+.rm-name{flex:1;font-size:11px;font-weight:500;color:var(--text)}
+.rm-id{font-size:10px;color:var(--text3);font-family:var(--mono)}
+.rm-room-lbl{font-size:10px;font-family:var(--mono);font-weight:600}
+.rm-meal{font-size:10px;color:var(--text3);padding:1px 5px;background:var(--bg2);border-radius:3px}
+.rm-na{font-size:10px;color:var(--r);font-weight:600}
+.rm-rooms-c{overflow-y:auto;padding:12px;flex:1}
+.rm-type-h{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px;font-family:var(--mono)}
+.rm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:7px;margin-bottom:14px}
+.rm-card{background:#fff;border:1.5px solid var(--border);border-radius:7px;padding:9px 11px}
+.rm-cn{font-size:11px;font-weight:700;font-family:var(--mono);margin-bottom:5px;display:flex;justify-content:space-between}
+.rm-slot{font-size:10px;color:var(--text2);padding:2px 6px;background:var(--bg);border-radius:3px;display:flex;justify-content:space-between;margin-bottom:2px}
+.rm-empty-slot{color:var(--text3);font-style:italic;font-size:10px;padding:2px 6px}
+/* CHECKLIST */
+.cl-hdr{background:linear-gradient(135deg,var(--k) 0%,#243050 100%);padding:16px 20px;display:flex;align-items:center;gap:16px}
+.cl-pct{font-size:32px;font-weight:900;color:var(--c);font-family:var(--mono);line-height:1}
+.cl-pw{flex:1}
+.cl-title{font-size:13px;font-weight:700;color:#fff;margin-bottom:5px}
+.cl-pbg{height:7px;background:rgba(255,255,255,.15);border-radius:4px;overflow:hidden}
+.cl-pf{height:100%;border-radius:4px;background:var(--c)}
+.cl-eta{font-size:10px;color:rgba(255,255,255,.4);margin-top:4px;font-family:var(--mono)}
+.cl-cd{text-align:center}
+.cl-cdn{font-size:26px;font-weight:900;color:var(--g);font-family:var(--mono);line-height:1}
+.cl-cdl{font-size:10px;color:rgba(255,255,255,.4);font-family:var(--mono)}
+.cl-items{}
+.cl-item{display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid var(--border);transition:background .12s}
+.cl-item:hover{background:var(--bg)}
+.cl-item.pend{background:var(--r10)}
+.cl-ico{font-size:17px;flex-shrink:0;width:24px;text-align:center}
+.cl-con{flex:1}
+.cl-lbl{font-size:12px;font-weight:600;color:var(--text);margin-bottom:2px}
+.cl-meta{font-size:10px;color:var(--text3);display:flex;gap:12px}
+.cl-foot{padding:11px 16px;border-top:1px solid var(--border);display:flex;gap:8px;background:var(--bg)}
+/* DOCUMENTS */
+.doc-gen{display:flex;gap:7px;padding:11px 16px;background:var(--bg);border-bottom:1px solid var(--border);flex-wrap:wrap}
+.doc-gbtn{display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:7px;border:1.5px solid var(--border);background:#fff;font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;transition:all .15s}
+.doc-gbtn:hover{border-color:var(--c);color:var(--c);background:var(--c10)}
+.doc-row{display:flex;align-items:center;padding:11px 16px;border-bottom:1px solid var(--border);transition:background .12s}
+.doc-row:hover{background:var(--bg)}
+.doc-ico{width:32px;height:32px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;margin-right:11px;flex-shrink:0}
+.di-b{background:var(--b10)}.di-c{background:var(--c10)}.di-g{background:var(--g10)}.di-r{background:var(--r10)}.di-k{background:var(--bg2)}
+.doc-info{flex:1}
+.doc-name{font-size:12px;font-weight:600;color:var(--text)}
+.doc-sub{font-size:10px;color:var(--text3);margin-top:1px}
+.doc-acts{display:flex;gap:5px;margin-left:10px}
+/* COMPONENTS */
+.comp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:13px}
+.comp-card{background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:var(--sh)}
+.cc-h{padding:13px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.cc-n{font-size:12px;font-weight:700;font-family:var(--mono)}
+.cc-p{font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px}
+.cc-mvp{background:var(--c10);color:var(--c);border:1px solid var(--c25)}
+.cc-r2{background:var(--g10);color:var(--warn);border:1px solid var(--g25)}
+.cc-b{padding:13px 16px}
+.cc-desc{font-size:12px;color:var(--text2);margin-bottom:9px;line-height:1.6}
+.cc-where{font-size:10px;color:var(--text3);font-family:var(--mono)}
+.cc-preview{padding:10px 13px;background:var(--bg);border-top:1px solid var(--border)}
+/* STATES */
+.states-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:22px}
+.sc{background:#fff;border:1.5px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:var(--sh)}
+.sc-h{padding:9px 13px;font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;font-family:var(--mono)}
+.sc-empty{background:var(--bg2);color:var(--text3)}
+.sc-part{background:var(--g10);color:var(--warn)}
+.sc-ready{background:var(--ok10);color:var(--ok)}
+.sc-done{background:var(--b10);color:var(--b)}
+.sc-b{padding:12px 13px;font-size:12px;color:var(--text2);line-height:1.6}
+/* CALENDAR */
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--border)}
+.cal-dh{background:var(--bg);padding:5px;text-align:center;font-size:10px;font-weight:700;color:var(--text3);font-family:var(--mono)}
+.cal-d{background:#fff;padding:5px;min-height:68px}
+.cal-n{font-size:10px;color:var(--text3);margin-bottom:3px;font-family:var(--mono)}
+.ce{padding:2px 5px;border-radius:3px;font-size:9px;font-weight:600;margin-bottom:2px;cursor:pointer}
+.ce-a{background:var(--c10);color:var(--c);border:1px solid var(--c25)}
+.ce-w{background:var(--g10);color:var(--warn);border:1px solid var(--g25)}
+.ce-f{background:var(--r10);color:var(--r);border:1px solid var(--r25)}
+/* SIDEBAR */
+.sidebar{width:175px;background:#fff;border-right:1px solid var(--border);flex-shrink:0;padding:7px 0}
+.sb-group{padding:8px 12px 3px;font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1.2px;text-transform:uppercase;font-family:var(--mono)}
+.sb-item{padding:7px 13px;font-size:11px;color:var(--text2);cursor:pointer;display:flex;align-items:center;gap:6px;margin:1px 6px;border-radius:6px;transition:all .15s}
+.sb-item:hover{background:var(--bg);color:var(--text)}
+.sb-item.on{background:var(--c10);color:var(--c);font-weight:600}
+</style>
+</head>
+<body>
+
+<div class="dh">
+  <div class="dh-logo">EUROTRIPS</div>
+  <div class="dh-t"><h1>OPS Модуль — Частина C: UI/UX Design</h1><p>UX/UI Designer · Parts A (BA) + B (PM) read · v1.0 · Липень 2026</p></div>
+  <span class="dh-badge">6 wireframes · 10 компонентів · 4 стани</span>
+</div>
+<nav class="main-nav">
+  <div class="mn-tab on" onclick="showSec('sm',this)">C-1 · Карта екранів</div>
+  <div class="mn-tab" onclick="showSec('wf',this)">C-2 · Wireframes (6)</div>
+  <div class="mn-tab" onclick="showSec('comp',this)">C-3 · Компоненти</div>
+  <div class="mn-tab" onclick="showSec('states',this)">C-4 · Стани екранів</div>
+</nav>
+
+<!-- C-1 SCREEN MAP -->
+<div id="sm" class="sec on">
+  <div class="sec-hdr"><div class="eyebrow">C-1 · Navigation Architecture</div><h2>Карта екранів OPS модуля</h2><p>12 вузлів навігації. Натисніть будь-який пункт для деталей.</p></div>
+  <div class="sm-wrap">
+    <div class="sm-tree">
+      <h3>Навігація /ops</h3>
+      <div class="ti on" onclick="sp('root',this)">📋 /ops — Дашборд ОМ</div>
+      <div class="ti" onclick="sp('tours',this)">🗓 /ops/tours — Виїзди</div>
+      <div class="tc" onclick="sp('info',this)">📄 /info — Основна інформація</div>
+      <div class="tc" onclick="sp('hotels',this)">🏨 /hotels — Готелі</div>
+      <div class="tc" onclick="sp('transport',this)">🚌 /transport — Транспорт</div>
+      <div class="tc" onclick="sp('activities',this)">🎭 /activities — Програма</div>
+      <div class="tc" onclick="sp('addons',this)">➕ /addons — ДОПи</div>
+      <div class="tc" onclick="sp('tourists',this)">👥 /tourists — Туристи</div>
+      <div class="tc" onclick="sp('rooming',this)">🛏 /rooming — Румінг</div>
+      <div class="tc" onclick="sp('seating',this)">💺 /seating — Розсадка</div>
+      <div class="tc" onclick="sp('documents',this)">📁 /documents — Документи</div>
+      <div class="tc" onclick="sp('checklist',this)">✅ /checklist — Чекліст</div>
+    </div>
+    <div class="sm-desc">
+      <div id="sp-root" class="sm-panel on">
+        <h2>Дашборд операційного менеджера</h2><div class="spath">/ops</div>
+        <p>Головний екран OPS. Критичні дедлайни, виїзди цього тижня, прогрес чеклістів, нові підтверджені туристи.</p>
+        <div class="roles"><span class="role ro">ops_manager</span><span class="role rm">manager</span></div>
+        <div class="sm-fields"><h4>Блоки дашборду</h4>
+          <div class="sfield"><span class="sf-n">🚨 Дедлайни готелів (&lt;3 дні)</span><span class="sf-t">alert panel</span></div>
+          <div class="sfield"><span class="sf-n">📅 Виїзди наступних 7 днів</span><span class="sf-t">card grid</span></div>
+          <div class="sfield"><span class="sf-n">📊 Прогрес чеклістів</span><span class="sf-t">progress list</span></div>
+          <div class="sfield"><span class="sf-n">👥 Нові туристи сьогодні</span><span class="sf-t">notification feed</span></div>
+        </div>
+      </div>
+      <div id="sp-tours" class="sm-panel">
+        <h2>Список виїздів</h2><div class="spath">/ops/tours</div>
+        <p>Реєстр виїздів: Список + CalendarGrid. Фільтри по місяцю, напрямку, статусу, менеджеру. 1006 виїздів у поточній базі даних.</p>
+        <div class="roles"><span class="role ro">ops_manager</span><span class="role rm">manager</span></div>
+        <div class="sm-fields"><h4>Поля картки виїзду</h4>
+          <div class="sfield"><span class="sf-n">ID (LP26010301), назва, напрямок</span><span class="sf-t">String</span></div>
+          <div class="sfield"><span class="sf-n">Дата виїзду / повернення</span><span class="sf-t">DateTime</span></div>
+          <div class="sfield"><span class="sf-n">% заповненості (n/max)</span><span class="sf-t">OccupancyBar</span></div>
+          <div class="sfield"><span class="sf-n">Статус набору (відкрито/майже/закрито)</span><span class="sf-t">TourStatus enum</span></div>
+          <div class="sfield"><span class="sf-n">% чекліст готовності</span><span class="sf-t">Int 0-100</span></div>
+        </div>
+      </div>
+      <div id="sp-info" class="sm-panel">
+        <h2>Основна інформація виїзду</h2><div class="spath">/ops/tours/[id]/info</div>
+        <p>Базові поля виїзду. ADR-003: Tour = Departure для MVP, product_code для групування (наприклад "LP" = Лапландія).</p>
+        <div class="roles"><span class="role ro">ops_manager</span><span class="role rm">manager</span></div>
+        <div class="sm-fields"><h4>Ключові поля (schema.prisma)</h4>
+          <div class="sfield"><span class="sf-n">tour_code / product_code</span><span class="sf-t">String unique</span></div>
+          <div class="sfield"><span class="sf-n">departure_date / return_date</span><span class="sf-t">DateTime</span></div>
+          <div class="sfield"><span class="sf-n">total_seats / available_seats (BR-01)</span><span class="sf-t">Int</span></div>
+          <div class="sfield"><span class="sf-n">base_price EUR (BR-04 — агент не бачить)</span><span class="sf-t">Decimal</span></div>
+          <div class="sfield"><span class="sf-n">status — 8 значень</span><span class="sf-t">TourStatus</span></div>
+          <div class="sfield"><span class="sf-n">tour_leader_id</span><span class="sf-t">FK → Staff</span></div>
+        </div>
+      </div>
+      <div id="sp-hotels" class="sm-panel">
+        <h2>Готелі по маршруту</h2><div class="spath">/ops/tours/[id]/hotels</div>
+        <p>Workflow: пошук→опція→підтверджено→депозит→оплачено. 2577 готельних записів у поточних даних. BullMQ авто-нагадування за 3 дні до дедлайну.</p>
+        <div class="roles"><span class="role ro">ops_manager</span></div>
+        <div class="sm-fields"><h4>Нова модель HotelBooking</h4>
+          <div class="sfield"><span class="sf-n">hotel_id (FK → hotels), tour_id</span><span class="sf-t">FK</span></div>
+          <div class="sfield"><span class="sf-n">city, check_in, check_out, nights</span><span class="sf-t">String / Date</span></div>
+          <div class="sfield"><span class="sf-n">twin/dbl/trpl/sngl × count + price</span><span class="sf-t">Int + Decimal ×4</span></div>
+          <div class="sfield"><span class="sf-n">option_deadline / deposit_deadline</span><span class="sf-t">DateTime</span></div>
+          <div class="sfield"><span class="sf-n">status: search→option→confirmed→deposit→paid</span><span class="sf-t">Enum 5</span></div>
+        </div>
+      </div>
+      <div id="sp-transport" class="sm-panel">
+        <h2>Транспорт</h2><div class="spath">/ops/tours/[id]/transport</div>
+        <p>Перевізник, маршрут, розрахунок: km × тариф + паливний збір + ЗП водіїв. 2827 рядків транспортних записів у поточних даних.</p>
+        <div class="roles"><span class="role ro">ops_manager</span></div>
+        <div class="sm-fields"><h4>Модель TransportBooking (розширити)</h4>
+          <div class="sfield"><span class="sf-n">carrier_name / bus_model / seats_count</span><span class="sf-t">String / Int</span></div>
+          <div class="sfield"><span class="sf-n">route_km / rate_per_km</span><span class="sf-t">Float</span></div>
+          <div class="sfield"><span class="sf-n">fuel_surcharge / driver_salary</span><span class="sf-t">Decimal</span></div>
+          <div class="sfield"><span class="sf-n">total_cost_plan / advance_paid / balance_due</span><span class="sf-t">Decimal</span></div>
+        </div>
+      </div>
+      <div id="sp-activities" class="sm-panel">
+        <h2>Програма і Гіди</h2><div class="spath">/ops/tours/[id]/activities</div>
+        <p>TimelineView по датах туру. MAIN (обов'язкова) та ADDON (ДОП на вибір туристу). 4341 записів у базі активностей. Прив'язка гіда: ім'я + телефон + вартість.</p>
+        <div class="roles"><span class="role ro">ops_manager</span></div>
+        <div class="sm-fields"><h4>Нова модель ActivityBooking</h4>
+          <div class="sfield"><span class="sf-n">tour_id, city, activity_date, start_time</span><span class="sf-t">FK / String / DateTime</span></div>
+          <div class="sfield"><span class="sf-n">activity_name, type: MAIN|ADDON</span><span class="sf-t">String / Enum</span></div>
+          <div class="sfield"><span class="sf-n">guide_name / guide_phone</span><span class="sf-t">String</span></div>
+          <div class="sfield"><span class="sf-n">cost_per_person / status: planned→confirmed→done</span><span class="sf-t">Decimal / Enum</span></div>
+        </div>
+      </div>
+      <div id="sp-addons" class="sm-panel">
+        <h2>ДОПи</h2><div class="spath">/ops/tours/[id]/addons</div>
+        <p>Матриця турист × ДОП. MB26070401: 50 туристів × 9 ДОПів. Збір під час туру. Звіт для турлідера (OPS-20). 4140 рядків план/факт у базі.</p>
+        <div class="roles"><span class="role ro">ops_manager</span></div>
+        <div class="sm-fields"><h4>Нова модель TouristAddon</h4>
+          <div class="sfield"><span class="sf-n">booking_tourist_id, activity_id</span><span class="sf-t">FK</span></div>
+          <div class="sfield"><span class="sf-n">price_charged (EUR)</span><span class="sf-t">Decimal</span></div>
+          <div class="sfield"><span class="sf-n">is_paid / paid_at</span><span class="sf-t">Bool / DateTime</span></div>
+        </div>
+      </div>
+      <div id="sp-tourists" class="sm-panel">
+        <h2>Список туристів виїзду</h2><div class="spath">/ops/tours/[id]/tourists</div>
+        <p>Зведений список із booking_tourists. Перевірка документів, оплати, особливих вимог. Основа для румінгу та розсадки.</p>
+        <div class="roles"><span class="role ro">ops_manager</span><span class="role rm">manager</span></div>
+        <div class="sm-fields"><h4>Поля (booking_tourists)</h4>
+          <div class="sfield"><span class="sf-n">surname_en / name_en (для документів)</span><span class="sf-t">String</span></div>
+          <div class="sfield"><span class="sf-n">passport_number / date_of_birth</span><span class="sf-t">String / Date</span></div>
+          <div class="sfield"><span class="sf-n">seat_number → BusSeat (nullable)</span><span class="sf-t">FK</span></div>
+          <div class="sfield"><span class="sf-n">room → RoomAssignment (nullable)</span><span class="sf-t">FK</span></div>
+          <div class="sfield"><span class="sf-n">payment_status / special_requests</span><span class="sf-t">Enum / String?</span></div>
+        </div>
+      </div>
+      <div id="sp-rooming" class="sm-panel">
+        <h2>Румінг (розселення)</h2><div class="spath">/ops/tours/[id]/rooming</div>
+        <p>Split-panel RoomingBoard. Статуси: draft → approved → final → sent. MB26070401: 53 туристи, кімнати QDPL/TRPL/TWIN. Харчування RO/BB/HB/FB.</p>
+        <div class="roles"><span class="role ro">ops_manager</span></div>
+        <div class="sm-fields"><h4>Нова модель RoomAssignment</h4>
+          <div class="sfield"><span class="sf-n">hotel_booking_id, booking_tourist_id</span><span class="sf-t">FK</span></div>
+          <div class="sfield"><span class="sf-n">room_number / room_type</span><span class="sf-t">String / Enum</span></div>
+          <div class="sfield"><span class="sf-n">meal_plan: RO|BB|HB|FB</span><span class="sf-t">Enum</span></div>
+          <div class="sfield"><span class="sf-n">rooming_status: draft→approved→final</span><span class="sf-t">Enum 3</span></div>
+          <div class="sfield"><span class="sf-n">notes (разом, соло, вид на море)</span><span class="sf-t">String?</span></div>
+        </div>
+      </div>
+      <div id="sp-seating" class="sm-panel">
+        <h2>Розсадка в автобусі</h2><div class="spath">/ops/tours/[id]/seating</div>
+        <p>BusSeatMap — схема автобуса (N рядів × 4). Клік → assign туриста. MB26070401__Розсадка.csv: 48 місць, 14 рядів.</p>
+        <div class="roles"><span class="role ro">ops_manager</span></div>
+        <div class="sm-fields"><h4>Нова модель BusSeat</h4>
+          <div class="sfield"><span class="sf-n">transport_booking_id, seat_number</span><span class="sf-t">FK / Int</span></div>
+          <div class="sfield"><span class="sf-n">booking_tourist_id (nullable)</span><span class="sf-t">FK?</span></div>
+          <div class="sfield"><span class="sf-n">row / side: A|B|C|D</span><span class="sf-t">Int / Enum</span></div>
+        </div>
+      </div>
+      <div id="sp-documents" class="sm-panel">
+        <h2>Документи виїзду</h2><div class="spath">/ops/tours/[id]/documents</div>
+        <p>5 типів PDF: ROOMING_HOTEL, PASSENGER_LIST, ADDON_LIST, INFO_LETTER, CONTACT_LIST. Puppeteer генерація. Brevo відправка. MB26070401: 3 CSV → 3 PDF.</p>
+        <div class="roles"><span class="role ro">ops_manager</span><span class="role rm">manager</span></div>
+        <div class="sm-fields"><h4>Нова модель TourDocument</h4>
+          <div class="sfield"><span class="sf-n">tour_id, doc_type (Enum 5)</span><span class="sf-t">FK / Enum</span></div>
+          <div class="sfield"><span class="sf-n">status: draft|ready|sent</span><span class="sf-t">Enum</span></div>
+          <div class="sfield"><span class="sf-n">file_url / generated_at / sent_at</span><span class="sf-t">String / DateTime</span></div>
+          <div class="sfield"><span class="sf-n">sent_to (email адреси)</span><span class="sf-t">String[]</span></div>
+        </div>
+      </div>
+      <div id="sp-checklist" class="sm-panel">
+        <h2>Операційний чекліст</h2><div class="spath">/ops/tours/[id]/checklist</div>
+        <p>9 пунктів готовності. Відсоток, countdown до виїзду, автор + дата закриття кожного пункту. При 100% → кнопка "Виїзд розпочато".</p>
+        <div class="roles"><span class="role ro">ops_manager</span></div>
+        <div class="sm-fields"><h4>Нова модель TourChecklist</h4>
+          <div class="sfield"><span class="sf-n">tour_id</span><span class="sf-t">FK</span></div>
+          <div class="sfield"><span class="sf-n">items: Json (9 пунктів)</span><span class="sf-t">Json</span></div>
+          <div class="sfield"><span class="sf-n">readiness_percent (auto-calc 0-100)</span><span class="sf-t">Int</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- C-2 WIREFRAMES -->
+<div id="wf" class="sec">
+  <div class="sec-hdr"><div class="eyebrow">C-2 · Wireframes</div><h2>6 ключових екранів OPS модуля</h2><p>Інтерактивні wireframes на основі реальних даних: MB26070401, 2577 готельних записів, 4341 активностей.</p></div>
+  <div class="wf-nav">
+    <button class="wf-btn on" onclick="swf(1,this)"><span class="wf-n">01</span>Список виїздів</button>
+    <button class="wf-btn" onclick="swf(2,this)"><span class="wf-n">02</span>Готелі</button>
+    <button class="wf-btn" onclick="swf(3,this)"><span class="wf-n">03</span>Програма і гіди</button>
+    <button class="wf-btn" onclick="swf(4,this)"><span class="wf-n">04</span>Румінг</button>
+    <button class="wf-btn" onclick="swf(5,this)"><span class="wf-n">05</span>Чекліст</button>
+    <button class="wf-btn" onclick="swf(6,this)"><span class="wf-n">06</span>Документи</button>
+  </div>
+
+  <!-- WF1: СПИСОК ВИЇЗДІВ -->
+  <div id="wf1" class="wf-frame" style="height:620px;display:flex;flex-direction:column">
+    <div class="topbar"><div class="tb-logo">ET</div><div class="tb-title">Операційний відділ</div><div class="tb-sp"></div><div style="display:flex;align-items:center;gap:7px;font-size:11px;color:rgba(255,255,255,.55)"><div class="tb-av">МІ</div>Марія Іваненко</div></div>
+    <div style="display:flex;flex:1;overflow:hidden">
+      <div class="sidebar">
+        <div class="sb-group">OPS</div>
+        <div class="sb-item on">🗓 Виїзди</div>
+        <div class="sb-item">🏨 Готелі</div>
+        <div class="sb-item">🚌 Транспорт</div>
+        <div class="sb-item">🎭 Активності</div>
+        <div class="sb-group" style="margin-top:8px">ЗАГАЛЬНЕ</div>
+        <div class="sb-item">👥 Туристи</div>
+        <div class="sb-item">📁 Документи</div>
+        <div class="sb-item">📊 Аналітика</div>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+        <div class="ph">
+          <div><div class="ph-title">Виїзди</div><div class="ph-sub">48 виїздів · Липень 2026</div></div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <div class="vtog"><button class="vb on" onclick="tv('vl',this)">☰ Список</button><button class="vb" onclick="tv('vc',this)">📅 Календар</button></div>
+            <button class="btn bp">+ Новий виїзд</button>
+          </div>
+        </div>
+        <div class="filter-bar">
+          <select class="fsel"><option>Липень 2026</option><option>Серпень 2026</option></select>
+          <select class="fsel"><option>Всі напрямки</option><option>Чорногорія</option><option>Лапландія</option></select>
+          <select class="fsel"><option>Всі статуси</option><option>Активно</option><option>Майже заповнений</option></select>
+          <select class="fsel"><option>Всі менеджери</option><option>Марія І.</option></select>
+          <input class="fsearch" placeholder="🔍 Пошук по ID або назві…">
+        </div>
+        <div id="vl" style="padding:14px;overflow:auto;flex:1;display:grid;grid-template-columns:repeat(auto-fill,minmax(285px,1fr));gap:11px">
+          <div class="dc">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:7px">
+              <div><div class="dc-id">MB26070401</div><div class="dc-name">Чорногорія — Будва</div><div class="dc-date">📅 04.07 → 11.07.26 · 8 дн.</div></div>
+              <span class="badge brd">● Майже повний</span>
+            </div>
+            <div class="dc-meta"><div class="dc-m">👥 <strong>50/52</strong></div><div class="dc-m">✅ <strong>78%</strong> готово</div><div class="dc-m" style="color:var(--r)">⏰ <strong>1 день</strong></div></div>
+            <div class="pbar"><div class="pb-bg"><div class="pb-fill pf-e" style="width:96%"></div></div><div class="pb-n" style="color:var(--r)">96%</div></div>
+            <div class="dc-act"><button class="btn bp bsm">Відкрити →</button><button class="btn bs bsm">Копія</button><button class="btn bs bsm">⚠️ Чекліст</button></div>
+          </div>
+          <div class="dc">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:7px">
+              <div><div class="dc-id">LP26070501</div><div class="dc-name">Лапландія — Рованіємі</div><div class="dc-date">📅 05.07 → 12.07.26 · 8 дн.</div></div>
+              <span class="badge bg">● Активно</span>
+            </div>
+            <div class="dc-meta"><div class="dc-m">👥 <strong>38/52</strong></div><div class="dc-m">🔄 <strong>55%</strong> готово</div><div class="dc-m">⏰ <strong>2 дні</strong></div></div>
+            <div class="pbar"><div class="pb-bg"><div class="pb-fill pf-w" style="width:73%"></div></div><div class="pb-n" style="color:var(--warn)">73%</div></div>
+            <div class="dc-act"><button class="btn bp bsm">Відкрити →</button><button class="btn bs bsm">Копія</button><button class="btn bs bsm">Статус ▾</button></div>
+          </div>
+          <div class="dc">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:7px">
+              <div><div class="dc-id">AG26071501</div><div class="dc-name">Австрія + Зальцбург</div><div class="dc-date">📅 15.07 → 22.07.26 · 8 дн.</div></div>
+              <span class="badge bc">● Відкрито</span>
+            </div>
+            <div class="dc-meta"><div class="dc-m">👥 <strong>22/48</strong></div><div class="dc-m">🟡 <strong>20%</strong> готово</div><div class="dc-m">⏰ <strong>12 днів</strong></div></div>
+            <div class="pbar"><div class="pb-bg"><div class="pb-fill pf-c" style="width:46%"></div></div><div class="pb-n" style="color:var(--c)">46%</div></div>
+            <div class="dc-act"><button class="btn bp bsm">Відкрити →</button><button class="btn bs bsm">Копія</button><button class="btn bs bsm">Статус ▾</button></div>
+          </div>
+        </div>
+        <div id="vc" style="padding:12px;overflow:auto;flex:1;display:none">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><button class="btn bs bsm">‹ Червень</button><strong>Липень 2026</strong><button class="btn bs bsm">Серпень ›</button></div>
+          <div class="cal">
+            <div class="cal-dh">Пн</div><div class="cal-dh">Вт</div><div class="cal-dh">Ср</div><div class="cal-dh">Чт</div><div class="cal-dh">Пт</div><div class="cal-dh">Сб</div><div class="cal-dh">Нд</div>
+            <div class="cal-d"></div><div class="cal-d"></div><div class="cal-d"></div><div class="cal-d"></div><div class="cal-d"></div>
+            <div class="cal-d"><div class="cal-n">5</div><div class="ce ce-a">LP26 (73%)</div></div>
+            <div class="cal-d"><div class="cal-n">6</div></div><div class="cal-d"><div class="cal-n">7</div></div><div class="cal-d"><div class="cal-n">8</div></div><div class="cal-d"><div class="cal-n">9</div></div><div class="cal-d"><div class="cal-n">10</div></div><div class="cal-d"><div class="cal-n">11</div></div>
+            <div class="cal-d"><div class="cal-n">12</div></div><div class="cal-d"><div class="cal-n">13</div></div><div class="cal-d"><div class="cal-n">14</div></div>
+            <div class="cal-d"><div class="cal-n">15</div><div class="ce ce-a">AG26 (46%)</div></div>
+            <div class="cal-d"><div class="cal-n">16</div></div><div class="cal-d"><div class="cal-n">17</div></div><div class="cal-d"><div class="cal-n">18</div></div>
+            <div class="cal-d"><div class="cal-n">19</div></div><div class="cal-d"><div class="cal-n">20</div></div><div class="cal-d"><div class="cal-n">21</div></div><div class="cal-d"><div class="cal-n">22</div></div><div class="cal-d"><div class="cal-n">23</div></div><div class="cal-d"><div class="cal-n">24</div></div><div class="cal-d"><div class="cal-n">25</div></div>
+            <div class="cal-d"><div class="cal-n">26</div></div><div class="cal-d"><div class="cal-n">27</div><div class="ce ce-w">IS26 (88%)</div></div><div class="cal-d"><div class="cal-n">28</div></div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:8px"><span class="badge bc">● &lt;60%</span><span class="badge bg">● 60-80%</span><span class="badge brd">● &gt;80%</span><span class="badge bgr">● Чернетка</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WF2: ГОТЕЛІ -->
+  <div id="wf2" class="wf-frame hide" style="height:620px;display:flex;flex-direction:column">
+    <div class="topbar"><div class="tb-logo">ET</div><span style="font-size:11px;color:rgba(255,255,255,.4)">OPS › MB26070401 — Чорногорія</span><div class="tb-sp"></div><div style="display:flex;align-items:center;gap:7px;font-size:11px;color:rgba(255,255,255,.55)"><div class="tb-av">МІ</div>Марія І.</div></div>
+    <div class="tab-bar"><div class="tab">Інфо</div><div class="tab on">🏨 Готелі (6)</div><div class="tab">Транспорт</div><div class="tab">Програма</div><div class="tab">ДОПи</div><div class="tab">Туристи (50)</div><div class="tab">Румінг</div><div class="tab">Розсадка</div><div class="tab">Документи</div><div class="tab">Чекліст</div></div>
+    <div class="alert alert-r">⚠️ <strong>Дедлайн опції Hotel Aleksandar — завтра 05.07.26!</strong><button class="btn br bxs" style="margin-left:auto">Підтвердити зараз</button></div>
+    <div style="padding:14px 16px;overflow:auto;flex:1">
+      <div class="kpi-strip">
+        <div class="kpi"><div class="kpi-v">12 750€</div><div class="kpi-l">Загальна вартість готелів</div></div>
+        <div class="kpi" style="border-color:var(--ok)"><div class="kpi-v" style="color:var(--ok)">5/6</div><div class="kpi-l">Підтверджено</div></div>
+        <div class="kpi" style="border-color:var(--r)"><div class="kpi-v" style="color:var(--r)">1/6</div><div class="kpi-l">⚠️ Дедлайн завтра</div></div>
+        <div class="kpi" style="border-color:var(--g)"><div class="kpi-v" style="color:var(--warn)">3 500€</div><div class="kpi-l">До оплати</div></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><strong>Готелі по маршруту</strong><button class="btn bp bsm">+ Додати готель</button></div>
+      <div style="overflow-x:auto">
+        <table class="wt">
+          <thead><tr><th>Місто</th><th>Готель</th><th>Дата</th><th>Ночей</th><th>TWIN (к/ціна)</th><th>DBL</th><th>TRPL</th><th>SNGL</th><th>Депозит EUR</th><th>Доплата EUR</th><th>Статус</th><th>Дедлайн опції</th><th></th></tr></thead>
+          <tbody>
+            <tr><td class="bold">Будва</td><td class="bold">Hotel Aleksandar 4★</td><td class="mono">04.07</td><td>7</td><td><span class="rt">20×35€</span></td><td><span class="rt">10×40€</span></td><td><span class="rt">3×30€</span></td><td><span class="rt">2×60€</span></td><td class="mono">1 700</td><td class="mono">10 700</td><td><span class="st sd">депозит ✓</span></td><td><span class="dl dle">⚠ 05.07 — завтра!</span></td><td><button class="btn bs bxs">···</button></td></tr>
+            <tr><td class="bold">Дубровнік</td><td>Hotel Palace 4★</td><td class="mono">08.07</td><td>2</td><td><span class="rt">22×45€</span></td><td><span class="rt">8×50€</span></td><td>—</td><td>—</td><td class="mono">900</td><td class="mono">3 600</td><td><span class="st spd">оплачено ✓</span></td><td><span class="dl dlo">✓ 20.06</span></td><td><button class="btn bs bxs">···</button></td></tr>
+            <tr><td class="bold">Сараєво</td><td style="color:var(--text3);font-style:italic">Пошук…</td><td class="mono">10.07</td><td>1</td><td><span class="rt">25×?€</span></td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td><span class="st ss">🔍 пошук</span></td><td><span class="dl dlw">⏳ 30.06</span></td><td><button class="btn bp bxs">Знайти</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- WF3: ПРОГРАМА І ГІДИ -->
+  <div id="wf3" class="wf-frame hide" style="height:620px;display:flex;flex-direction:column">
+    <div class="topbar"><div class="tb-logo">ET</div><span style="font-size:11px;color:rgba(255,255,255,.4)">OPS › MB26070401 › Програма і Гіди</span><div class="tb-sp"></div><div style="display:flex;align-items:center;gap:7px;font-size:11px;color:rgba(255,255,255,.55)"><div class="tb-av">МІ</div>Марія І.</div></div>
+    <div class="tab-bar"><div class="tab">Інфо</div><div class="tab">Готелі</div><div class="tab on">🎭 Програма (9)</div><div class="tab">Румінг</div><div class="tab">Чекліст</div></div>
+    <div style="background:var(--bg);padding:9px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center;flex-shrink:0;flex-wrap:wrap">
+      <span class="badge bok">✓ Підтверджено: 7/9</span><span class="badge bg">⏳ Очікують: 2</span><span class="badge bgr">📍 Міст: 3</span>
+      <div style="flex:1"></div><button class="btn bp bsm">+ Додати активність</button><button class="btn bs bsm">Фільтр ▾</button>
+    </div>
+    <div style="padding:14px 16px;overflow:auto;flex:1">
+      <div class="tl">
+        <div class="tl-day">
+          <div style="position:relative;display:flex;align-items:center;gap:9px;margin-bottom:9px"><div class="tl-dot"></div><div><div class="tl-date">04 липня, Четвер — День 1</div><div class="tl-city">📍 Будва, Чорногорія</div></div></div>
+          <div class="tl-acts">
+            <div class="tl-act act-m"><span class="atag at-m">ОСНОВНА</span><div class="ai"><div class="ai-name">Оглядова екскурсія Будвою</div><div class="ai-meta"><span>⏰ 11:00</span><span>👤 Оксана Петрова · +38099…</span><span>💶 Включено</span></div></div><span class="st sc">підтверджено</span></div>
+            <div class="tl-act act-d"><span class="atag at-d">ДОП</span><div class="ai"><div class="ai-name">Sunset Walk до Старої Будви</div><div class="ai-meta"><span>⏰ 19:00</span><span>👤 Андрій Коваль · +38097…</span><span>💶 20€/10€</span></div></div><span class="st sc">підтверджено</span></div>
+            <div class="tl-act act-d"><span class="atag at-d">ДОП</span><div class="ai"><div class="ai-name">Параглайдинг над узбережжям</div><div class="ai-meta"><span>⏰ 10:00</span><span style="color:var(--r)">👤 Гід — не призначений!</span><span>💶 105€</span></div></div><span class="st sw">⚠️ без гіда</span><button class="btn bs bxs" style="margin-left:8px">Призначити</button></div>
+          </div>
+        </div>
+        <div class="tl-day">
+          <div style="position:relative;display:flex;align-items:center;gap:9px;margin-bottom:9px"><div class="tl-dot" style="background:var(--b)"></div><div><div class="tl-date">08 липня, Понеділок — День 5</div><div class="tl-city">📍 Дубровнік, Хорватія</div></div></div>
+          <div class="tl-acts">
+            <div class="tl-act act-m"><span class="atag at-m">ОСНОВНА</span><div class="ai"><div class="ai-name">Оглядова Дубровніком</div><div class="ai-meta"><span>⏰ 10:00</span><span>👤 Марта Сич · +385…</span><span>💶 Включено</span></div></div><span class="st sc">підтверджено</span></div>
+            <div class="tl-act act-d"><span class="atag at-d">ДОП</span><div class="ai"><div class="ai-name">Морський круїз навколо Дубровніка</div><div class="ai-meta"><span>⏰ 15:00</span><span>👤 Капітан Анте · +385…</span><span>💶 20€</span></div></div><span class="badge bg">⏳ очікує</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WF4: РУМІНГ -->
+  <div id="wf4" class="wf-frame hide" style="height:620px;display:flex;flex-direction:column">
+    <div class="topbar"><div class="tb-logo">ET</div><span style="font-size:11px;color:rgba(255,255,255,.4)">OPS › MB26070401 › Румінг · Hotel Aleksandar</span><div class="tb-sp"></div><div style="display:flex;align-items:center;gap:7px;font-size:11px;color:rgba(255,255,255,.55)"><div class="tb-av">МІ</div>Марія І.</div></div>
+    <div style="background:#fff;border-bottom:1px solid var(--border);padding:9px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0;flex-wrap:wrap">
+      <span class="badge bg">ПОПЕРЕДНІЙ РУМІНГ</span><span style="font-size:11px;color:var(--text2)">Структура ✅ підтверджена 04.07</span>
+      <div style="flex:1"></div>
+      <button class="btn bs bsm">📥 CSV</button><button class="btn bs bsm">📄 PDF чернетка</button>
+      <button class="btn bp bsm" onclick="alert('Румінг фіналізовано! PDF надіслано готелю.')">🔒 Фіналізувати румінг</button>
+    </div>
+    <div class="rm-wrap" style="flex:1;overflow:hidden">
+      <div class="rm-l">
+        <div class="rm-ph">Туристи (50)<span style="color:var(--r);font-size:11px">⚠️ 3 без кімнати</span></div>
+        <div style="padding:6px 8px;border-bottom:1px solid var(--border);background:var(--bg)"><input class="fsearch" placeholder="🔍 Пошук…" style="width:100%;margin:0"></div>
+        <div class="rm-list">
+          <div class="rm-item"><div><div class="rm-name">Козаченко В.</div><div class="rm-id">#17084</div></div><div class="rm-room-lbl" style="color:var(--b)">TWIN 201</div><span class="rm-meal">BB</span></div>
+          <div class="rm-item"><div><div class="rm-name">Бойко М.</div><div class="rm-id">#17084</div></div><div class="rm-room-lbl" style="color:var(--b)">TWIN 201</div><span class="rm-meal">BB</span></div>
+          <div class="rm-item"><div><div class="rm-name">Соловей А.</div><div class="rm-id">#20086</div></div><div class="rm-room-lbl" style="color:var(--c)">DBL 105</div><span class="rm-meal">HB</span></div>
+          <div class="rm-item"><div><div class="rm-name">Мороз Н.</div><div class="rm-id">#17970</div></div><div class="rm-room-lbl" style="color:var(--g)">TRPL 302</div><span class="rm-meal">BB</span></div>
+          <div class="rm-item una"><div><div class="rm-name">Іваненко П.</div><div class="rm-id">#19615</div></div><div><div class="rm-na">Без кімнати</div><button class="btn bp bxs" style="margin-top:2px">Призначити</button></div></div>
+          <div class="rm-item una"><div><div class="rm-name">Кравченко О.</div><div class="rm-id">#20432</div></div><div><div class="rm-na">Без кімнати</div><button class="btn bp bxs" style="margin-top:2px">Призначити</button></div></div>
+          <div class="rm-item"><div><div class="rm-name">Гриценко І.</div><div class="rm-id">#18785</div></div><div class="rm-room-lbl" style="color:var(--b)">TWIN 203</div><span class="rm-meal">RO</span></div>
+        </div>
+        <div style="padding:7px 12px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);background:var(--bg)">Харчування: <strong>RO</strong> | <strong>BB</strong> | <strong>HB</strong> | <strong>FB</strong></div>
+      </div>
+      <div class="rm-r">
+        <div class="rm-ph">Hotel Aleksandar — Кімнати<span style="color:var(--ok);font-size:11px">47/50 розселено</span></div>
+        <div class="rm-rooms-c">
+          <div class="rm-type-h" style="color:var(--b)">🛏 TWIN (двомісні) — 20 кімнат = 40 місць</div>
+          <div class="rm-grid">
+            <div class="rm-card"><div class="rm-cn">201 <span class="badge bok" style="font-size:9px">✓ повна</span></div><div><div class="rm-slot">Козаченко В. <span class="rm-meal">BB</span></div><div class="rm-slot">Бойко М. <span class="rm-meal">BB</span></div></div></div>
+            <div class="rm-card"><div class="rm-cn">202 <span class="badge bok" style="font-size:9px">✓ повна</span></div><div><div class="rm-slot">Соловей К. <span class="rm-meal">BB</span></div><div class="rm-slot">Мороз Н. <span class="rm-meal">BB</span></div></div></div>
+            <div class="rm-card" style="border-color:var(--r)"><div class="rm-cn" style="color:var(--r)">203 <span class="badge brd" style="font-size:9px">1/2 вільно</span></div><div><div class="rm-slot">Гриценко І. <span class="rm-meal">RO</span></div><div class="rm-empty-slot">+ Призначити туриста</div></div></div>
+          </div>
+          <div class="rm-type-h" style="color:var(--c)">🛏 DBL (double) — 10 кімнат = 20 місць</div>
+          <div class="rm-grid"><div class="rm-card"><div class="rm-cn">105 <span class="badge bok" style="font-size:9px">✓ повна</span></div><div><div class="rm-slot">Соловей А. <span class="rm-meal">HB</span></div><div class="rm-slot">— пара</div></div></div></div>
+          <div class="rm-type-h" style="color:var(--g)">🛏 TRPL (тримісні) — 3 кімнати = 9 місць</div>
+          <div class="rm-grid"><div class="rm-card"><div class="rm-cn">302 <span class="badge bg" style="font-size:9px">2/3 зайнято</span></div><div><div class="rm-slot">Мороз Н. <span class="rm-meal">BB</span></div><div class="rm-slot">Луценко В. <span class="rm-meal">BB</span></div><div class="rm-empty-slot">+ Призначити</div></div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WF5: ЧЕКЛІСТ -->
+  <div id="wf5" class="wf-frame hide" style="height:620px;display:flex;flex-direction:column">
+    <div class="topbar"><div class="tb-logo">ET</div><span style="font-size:11px;color:rgba(255,255,255,.4)">OPS › MB26070401 › Операційний Чекліст</span><div class="tb-sp"></div><div style="display:flex;align-items:center;gap:7px;font-size:11px;color:rgba(255,255,255,.55)"><div class="tb-av">МІ</div>Марія І.</div></div>
+    <div class="cl-hdr"><div class="cl-pct">78%</div><div class="cl-pw"><div class="cl-title">Чекліст готовності — MB26070401 Чорногорія</div><div class="cl-pbg"><div class="cl-pf" style="width:78%"></div></div><div class="cl-eta">7 з 9 пунктів виконано · Виїзд: 04.07.26</div></div><div class="cl-cd"><div class="cl-cdn">1</div><div class="cl-cdl">день до виїзду</div></div></div>
+    <div style="flex:1;overflow:auto">
+      <div class="cl-items">
+        <div class="cl-item"><div class="cl-ico">✅</div><div class="cl-con"><div class="cl-lbl">Тур підтверджений перевізником</div><div class="cl-meta"><span>MB Bus Transport</span><span>03.07.26</span><span>Марія І.</span></div></div></div>
+        <div class="cl-item"><div class="cl-ico">✅</div><div class="cl-con"><div class="cl-lbl">Готелі всі оплачені (депозит + фінальна)</div><div class="cl-meta"><span>1 700€ + 10 700€</span><span>03.07.26</span><span>Ната Павлик</span></div></div></div>
+        <div class="cl-item"><div class="cl-ico">✅</div><div class="cl-con"><div class="cl-lbl">Гіди всі підтверджені</div><div class="cl-meta"><span>7/9 активностей</span><span>02.07.26</span></div></div></div>
+        <div class="cl-item"><div class="cl-ico">✅</div><div class="cl-con"><div class="cl-lbl">Румінг фіналізовано і відправлено в готелі</div><div class="cl-meta"><span>Hotel Aleksandar</span><span>01.07.26</span></div></div></div>
+        <div class="cl-item"><div class="cl-ico">✅</div><div class="cl-con"><div class="cl-lbl">Документи сформовані</div><div class="cl-meta"><span>3/3 PDF готові</span><span>03.07.26</span></div></div></div>
+        <div class="cl-item"><div class="cl-ico">✅</div><div class="cl-con"><div class="cl-lbl">Туристи отримали інфо-лист</div><div class="cl-meta"><span>50/50 відправлено</span><span>02.07.26</span><span>Brevo</span></div></div></div>
+        <div class="cl-item"><div class="cl-ico">✅</div><div class="cl-con"><div class="cl-lbl">Турлідер призначений</div><div class="cl-meta"><span>Оксана Петренко · +38099123456</span><span>28.06.26</span></div></div></div>
+        <div class="cl-item pend"><div class="cl-ico">❌</div><div class="cl-con"><div class="cl-lbl" style="color:var(--r)">Екстрені контакти готові</div><div class="cl-meta"><span style="color:var(--r)">⏳ Заповніть контакти лікарні та посольства</span></div></div><button class="btn br bsm" onclick="alert('Форма екстрених контактів')">Заповнити →</button></div>
+        <div class="cl-item pend"><div class="cl-ico">❌</div><div class="cl-con"><div class="cl-lbl" style="color:var(--r)">Фінальний лист туристам відправлено</div><div class="cl-meta"><span style="color:var(--r)">⏳ Надішліть за 24 год до виїзду</span></div></div><button class="btn br bsm" onclick="alert('Розсилка запущена!')">Надіслати →</button></div>
+      </div>
+    </div>
+    <div class="cl-foot"><button class="btn bs">🔔 Нагадати команді</button><button class="btn bs">📋 Звіт готовності</button><div style="flex:1"></div><button class="btn" style="background:var(--r);color:#fff;opacity:.4;cursor:not-allowed;font-size:11px;padding:7px 14px;border-radius:7px;border:none">✈️ Виїзд (78% — не готово)</button></div>
+  </div>
+
+  <!-- WF6: ДОКУМЕНТИ -->
+  <div id="wf6" class="wf-frame hide" style="height:620px;display:flex;flex-direction:column">
+    <div class="topbar"><div class="tb-logo">ET</div><span style="font-size:11px;color:rgba(255,255,255,.4)">OPS › MB26070401 › Документи виїзду</span><div class="tb-sp"></div><div style="display:flex;align-items:center;gap:7px;font-size:11px;color:rgba(255,255,255,.55)"><div class="tb-av">МІ</div>Марія І.</div></div>
+    <div class="ph" style="flex-shrink:0"><div><div class="ph-title">Документи виїзду</div><div class="ph-sub">5 документів · 3 готово · 1 відправлено</div></div><button class="btn bp">+ Згенерувати</button></div>
+    <div class="doc-gen">
+      <span style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;margin-right:4px">Швидко:</span>
+      <button class="doc-gbtn">📄 Румінг PDF</button><button class="doc-gbtn">👥 Пасенджер-ліст</button><button class="doc-gbtn">📋 Список ДОПів</button><button class="doc-gbtn">📞 Контакти</button><button class="doc-gbtn">💌 Інфо-лист</button>
+    </div>
+    <div style="flex:1;overflow:auto">
+      <div class="doc-row"><div class="doc-ico di-b">📄</div><div class="doc-info"><div class="doc-name">Румінг для готелю</div><div class="doc-sub">ROOMING_HOTEL · Hotel Aleksandar · 50 туристів</div></div><div style="display:flex;gap:5px;align-items:center"><span class="badge bok">✅ Готово</span><span class="badge bc">📧 Надіслано</span></div><div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin:0 10px">01.07.26<br>hotel@aleksandar.me</div><div class="doc-acts"><button class="btn bs bsm">👁</button><button class="btn bs bsm">📥</button><button class="btn bs bsm">📧</button></div></div>
+      <div class="doc-row"><div class="doc-ico di-c">👥</div><div class="doc-info"><div class="doc-name">Пасенджер-ліст</div><div class="doc-sub">PASSENGER_LIST · 51 запис · MB Bus Transport</div></div><div style="display:flex;gap:5px;align-items:center"><span class="badge bok">✅ Готово</span><span class="badge bc">📧 Надіслано</span></div><div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin:0 10px">03.07.26<br>driver@mb-bus.ua</div><div class="doc-acts"><button class="btn bs bsm">👁</button><button class="btn bs bsm">📥</button><button class="btn bs bsm">📧</button></div></div>
+      <div class="doc-row"><div class="doc-ico di-g">📋</div><div class="doc-info"><div class="doc-name">Список ДОПів по туристах</div><div class="doc-sub">ADDON_LIST · 50 туристів × 9 ДОПів · для турлідера</div></div><div style="display:flex;gap:5px;align-items:center"><span class="badge bok">✅ Готово</span></div><div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin:0 10px">03.07.26<br>—</div><div class="doc-acts"><button class="btn bs bsm">👁</button><button class="btn bs bsm">📥</button><button class="btn bp bsm">📧 Турлідеру</button></div></div>
+      <div class="doc-row"><div class="doc-ico di-r">💌</div><div class="doc-info"><div class="doc-name">Інфо-лист туристам</div><div class="doc-sub">INFO_LETTER · 50 отримувачів · Brevo</div></div><div style="display:flex;gap:5px;align-items:center"><span class="badge bc">📧 Надіслано</span></div><div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin:0 10px">02.07.26<br>50/50 доставлено</div><div class="doc-acts"><button class="btn bs bsm">👁</button><button class="btn bs bsm">📧 Ще</button></div></div>
+      <div class="doc-row"><div class="doc-ico di-k">📞</div><div class="doc-info"><div class="doc-name">Список контактів та екстрені</div><div class="doc-sub">CONTACT_LIST · готелі, перевізник, гіди, лікарні</div></div><div style="display:flex;gap:5px;align-items:center"><span class="badge bg">⏳ Чернетка</span></div><div style="font-family:var(--mono);font-size:10px;color:var(--r);margin:0 10px">⚠️ Треба<br>завершити</div><div class="doc-acts"><button class="btn bp bsm">⚙️ Згенерувати</button></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- C-3 COMPONENTS -->
+<div id="comp" class="sec">
+  <div class="sec-hdr"><div class="eyebrow">C-3 · UI Component Library</div><h2>10 нових компонентів для OPS модуля</h2><p>React 18 + TypeScript + Tailwind. Бренд-токени: #53c7d6 · #f0366d · #2d70b9 · #f9c01d.</p></div>
+  <div class="note">💡 Всі компоненти розширюють існуючу дизайн-систему. Сумісні з useAuth(), isOpsManager, isManager. RBAC перевірка на сервері першочергово.</div>
+  <div class="comp-grid">
+    <div class="comp-card"><div class="cc-h"><span class="cc-n">CalendarGrid</span><span class="cc-p cc-mvp">MVP · P0</span></div><div class="cc-b"><div class="cc-desc">Місячна сітка виїздів. 7 колонок, картки-події. Кольор-кодування: cyan (&lt;60%), gold (60-80%), red (&gt;80%). Props: month, events[], onEventClick.</div><div class="cc-where">📍 /ops/tours · calendar view</div></div><div class="cc-preview"><div style="display:flex;gap:5px"><span class="ce ce-a">LP (46%)</span><span class="ce ce-w">AG (73%)</span><span class="ce ce-f">MB (96%)</span></div></div></div>
+    <div class="comp-card"><div class="cc-h"><span class="cc-n">OccupancyBar</span><span class="cc-p cc-mvp">MVP · P0</span></div><div class="cc-b"><div class="cc-desc">Прогрес-бар заповненості. Автоматичний колір: ok &lt;60%, warn 60-80%, err &gt;80%. Props: current, max, showLabel?, size?.</div><div class="cc-where">📍 Картка виїзду, таблиці</div></div><div class="cc-preview"><div class="pbar" style="margin-bottom:4px"><div class="pb-bg"><div class="pb-fill pf-ok" style="width:46%"></div></div><div class="pb-n" style="color:var(--ok)">46%</div></div><div class="pbar" style="margin-bottom:4px"><div class="pb-bg"><div class="pb-fill pf-w" style="width:73%"></div></div><div class="pb-n" style="color:var(--warn)">73%</div></div><div class="pbar"><div class="pb-bg"><div class="pb-fill pf-e" style="width:96%"></div></div><div class="pb-n" style="color:var(--r)">96%</div></div></div></div>
+    <div class="comp-card"><div class="cc-h"><span class="cc-n">HotelStatusBadge</span><span class="cc-p cc-mvp">MVP · P0</span></div><div class="cc-b"><div class="cc-desc">Бейдж статусу готелю. 5 станів з кольором та іконкою. Props: status, deadline?, showDeadline?.</div><div class="cc-where">📍 /hotels tab, загальний огляд</div></div><div class="cc-preview"><div style="display:flex;flex-wrap:wrap;gap:4px"><span class="st ss">🔍 пошук</span><span class="st sop">⏳ опція</span><span class="st sc">✓ підтверджено</span><span class="st sd">💳 депозит</span><span class="st spd">✅ оплачено</span></div></div></div>
+    <div class="comp-card"><div class="cc-h"><span class="cc-n">DeadlineIndicator</span><span class="cc-p cc-mvp">MVP · P0</span></div><div class="cc-b"><div class="cc-desc">Індикатор дедлайну. Auto-calc від today(): ok (&gt;3 дні), warn (1-3 дні), err (0/прострочено). Props: date, label?.</div><div class="cc-where">📍 Готелі, транспорт, фінанси</div></div><div class="cc-preview"><div style="display:flex;flex-direction:column;gap:4px"><span class="dl dlo">✓ 15.07.26 (12 днів)</span><span class="dl dlw">⏳ 06.07.26 (2 дні)</span><span class="dl dle">🔴 05.07.26 — завтра!</span><span class="dl dle">🚨 прострочено!</span></div></div></div>
+    <div class="comp-card"><div class="cc-h"><span class="cc-n">RoomingBoard</span><span class="cc-p cc-mvp">MVP · P0</span></div><div class="cc-b"><div class="cc-desc">Split-panel: туристи зліва + кімнати справа. Click-assign. Фільтр "без кімнати". Props: tourists[], roomGroups[], onAssign(), roomingStatus.</div><div class="cc-where">📍 /rooming tab</div></div><div class="cc-preview" style="font-size:10px;color:var(--text3)">[Туристи 50 | ⚠️ 3 без кімнати] | [TWIN 201/202/203…]<br>Click → assign · 47/50 розселено</div></div>
+    <div class="comp-card"><div class="cc-h"><span class="cc-n">BusSeatMap</span><span class="cc-p cc-mvp">MVP · P0</span></div><div class="cc-b"><div class="cc-desc">Схема автобуса N×4. cyan=зайнято, green=вільно. Клік → assign. Props: seats[], assignments, onSeatClick, totalSeats.</div><div class="cc-where">📍 /seating tab</div></div><div class="cc-preview"><div style="display:grid;grid-template-columns:repeat(4,20px);gap:2px"><div style="width:20px;height:17px;border-radius:3px;background:var(--c10);border:1px solid var(--c25);font-size:9px;display:flex;align-items:center;justify-content:center;color:var(--c)">1</div><div style="width:20px;height:17px;border-radius:3px;background:var(--c10);border:1px solid var(--c25);font-size:9px;display:flex;align-items:center;justify-content:center;color:var(--c)">2</div><div style="width:20px;height:17px;border-radius:3px;background:#e5e7eb;font-size:9px;display:flex;align-items:center;justify-content:center;color:#9ca3af">3</div><div style="width:20px;height:17px;border-radius:3px;background:#e5e7eb;font-size:9px;display:flex;align-items:center;justify-content:center;color:#9ca3af">4</div><div style="width:20px;height:17px;border-radius:3px;background:var(--ok10);border:1px solid rgba(22,163,74,.2);font-size:9px;display:flex;align-items:center;justify-content:center;color:var(--ok)">5</div><div style="width:20px;height:17px;border-radius:3px;background:#e5e7eb;font-size:9px;display:flex;align-items:center;justify-content:center;color:#9ca3af">6</div><div style="width:20px;height:17px;border-radius:3px;background:#e5e7eb;font-size:9px;display:flex;align-items:center;justify-content:center;color:#9ca3af">7</div><div style="width:20px;height:17px;border-radius:3px;background:#e5e7eb;font-size:9px;display:flex;align-items:center;justify-content:center;color:#9ca3af">8</div></div><div style="font-size:9px;color:var(--text3);margin-top:4px">🟦 Зайнято · 🟩 Вільно</div></div></div>
+    <div class="comp-card"><div class="cc-h"><span class="cc-n">TimelineView</span><span class="cc-p cc-mvp">MVP · P1</span></div><div class="cc-b"><div class="cc-desc">Вертикальний timeline по датах туру. Групування по містах. Теги ОСНОВНА/ДОП. Клік → modal редагування. Props: activities[], tourDates.</div><div class="cc-where">📍 /activities tab</div></div><div class="cc-preview" style="font-size:11px"><div style="border-left:2px solid var(--c);padding-left:9px"><div style="font-weight:700;color:var(--text)">04 лип · 📍 Будва</div><div style="color:var(--text3);margin-top:3px"><span class="atag at-m" style="font-size:9px">ОСНОВНА</span> 11:00 Оглядова</div><div style="color:var(--text3);margin-top:2px"><span class="atag at-d" style="font-size:9px">ДОП</span> 19:00 Sunset Walk</div></div></div></div>
+    <div class="comp-card"><div class="cc-h"><span class="cc-n">ProgressChecklist</span><span class="cc-p cc-mvp">MVP · P0</span></div><div class="cc-b"><div class="cc-desc">9-пунктний чекліст з прогрес-баром. ✅/❌ per пункт. Автор + дата. Countdown до виїзду. При 100% → кнопка "Виїзд розпочато". Props: items[], departureDate.</div><div class="cc-where">📍 /checklist tab, OPS дашборд</div></div><div class="cc-preview"><div class="pbar" style="margin-bottom:5px"><div class="pb-bg"><div class="pb-fill pf-w" style="width:78%"></div></div><div class="pb-n" style="color:var(--warn)">78%</div></div><div style="font-size:10px;color:var(--text3)">✅ 7 виконано · ❌ 2 потребують дії</div></div></div>
+    <div class="comp-card"><div class="cc-h"><span class="cc-n">DocumentCard</span><span class="cc-p cc-mvp">MVP · P1</span></div><div class="cc-b"><div class="cc-desc">Картка документа: тип (іконка), назва, статус, дата, кому відправлено. Кнопки: переглянути / скачати / відправити email. Props: document, onGenerate, onSend.</div><div class="cc-where">📍 /documents tab</div></div><div class="cc-preview" style="font-size:11px"><div style="display:flex;gap:8px;align-items:center"><div style="width:28px;height:28px;border-radius:6px;background:var(--b10);display:flex;align-items:center;justify-content:center">📄</div><div style="flex:1"><div style="font-weight:600;font-size:12px">Румінг для готелю</div><div style="color:var(--text3);font-size:10px">01.07.26 · hotel@aleksandar.me</div></div><span class="badge bok">✅</span></div></div></div>
+    <div class="comp-card"><div class="cc-h"><span class="cc-n">AddonMatrix</span><span class="cc-p cc-r2">Реліз 2</span></div><div class="cc-b"><div class="cc-desc">Матриця турист × ДОП. ✅/❌ per комірка. Підрахунок по колонках. MB26070401: 50 туристів × 9 ДОПів. Props: tourists[], addons[], selections, onToggle.</div><div class="cc-where">📍 /addons tab (Реліз 2)</div></div><div class="cc-preview" style="font-size:10px;font-family:var(--mono)"><div style="color:var(--text3)">Турист | Sunset | Параглайд | Скадар</div><div style="color:var(--text2)">Козаченко | ✅ | ❌ | ✅</div><div style="color:var(--text2)">Бойко    | ✅ | ✅ | ❌</div><div style="color:var(--c);margin-top:3px">Всього: 35 | 12 | 28</div></div></div>
+  </div>
+</div>
+
+<!-- C-4 STATES -->
+<div id="states" class="sec">
+  <div class="sec-hdr"><div class="eyebrow">C-4 · Screen States</div><h2>Стани екранів та Empty States</h2><p>4 стани для 4 ключових екранів. ОМ завжди бачить конкретний наступний крок — без "порожнього тупика".</p></div>
+
+  <div style="margin-bottom:22px">
+    <div style="font-size:12px;font-weight:700;margin-bottom:9px;display:flex;align-items:center;gap:8px"><span style="background:var(--c10);color:var(--c);padding:2px 9px;border-radius:5px;font-family:var(--mono);font-size:10px">/ops/tours</span> Список виїздів</div>
+    <div class="states-grid">
+      <div class="sc"><div class="sc-h sc-empty">📭 Empty state</div><div class="sc-b"><span style="font-size:22px;display:block;margin-bottom:8px">🗓</span>Немає виїздів на цей місяць.<br><br><button class="btn bp bsm" style="margin-top:8px">+ Створити перший виїзд</button><div style="font-size:10px;color:var(--text3);margin-top:6px">Або оберіть інший місяць</div></div></div>
+      <div class="sc"><div class="sc-h sc-part">🔄 Partial state</div><div class="sc-b"><span style="font-size:22px;display:block;margin-bottom:8px">🔧</span>3 виїзди: 1 активний, 2 в роботі.<br><br>⚠️ Чекліст &lt;50% у 2 виїздах<br>🔴 Дедлайн готелю — завтра!<br><br><span style="font-size:11px;color:var(--r)">→ Підтвердити дедлайн!</span></div></div>
+      <div class="sc"><div class="sc-h sc-ready">✅ Ready state</div><div class="sc-b"><span style="font-size:22px;display:block;margin-bottom:8px">🚀</span>Всі виїзди активні.<br>Чекліст ≥80% у всіх.<br>Наступний виїзд за 1 день.<br><br><span style="font-size:11px;color:var(--c)">→ Перейти до чекліст</span></div></div>
+      <div class="sc"><div class="sc-h sc-done">🏁 Post-tour state</div><div class="sc-b"><span style="font-size:22px;display:block;margin-bottom:8px">📊</span>Виїзди завершені.<br>Статус: completed.<br>Документи в архіві.<br><br><span style="font-size:11px;color:var(--b)">→ Переглянути аналітику</span></div></div>
+    </div>
+  </div>
+
+  <div style="margin-bottom:22px">
+    <div style="font-size:12px;font-weight:700;margin-bottom:9px;display:flex;align-items:center;gap:8px"><span style="background:var(--b10);color:var(--b);padding:2px 9px;border-radius:5px;font-family:var(--mono);font-size:10px">/hotels</span> Вкладка Готелі</div>
+    <div class="states-grid">
+      <div class="sc"><div class="sc-h sc-empty">🏨 Empty state</div><div class="sc-b"><span style="font-size:22px;display:block;margin-bottom:8px">🔍</span>Готелі не додані.<br>Маршрут ще не налаштований.<br><br><button class="btn bp bsm" style="margin-top:8px">+ Додати перший готель</button><div style="font-size:10px;color:var(--text3);margin-top:5px">Підказка: спершу вкладка Інфо → маршрут</div></div></div>
+      <div class="sc"><div class="sc-h sc-part">🔄 Partial state</div><div class="sc-b"><span style="font-size:22px;display:block;margin-bottom:8px">⏳</span>2 з 5 підтверджено.<br><br>🔴 Дедлайн опції #3 — завтра!<br>🔍 Сараєво — ще в пошуку.<br><br><span style="font-size:11px;color:var(--r)">→ Підтвердити дедлайн!</span></div></div>
+      <div class="sc"><div class="sc-h sc-ready">✅ Ready state</div><div class="sc-b"><span style="font-size:22px;display:block;margin-bottom:8px">✈️</span>5/5 підтверджено.<br>Всі рахунки оплачено.<br>Румінг відправлено.<br><br><span style="font-size:11px;color:var(--c)">→ Перейти до документів</span></div></div>
+      <div class="sc"><div class="sc-h sc-done">🏁 Post-tour state</div><div class="sc-b"><span style="font-size:22px;display:block;margin-bottom:8px">📁</span>Всі готелі оплачено.<br>Рахунки в архіві.<br>Фідбек збережено.<br><br><span style="font-size:10px;color:var(--text3)">Готується до наступного сезону</span></div></div>
+    </div>
+  </div>
+
+  <div style="margin-bottom:22px">
+    <div style="font-size:12px;font-weight:700;margin-bottom:9px;display:flex;align-items:center;gap:8px"><span style="background:var(--g10);color:var(--warn);padding:2px 9px;border-radius:5px;font-family:var(--mono);font-size:10px">/rooming</span> Вкладка Румінг</div>
+    <div class="states-grid">
+      <div class="sc"><div class="sc-h sc-empty">🛏 Empty state</div><div class="sc-b"><span style="font-size:22px;display:block;margin-bottom:8px">👥</span>Туристів ще немає.<br>Румінг доступний після перших підтверджених бронювань.<br><br><div style="font-size:10px;color:var(--text3)">0 підтверджених туристів</div></div></div>
+      <div class="sc"><div class="sc-h sc-part">🔄 Partial state</div><div class="sc-b"><span style="font-size:22px;display:block;margin-bottom:8px">🔧</span>30 призначено, 8 без кімнати.<br><br>⚠️ rooming_status = DRAFT<br>⚠️ Не можна фіналізувати!<br><br><span style="font-size:11px;color:var(--r)">→ Призначити кімнати</span></div></div>
+      <div class="sc"><div class="sc-h sc-ready">✅ Ready state</div><div class="sc-b"><span style="font-size:22px;display:block;margin-bottom:8px">🏨</span>50/50 розселено.<br>final_rooming_done ✅<br>PDF відправлено готелю.<br><br><span style="font-size:11px;color:var(--c)">→ Переглянути документ</span></div></div>
+      <div class="sc"><div class="sc-h sc-done">🏁 Post-tour state</div><div class="sc-b"><span style="font-size:22px;display:block;margin-bottom:8px">📊</span>Румінг архівовано.<br>Факт-розміщення: зафіксовано.<br>Зміни від плану: 2.<br><br><span style="font-size:10px;color:var(--text3)">Збережено для наступного туру</span></div></div>
+    </div>
+  </div>
+
+  <div style="margin-bottom:22px">
+    <div style="font-size:12px;font-weight:700;margin-bottom:9px;display:flex;align-items:center;gap:8px"><span style="background:var(--ok10);color:var(--ok);padding:2px 9px;border-radius:5px;font-family:var(--mono);font-size:10px">/checklist</span> Операційний чекліст</div>
+    <div class="states-grid">
+      <div class="sc"><div class="sc-h sc-empty">📋 Empty state</div><div class="sc-b"><span style="font-size:22px;display:block;margin-bottom:8px">🆕</span>Виїзд щойно створено.<br>0/9 пунктів виконано.<br><br><button class="btn bp bsm" style="margin-top:8px">Розпочати підготовку</button><div style="font-size:10px;color:var(--text3);margin-top:5px">Перший крок: підтвердіть перевізника</div></div></div>
+      <div class="sc"><div class="sc-h sc-part">🔄 Partial state</div><div class="sc-b"><span style="font-size:22px;display:block;margin-bottom:8px">📊</span>5/9 ✅ · 4 відкриті.<br>30 днів до виїзду.<br><br>🔴 Гіди не підтверджені!<br>⚠️ Документи не готові.<br><br><span style="font-size:11px;color:var(--r)">→ Підтвердити гідів</span></div></div>
+      <div class="sc"><div class="sc-h sc-ready">✅ Ready state</div><div class="sc-b"><span style="font-size:22px;display:block;margin-bottom:8px">🚀</span>9/9 ✅ — 100% готово!<br><br><button class="btn" style="background:var(--ok);color:#fff;border:none;padding:7px 12px;border-radius:7px;font-size:11px;font-weight:600;width:100%;cursor:pointer">✈️ Виїзд розпочато!</button></div></div>
+      <div class="sc"><div class="sc-h sc-done">🏁 Post-tour state</div><div class="sc-b"><span style="font-size:22px;display:block;margin-bottom:8px">🏆</span>Виїзд завершено.<br>Чекліст закрито: 11.07.26.<br><br>Підготовка: 3.5 год<br><span style="color:var(--ok)">✅ Ціль ≤4 год виконано</span></div></div>
+    </div>
+  </div>
+
+  <div class="note note-warn">📐 <strong>Правило дизайну:</strong> ОМ ніколи не бачить "порожній тупик". Кожен empty state = конкретний наступний крок + кнопка. Partial state показує найкритичнішу незакриту дію першою.</div>
+</div>
+
+<script>
+function showSec(id,el){
+  document.querySelectorAll('.sec').forEach(s=>s.classList.remove('on'));
+  document.querySelectorAll('.mn-tab').forEach(t=>t.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+  el.classList.add('on');
+  window.scrollTo(0,0);
+}
+function sp(id,el){
+  document.querySelectorAll('.sm-panel').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.ti,.tc').forEach(t=>t.classList.remove('on'));
+  var p=document.getElementById('sp-'+id);
+  if(p) p.classList.add('on');
+  el.classList.add('on');
+}
+function swf(n,btn){
+  for(var i=1;i<=6;i++){
+    var e=document.getElementById('wf'+i);
+    if(e) e.classList.toggle('hide',i!==n);
+  }
+  document.querySelectorAll('.wf-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+}
+function tv(mode,btn){
+  document.getElementById('vl').style.display=mode==='vl'?'grid':'none';
+  document.getElementById('vc').style.display=mode==='vc'?'block':'none';
+  document.querySelectorAll('.vb').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+}
+</script>
+</body>
+</html>
