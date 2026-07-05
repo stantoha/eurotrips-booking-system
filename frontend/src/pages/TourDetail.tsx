@@ -22,6 +22,7 @@ import { useTourActivities, useCreateActivity, usePatchActivity } from '../hooks
 import { BusSeatMap } from '../components/ops/BusSeatMap';
 import { useTourSeatMap, useAssignSeat } from '../hooks/useTourSeatMap';
 import { useTourTourists } from '../hooks/useTourTourists';
+import { useTourTransport, useCreateTransport, usePatchTransport, type TourTransport } from '../hooks/useTourTransport';
 
 const TOUR_TYPE_LABELS: Record<string, string> = {
   bus: 'Автобусний', avia: 'Авіатур', combined: 'Комбінований',
@@ -162,6 +163,163 @@ const ActivitiesTab: React.FC<{ tourId: string; canEdit: boolean }> = ({ tourId,
       />
       {patchActivity.isError && (
         <p className="text-xs text-brand-red mt-2">{apiErrorMessage(patchActivity.error, 'Не вдалося оновити активність.')}</p>
+      )}
+    </div>
+  );
+};
+
+// ─── TAB: ТРАНСПОРТ (OPS-08/09/10) ──────────────────────────────
+
+const TransportRow: React.FC<{ tourId: string; tb: TourTransport; canEdit: boolean }> = ({ tourId, tb, canEdit }) => {
+  const patchTransport = usePatchTransport(tourId);
+  const [draft, setDraft] = useState({
+    carrierName: tb.carrier_name ?? '', busBrand: tb.bus_brand ?? '',
+    kmGoogle: tb.km_google ?? 0, kmExtras: tb.km_extras ?? 0, ratePerKm: tb.rate_per_km ?? 0,
+    fuelSurcharge: tb.fuel_surcharge ?? 0,
+  });
+  const editable = canEdit && tb.status === 'planned';
+
+  const field = (key: keyof typeof draft, label: string, isText = false) => (
+    <label className="flex flex-col gap-0.5">
+      <span className="text-[10px] text-slate-400 uppercase">{label}</span>
+      <input
+        type={isText ? 'text' : 'number'}
+        min={isText ? undefined : 0}
+        disabled={!editable}
+        value={draft[key]}
+        onChange={(e) => setDraft((d) => ({ ...d, [key]: isText ? e.target.value : Math.max(0, Number(e.target.value)) }))}
+        className="text-sm border border-slate-200 dark:border-slate-700 rounded px-1.5 py-1 bg-white dark:bg-slate-900 disabled:opacity-50 w-24"
+      />
+    </label>
+  );
+
+  return (
+    <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 space-y-2">
+      <div className="flex flex-wrap items-end gap-2">
+        {field('carrierName', 'Перевізник', true)}
+        {field('busBrand', 'Марка авто', true)}
+        {field('kmGoogle', 'Км (Google)')}
+        {field('kmExtras', 'Км (допи)')}
+        {field('ratePerKm', 'Тариф €/км')}
+        {field('fuelSurcharge', 'Пальне €')}
+        {editable && (
+          <button
+            onClick={() => patchTransport.mutate({ transportId: tb.id, payload: draft })}
+            disabled={patchTransport.isPending}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-cyan text-white hover:bg-brand-cyan-dark disabled:opacity-40"
+          >
+            Зберегти
+          </button>
+        )}
+        {canEdit && tb.status === 'planned' && (
+          <button
+            onClick={() => patchTransport.mutate({ transportId: tb.id, payload: { status: 'confirmed' } })}
+            disabled={patchTransport.isPending}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-blue text-white hover:bg-brand-blue-dark disabled:opacity-40"
+          >
+            Підтвердити
+          </button>
+        )}
+        {tb.status !== 'planned' && (
+          <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+            <CheckCircle2 size={14} /> {tb.status === 'confirmed' ? 'Підтверджено' : tb.status}
+          </span>
+        )}
+      </div>
+
+      <div className="text-xs text-slate-500 dark:text-slate-400 flex flex-wrap gap-x-4 gap-y-1">
+        <span>Базова вартість: <strong className="text-slate-700 dark:text-slate-300">{tb.base_transport_cost.toLocaleString('uk-UA')} €</strong></span>
+        <span>Всього: <strong className="text-slate-700 dark:text-slate-300">{tb.total_transport_cost.toLocaleString('uk-UA')} €</strong></span>
+        <span>На особу: <strong className="text-slate-700 dark:text-slate-300">{tb.cost_per_person != null ? `${tb.cost_per_person.toLocaleString('uk-UA')} €` : 'н/д'}</strong></span>
+        <span>Залишок до сплати: <strong className={tb.remaining_amount > 0 ? 'text-brand-red' : 'text-emerald-600'}>{tb.remaining_amount.toLocaleString('uk-UA')} €</strong></span>
+      </div>
+
+      {canEdit && tb.status === 'confirmed' && (
+        <div className="flex items-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <label className="flex flex-col gap-0.5">
+            <span className="text-[10px] text-slate-400 uppercase">Аванс, €</span>
+            <input
+              type="number" min={0} defaultValue={tb.paid_advance_eur ?? 0}
+              onBlur={(e) => patchTransport.mutate({ transportId: tb.id, payload: { paidAdvanceEur: Number(e.target.value) } })}
+              className="text-sm border border-slate-200 dark:border-slate-700 rounded px-1.5 py-1 bg-white dark:bg-slate-900 w-24"
+            />
+          </label>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const NewTransportForm: React.FC<{ tourId: string; onDone: () => void }> = ({ tourId, onDone }) => {
+  const createTransport = useCreateTransport(tourId);
+  const [form, setForm] = useState({ carrierName: '', busBrand: '', kmGoogle: '', ratePerKm: '' });
+
+  const submit = () => {
+    createTransport.mutate(
+      {
+        transportType: 'bus',
+        carrierName: form.carrierName || undefined,
+        busBrand: form.busBrand || undefined,
+        kmGoogle: form.kmGoogle ? Number(form.kmGoogle) : undefined,
+        ratePerKm: form.ratePerKm ? Number(form.ratePerKm) : undefined,
+      },
+      { onSuccess: onDone }
+    );
+  };
+
+  return (
+    <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 mb-4 flex flex-wrap items-end gap-2">
+      <label className="flex flex-col gap-0.5">
+        <span className="text-[10px] text-slate-400 uppercase">Перевізник</span>
+        <input value={form.carrierName} onChange={(e) => setForm((f) => ({ ...f, carrierName: e.target.value }))} className="text-sm border border-slate-200 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900" />
+      </label>
+      <label className="flex flex-col gap-0.5">
+        <span className="text-[10px] text-slate-400 uppercase">Марка авто</span>
+        <input value={form.busBrand} onChange={(e) => setForm((f) => ({ ...f, busBrand: e.target.value }))} className="text-sm border border-slate-200 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900" />
+      </label>
+      <label className="flex flex-col gap-0.5">
+        <span className="text-[10px] text-slate-400 uppercase">Км (Google)</span>
+        <input type="number" min={0} value={form.kmGoogle} onChange={(e) => setForm((f) => ({ ...f, kmGoogle: e.target.value }))} className="text-sm border border-slate-200 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900 w-24" />
+      </label>
+      <label className="flex flex-col gap-0.5">
+        <span className="text-[10px] text-slate-400 uppercase">Тариф €/км</span>
+        <input type="number" min={0} value={form.ratePerKm} onChange={(e) => setForm((f) => ({ ...f, ratePerKm: e.target.value }))} className="text-sm border border-slate-200 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900 w-24" />
+      </label>
+      <button onClick={submit} disabled={createTransport.isPending} className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-cyan text-white hover:bg-brand-cyan-dark disabled:opacity-40">
+        Додати
+      </button>
+      <button onClick={onDone} className="text-xs text-slate-400 hover:text-slate-600">Скасувати</button>
+      {createTransport.isError && (
+        <p className="w-full text-xs text-brand-red">{apiErrorMessage(createTransport.error, 'Не вдалося додати транспорт.')}</p>
+      )}
+    </div>
+  );
+};
+
+const TransportTab: React.FC<{ tourId: string; canEdit: boolean }> = ({ tourId, canEdit }) => {
+  const { data: items, isLoading, isError } = useTourTransport(tourId);
+  const [showForm, setShowForm] = useState(false);
+
+  if (isLoading) return <p className="text-sm text-slate-400 py-6">Завантаження транспорту…</p>;
+  if (isError || !items) return <p className="text-sm text-brand-red py-6">Не вдалося завантажити транспорт.</p>;
+
+  return (
+    <div>
+      {canEdit && (
+        showForm
+          ? <NewTransportForm tourId={tourId} onDone={() => setShowForm(false)} />
+          : (
+            <button onClick={() => setShowForm(true)} className="mb-4 px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-cyan text-white hover:bg-brand-cyan-dark">
+              + Додати перевізника
+            </button>
+          )
+      )}
+      {items.length === 0 ? (
+        <div className="text-center py-10 text-slate-400 text-sm">Транспорт для цього туру ще не додано.</div>
+      ) : (
+        <div className="space-y-3">
+          {items.map((tb) => <TransportRow key={tb.id} tourId={tourId} tb={tb} canEdit={canEdit} />)}
+        </div>
       )}
     </div>
   );
@@ -356,7 +514,7 @@ const TourDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { canSeeMargin, isOpsManager, isAdmin, isDirector, isManager, isAccountant } = useAuth();
   const { data: tour, isLoading, isError } = useTour(id ?? '');
-  const [tab, setTab] = useState<'info' | 'checklist' | 'rooming' | 'activities' | 'seating'>('info');
+  const [tab, setTab] = useState<'info' | 'checklist' | 'rooming' | 'activities' | 'seating' | 'transport'>('info');
 
   const isInternal = isOpsManager || isAdmin || isDirector || isManager || isAccountant;
   const canEditStructure = isOpsManager || isAdmin;
@@ -424,6 +582,7 @@ const TourDetailPage: React.FC = () => {
               { key: 'rooming' as const, label: 'Структура номерів' },
               { key: 'activities' as const, label: 'Програма' },
               { key: 'seating' as const, label: 'Розсадка' },
+              { key: 'transport' as const, label: 'Транспорт' },
             ]).map((t) => (
               <button
                 key={t.key}
@@ -461,6 +620,12 @@ const TourDetailPage: React.FC = () => {
         {tab === 'seating' && (
           <div className="p-6">
             <SeatingTab tourId={tour.id} canEdit={canEditStructure} />
+          </div>
+        )}
+
+        {tab === 'transport' && (
+          <div className="p-6">
+            <TransportTab tourId={tour.id} canEdit={canEditStructure} />
           </div>
         )}
 

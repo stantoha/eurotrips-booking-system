@@ -27,6 +27,7 @@ import { checklistRoutes }     from './modules/tours/checklist.routes';
 import { activitiesRoutes }    from './modules/tours/activities.routes';
 import { touristsRoutes }      from './modules/tours/tourists.routes';
 import { tourSeatMapRoutes }   from './modules/tours/tour-seat-map.routes';
+import { transportRoutes }     from './modules/tours/transport.routes';
 import { bookingRoutes }      from './modules/bookings/bookings.routes';
 import { seatMapRoutes }      from './modules/bookings/seat-map.routes';
 import { financeRoutes }      from './modules/finance/finance.routes';
@@ -186,6 +187,8 @@ export async function buildApp(app: FastifyInstance) {
       await api.register(touristsRoutes, { prefix: '/tours' });
       // Розсадка в автобусі (tour-scoped, OPS-17)
       await api.register(tourSeatMapRoutes, { prefix: '/tours' });
+      // Транспорт: перевізник, км×тариф, аванс (OPS-08/09/10)
+      await api.register(transportRoutes, { prefix: '/tours' });
       // Bookings — повна реалізація (BR-01/06/08)
       await api.register(bookingRoutes, { prefix: '/bookings' });
       // Seat map + preferences — OPS-03/BR-12
