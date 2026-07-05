@@ -27,6 +27,7 @@ export interface TourHotelBooking {
   confirmation_status: string | null;
   fact_amount_eur: number | null;
   notes: string | null;
+  final_rooming_done: boolean;
   hotel: { name: string; city: string; country: string };
   ui_status: HotelBookingUiStatus;
 }

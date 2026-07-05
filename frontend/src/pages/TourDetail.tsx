@@ -26,6 +26,7 @@ import { useTourTransport, useCreateTransport, usePatchTransport, type TourTrans
 import { useTourHotels, useCreateHotel, usePatchHotel, type TourHotelBooking } from '../hooks/useTourHotels';
 import { HotelStatusBadge } from '../components/ui/HotelStatusBadge';
 import { DeadlineIndicator } from '../components/ui/DeadlineIndicator';
+import { useAssignRoom, useFinalizeRooming } from '../hooks/useRooming';
 
 const TOUR_TYPE_LABELS: Record<string, string> = {
   bus: 'Автобусний', avia: 'Авіатур', combined: 'Комбінований',
@@ -166,6 +167,117 @@ const ActivitiesTab: React.FC<{ tourId: string; canEdit: boolean }> = ({ tourId,
       />
       {patchActivity.isError && (
         <p className="text-xs text-brand-red mt-2">{apiErrorMessage(patchActivity.error, 'Не вдалося оновити активність.')}</p>
+      )}
+    </div>
+  );
+};
+
+// ─── TAB: РОЗСЕЛЕННЯ / ФАКТ-РУМІНГ (OPS-14/15/16) ────────────────
+
+const MEAL_TYPE_OPTIONS = ['RO', 'BB', 'HB', 'FB'] as const;
+const ROOM_TYPE_OPTIONS = [
+  { value: 'twin', label: 'Twin' }, { value: 'double', label: 'Double' },
+  { value: 'triple', label: 'Triple' }, { value: 'single', label: 'Single' },
+];
+
+const RoomingTab: React.FC<{ tourId: string; canEdit: boolean }> = ({ tourId, canEdit }) => {
+  const { data: touristsData, isLoading: loadingTourists } = useTourTourists(tourId);
+  const { data: hotels, isLoading: loadingHotels } = useTourHotels(tourId);
+  const assignRoom = useAssignRoom(tourId);
+  const finalizeRooming = useFinalizeRooming(tourId);
+
+  if (loadingTourists || loadingHotels) return <p className="text-sm text-slate-400 py-6">Завантаження розселення…</p>;
+  if (!touristsData || !hotels) return <p className="text-sm text-brand-red py-6">Не вдалося завантажити дані розселення.</p>;
+
+  const alreadyFinalized = hotels.some((hb) => hb.final_rooming_done);
+  const editable = canEdit && !alreadyFinalized;
+  const withoutRoom = touristsData.tourists.filter((t) => !t.actual_room_number).length;
+
+  return (
+    <div>
+      {hotels.length === 0 ? (
+        <p className="text-sm text-slate-400 mb-4">Додайте готель у вкладці "Готелі", щоб розпочати розселення.</p>
+      ) : (
+        <div className="flex flex-wrap gap-2 mb-4">
+          {hotels.map((hb) => (
+            <div key={hb.id} className="flex items-center gap-2 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5">
+              <span className="text-xs text-slate-600 dark:text-slate-300">{hb.hotel.name}</span>
+              {hb.final_rooming_done ? (
+                <span className="flex items-center gap-1 text-xs text-emerald-600 font-medium"><CheckCircle2 size={12} /> Фіналізовано</span>
+              ) : canEdit ? (
+                <button
+                  onClick={() => finalizeRooming.mutate(hb.id)}
+                  disabled={withoutRoom > 0 || finalizeRooming.isPending}
+                  title={withoutRoom > 0 ? `Є ${withoutRoom} турист(ів) без кімнати` : undefined}
+                  className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-40"
+                >
+                  <Lock size={11} /> Фіналізувати
+                </button>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {withoutRoom > 0 && (
+        <p className="text-xs text-brand-red mb-2">⚠ {withoutRoom} турист(ів) без призначеної кімнати</p>
+      )}
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-[10px] uppercase text-slate-400 border-b border-slate-200 dark:border-slate-700">
+              <th className="py-1.5 pr-2">Турист</th>
+              <th className="py-1.5 pr-2">Кімната</th>
+              <th className="py-1.5 pr-2">Тип</th>
+              <th className="py-1.5 pr-2">Харчування</th>
+            </tr>
+          </thead>
+          <tbody>
+            {touristsData.tourists.map((t) => (
+              <tr key={t.tourist_id} className="border-b border-slate-100 dark:border-slate-800">
+                <td className="py-1.5 pr-2 whitespace-nowrap">{t.last_name} {t.first_name}</td>
+                <td className="py-1.5 pr-2">
+                  <input
+                    type="text"
+                    disabled={!editable}
+                    defaultValue={t.actual_room_number ?? ''}
+                    onBlur={(e) => assignRoom.mutate({ touristId: t.tourist_id, payload: { actualRoomNumber: e.target.value || null } })}
+                    className="text-sm border border-slate-200 dark:border-slate-700 rounded px-1.5 py-1 bg-white dark:bg-slate-900 disabled:opacity-50 w-20"
+                  />
+                </td>
+                <td className="py-1.5 pr-2">
+                  <select
+                    disabled={!editable}
+                    defaultValue={t.actual_room_type ?? ''}
+                    onChange={(e) => assignRoom.mutate({ touristId: t.tourist_id, payload: { actualRoomNumber: t.actual_room_number, actualRoomType: (e.target.value || null) as any } })}
+                    className="text-sm border border-slate-200 dark:border-slate-700 rounded px-1.5 py-1 bg-white dark:bg-slate-900 disabled:opacity-50"
+                  >
+                    <option value="">—</option>
+                    {ROOM_TYPE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                </td>
+                <td className="py-1.5 pr-2">
+                  <select
+                    disabled={!editable}
+                    defaultValue={t.meal_type ?? ''}
+                    onChange={(e) => assignRoom.mutate({ touristId: t.tourist_id, payload: { actualRoomNumber: t.actual_room_number, mealType: (e.target.value || null) as any } })}
+                    className="text-sm border border-slate-200 dark:border-slate-700 rounded px-1.5 py-1 bg-white dark:bg-slate-900 disabled:opacity-50"
+                  >
+                    <option value="">—</option>
+                    {MEAL_TYPE_OPTIONS.map((m) => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {(assignRoom.isError || finalizeRooming.isError) && (
+        <p className="text-xs text-brand-red mt-2">
+          {apiErrorMessage(assignRoom.error ?? finalizeRooming.error, 'Не вдалося оновити розселення.')}
+        </p>
       )}
     </div>
   );
@@ -679,7 +791,7 @@ const TourDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { canSeeMargin, isOpsManager, isAdmin, isDirector, isManager, isAccountant } = useAuth();
   const { data: tour, isLoading, isError } = useTour(id ?? '');
-  const [tab, setTab] = useState<'info' | 'checklist' | 'rooming' | 'activities' | 'seating' | 'transport' | 'hotels'>('info');
+  const [tab, setTab] = useState<'info' | 'checklist' | 'rooming' | 'roomAssignment' | 'activities' | 'seating' | 'transport' | 'hotels'>('info');
 
   const isInternal = isOpsManager || isAdmin || isDirector || isManager || isAccountant;
   const canEditStructure = isOpsManager || isAdmin;
@@ -745,6 +857,7 @@ const TourDetailPage: React.FC = () => {
               { key: 'info' as const, label: 'Інфо' },
               { key: 'checklist' as const, label: 'Чекліст' },
               { key: 'rooming' as const, label: 'Структура номерів' },
+              { key: 'roomAssignment' as const, label: 'Розселення' },
               { key: 'activities' as const, label: 'Програма' },
               { key: 'seating' as const, label: 'Розсадка' },
               { key: 'transport' as const, label: 'Транспорт' },
@@ -774,6 +887,12 @@ const TourDetailPage: React.FC = () => {
         {tab === 'rooming' && (
           <div className="p-6">
             <RoomStructureTab tourId={tour.id} canEdit={canEditStructure} canApprove={canApproveStructure} />
+          </div>
+        )}
+
+        {tab === 'roomAssignment' && (
+          <div className="p-6">
+            <RoomingTab tourId={tour.id} canEdit={canEditStructure} />
           </div>
         )}
 
