@@ -6,7 +6,7 @@
 import React from 'react';
 import { CheckCircle2, Circle } from 'lucide-react';
 import { occupancyColor } from '../ui/OccupancyBar';
-import type { ChecklistItemKey, TourChecklist } from '../../hooks/useTourChecklist';
+import { CHECKLIST_ITEMS, type ChecklistItemKey, type TourChecklist } from '../../hooks/useTourChecklist';
 
 const ITEM_LABELS: Record<ChecklistItemKey, string> = {
   transportConfirmed:      'Тур підтверджений перевізником',
@@ -19,12 +19,6 @@ const ITEM_LABELS: Record<ChecklistItemKey, string> = {
   emergencyContactsReady:  'Екстрені контакти готові',
   finalLetterSent:         'Фінальний лист туристам відправлено',
 };
-
-const ITEM_ORDER: ChecklistItemKey[] = [
-  'transportConfirmed', 'hotelsAllPaid', 'guidesAllConfirmed',
-  'roomingFinalizedAndSent', 'documentsGenerated', 'touristsNotified',
-  'guideAssigned', 'emergencyContactsReady', 'finalLetterSent',
-];
 
 export interface ProgressChecklistProps {
   checklist: TourChecklist;
@@ -47,8 +41,8 @@ function daysUntil(dateStr?: string): number | null {
 export const ProgressChecklist: React.FC<ProgressChecklistProps> = ({
   checklist, departureDate, canEdit = false, onToggle, className = '',
 }) => {
-  const pct = checklist.readinessPercent;
-  const doneCount = ITEM_ORDER.filter((item) => checklist[item]).length;
+  const pct = checklist.readiness_percent;
+  const doneCount = CHECKLIST_ITEMS.filter(({ field }) => checklist[field]).length;
   const daysLeft = daysUntil(departureDate);
 
   return (
@@ -61,7 +55,7 @@ export const ProgressChecklist: React.FC<ProgressChecklistProps> = ({
           <div className="h-1.5 bg-white/15 rounded-full overflow-hidden">
             <div className={`h-full rounded-full ${occupancyColor(pct)}`} style={{ width: `${pct}%` }} />
           </div>
-          <p className="text-[11px] text-white/40 font-mono mt-1">{doneCount} з {ITEM_ORDER.length} пунктів виконано</p>
+          <p className="text-[11px] text-white/40 font-mono mt-1">{doneCount} з {CHECKLIST_ITEMS.length} пунктів виконано</p>
         </div>
         {daysLeft !== null && (
           <div className="text-center shrink-0">
@@ -73,14 +67,14 @@ export const ProgressChecklist: React.FC<ProgressChecklistProps> = ({
 
       {/* Items */}
       <div>
-        {ITEM_ORDER.map((item) => {
-          const done = Boolean(checklist[item]);
+        {CHECKLIST_ITEMS.map(({ key, field }) => {
+          const done = Boolean(checklist[field]);
           return (
             <button
-              key={item}
+              key={key}
               type="button"
               disabled={!canEdit}
-              onClick={() => onToggle?.(item, !done)}
+              onClick={() => onToggle?.(key, !done)}
               className={`
                 w-full flex items-center gap-3 px-4 py-2.5 border-b border-slate-100 dark:border-slate-800 last:border-0 text-left
                 transition-colors
@@ -93,7 +87,7 @@ export const ProgressChecklist: React.FC<ProgressChecklistProps> = ({
                 : <Circle size={18} className="text-brand-red shrink-0" />
               }
               <span className={`text-sm flex-1 ${done ? 'text-slate-700 dark:text-slate-300' : 'text-brand-red font-medium'}`}>
-                {ITEM_LABELS[item]}
+                {ITEM_LABELS[key]}
               </span>
             </button>
           );

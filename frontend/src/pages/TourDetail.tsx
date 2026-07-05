@@ -5,22 +5,201 @@
 // cost_price/margin — тільки якщо canSeeMargin (BR-04).
 // ============================================================
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, MapPin, Calendar, Users, Tag, Plus } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, Users, Tag, Plus, Lock, CheckCircle2 } from 'lucide-react';
 import { useTour } from '../hooks/useTours';
 import { useAuth } from '../hooks/useAuth';
 import { TOUR_STATUS_CONFIG, STATUS_COLOR_CLASSES } from '../constants/statuses';
+import { ProgressChecklist } from '../components/ops/ProgressChecklist';
+import { useTourChecklist, usePatchChecklistItem, type ChecklistItemKey } from '../hooks/useTourChecklist';
+import {
+  useRoomStructure, useSetRoomStructure, useApproveRoomStructure, useFinalizeRoomStructure,
+  type HotelBookingStructure,
+} from '../hooks/useRoomStructure';
 
 const TOUR_TYPE_LABELS: Record<string, string> = {
   bus: 'Автобусний', avia: 'Авіатур', combined: 'Комбінований',
 };
 
+/** Дістає message з AppError-відповіді бекенду ({error:{code,message}}) */
+function apiErrorMessage(err: unknown, fallback: string): string {
+  const anyErr = err as { response?: { data?: { error?: { message?: string } } } };
+  return anyErr?.response?.data?.error?.message ?? fallback;
+}
+
+// ─── TAB: ЧЕКЛІСТ (OPS-18) ──────────────────────────────────────
+
+const ChecklistTab: React.FC<{ tourId: string; departureDate: string; canEdit: boolean }> = ({
+  tourId, departureDate, canEdit,
+}) => {
+  const { data: checklist, isLoading } = useTourChecklist(tourId);
+  const patchItem = usePatchChecklistItem(tourId);
+
+  if (isLoading || !checklist) {
+    return <p className="text-sm text-slate-400 py-6">Завантаження чекліста…</p>;
+  }
+
+  return (
+    <div>
+      <ProgressChecklist
+        checklist={checklist}
+        departureDate={departureDate}
+        canEdit={canEdit}
+        onToggle={(item: ChecklistItemKey, value: boolean) => patchItem.mutate({ item, value })}
+      />
+      {patchItem.isError && (
+        <p className="text-xs text-brand-red mt-2">{apiErrorMessage(patchItem.error, 'Не вдалося оновити пункт чекліста.')}</p>
+      )}
+    </div>
+  );
+};
+
+// ─── TAB: СТРУКТУРА НОМЕРІВ (BR-09/10/OPS-01) ──────────────────
+
+const STRUCTURE_STATUS_LABELS: Record<HotelBookingStructure['structure_status'], string> = {
+  draft: 'Чернетка', approved: 'Затверджено', final: 'Фінал',
+};
+
+const RoomStructureRow: React.FC<{
+  hb: HotelBookingStructure;
+  totalSeats: number;
+  canEdit: boolean;
+  canApprove: boolean;
+  canFinalize: boolean;
+}> = ({ hb, totalSeats, canEdit, canApprove, canFinalize }) => {
+  const { id: tourId } = useParams<{ id: string }>();
+  const [draft, setDraft] = useState({
+    plannedTwin: hb.planned_twin, plannedDouble: hb.planned_double,
+    plannedTriple: hb.planned_triple, plannedSingle: hb.planned_single,
+  });
+  const setStructure = useSetRoomStructure(tourId ?? '');
+  const approve = useApproveRoomStructure(tourId ?? '');
+  const finalize = useFinalizeRoomStructure(tourId ?? '');
+
+  const editable = canEdit && hb.structure_status === 'draft';
+  const capacity = draft.plannedTwin * 2 + draft.plannedDouble * 2 + draft.plannedTriple * 3 + draft.plannedSingle;
+  const overCapacity = capacity > totalSeats;
+
+  const field = (key: keyof typeof draft, label: string) => (
+    <label className="flex flex-col gap-0.5">
+      <span className="text-[10px] text-slate-400 uppercase">{label}</span>
+      <input
+        type="number"
+        min={0}
+        disabled={!editable}
+        value={draft[key]}
+        onChange={(e) => setDraft((d) => ({ ...d, [key]: Math.max(0, Number(e.target.value)) }))}
+        className="w-16 text-sm border border-slate-200 dark:border-slate-700 rounded px-1.5 py-1 bg-white dark:bg-slate-900 disabled:opacity-50"
+      />
+    </label>
+  );
+
+  return (
+    <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 flex flex-wrap items-end gap-3">
+      <div className="min-w-[140px] flex-1">
+        <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{hb.hotel_name}</p>
+        <p className="text-xs text-slate-400">{hb.city} · {new Date(hb.check_in_date).toLocaleDateString('uk-UA')}</p>
+        <p className="text-xs mt-1">
+          <span className={overCapacity ? 'text-brand-red font-medium' : 'text-slate-500'}>
+            Місткість: {capacity} / {totalSeats}
+          </span>
+          {' · '}
+          <span className="text-slate-400">{STRUCTURE_STATUS_LABELS[hb.structure_status]}</span>
+        </p>
+      </div>
+
+      {field('plannedTwin', 'Twin')}
+      {field('plannedDouble', 'Double')}
+      {field('plannedTriple', 'Triple')}
+      {field('plannedSingle', 'Single')}
+
+      <div className="flex items-center gap-2">
+        {editable && (
+          <button
+            onClick={() => setStructure.mutate({ hotelBookingId: hb.id, ...draft })}
+            disabled={setStructure.isPending || overCapacity}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-cyan text-white hover:bg-brand-cyan-dark disabled:opacity-40 transition-colors"
+          >
+            Зберегти
+          </button>
+        )}
+        {canApprove && hb.structure_status === 'draft' && (
+          <button
+            onClick={() => approve.mutate(hb.id)}
+            disabled={approve.isPending}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-blue text-white hover:bg-brand-blue-dark disabled:opacity-40 transition-colors"
+          >
+            Затвердити
+          </button>
+        )}
+        {canFinalize && hb.structure_status === 'approved' && (
+          <button
+            onClick={() => finalize.mutate(hb.id)}
+            disabled={finalize.isPending}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-40 transition-colors"
+          >
+            <Lock size={12} /> Фіналізувати
+          </button>
+        )}
+        {hb.structure_status === 'final' && (
+          <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+            <CheckCircle2 size={14} /> Закрито
+          </span>
+        )}
+      </div>
+
+      {(setStructure.isError || approve.isError || finalize.isError) && (
+        <p className="w-full text-xs text-brand-red">
+          {apiErrorMessage(setStructure.error ?? approve.error ?? finalize.error, 'Помилка збереження структури.')}
+        </p>
+      )}
+    </div>
+  );
+};
+
+const RoomStructureTab: React.FC<{ tourId: string; canEdit: boolean; canApprove: boolean }> = ({
+  tourId, canEdit, canApprove,
+}) => {
+  const { data, isLoading, isError } = useRoomStructure(tourId);
+
+  if (isLoading) return <p className="text-sm text-slate-400 py-6">Завантаження структури…</p>;
+  if (isError || !data) return <p className="text-sm text-brand-red py-6">Не вдалося завантажити структуру номерів.</p>;
+
+  if (data.hotel_bookings.length === 0) {
+    return (
+      <div className="text-center py-10 text-slate-400 text-sm">
+        Готелі для цього туру ще не додані. Структуру номерів можна внести після додавання готелю.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {data.hotel_bookings.map((hb) => (
+        <RoomStructureRow
+          key={hb.id}
+          hb={hb}
+          totalSeats={data.total_seats}
+          canEdit={canEdit}
+          canApprove={canApprove}
+          canFinalize={canEdit}
+        />
+      ))}
+    </div>
+  );
+};
+
 const TourDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { canSeeMargin } = useAuth();
+  const { canSeeMargin, isOpsManager, isAdmin, isDirector, isManager, isAccountant } = useAuth();
   const { data: tour, isLoading, isError } = useTour(id ?? '');
+  const [tab, setTab] = useState<'info' | 'checklist' | 'rooming'>('info');
+
+  const isInternal = isOpsManager || isAdmin || isDirector || isManager || isAccountant;
+  const canEditStructure = isOpsManager || isAdmin;
+  const canApproveStructure = isAdmin || isDirector;
 
   if (isLoading) {
     return (
@@ -76,6 +255,41 @@ const TourDetailPage: React.FC = () => {
           </p>
         </div>
 
+        {isInternal && (
+          <div className="flex border-b border-slate-100 dark:border-slate-700 px-6">
+            {([
+              { key: 'info' as const, label: 'Інфо' },
+              { key: 'checklist' as const, label: 'Чекліст' },
+              { key: 'rooming' as const, label: 'Структура номерів' },
+            ]).map((t) => (
+              <button
+                key={t.key}
+                onClick={() => setTab(t.key)}
+                className={`px-3 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                  tab === t.key
+                    ? 'border-brand-cyan text-brand-cyan-dark dark:text-brand-cyan'
+                    : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {tab === 'checklist' && (
+          <div className="p-6">
+            <ChecklistTab tourId={tour.id} departureDate={tour.departure_date} canEdit={canEditStructure} />
+          </div>
+        )}
+
+        {tab === 'rooming' && (
+          <div className="p-6">
+            <RoomStructureTab tourId={tour.id} canEdit={canEditStructure} canApprove={canApproveStructure} />
+          </div>
+        )}
+
+        {tab === 'info' && (
         <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div>
             <p className="text-xs text-slate-400 mb-1 flex items-center gap-1"><Calendar size={12} aria-hidden="true" /> Дати</p>
@@ -143,6 +357,7 @@ const TourDetailPage: React.FC = () => {
             </div>
           )}
         </div>
+        )}
 
         <div className="p-6 border-t border-slate-100 dark:border-slate-700">
           <button
