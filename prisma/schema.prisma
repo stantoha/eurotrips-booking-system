@@ -262,6 +262,17 @@ enum RoomingStatus {
   @@map("rooming_status")
 }
 
+/// Тип харчування в готелі (OPS-15). RO=без харчування, BB=сніданок,
+/// HB=напівпансіон, FB=повний пансіон
+enum MealType {
+  RO
+  BB
+  HB
+  FB
+
+  @@map("meal_type")
+}
+
 // =============================================================================
 // MODEL 1: users
 // Всі користувачі системи: менеджери, агенти, туристи, бухгалтери, тощо
@@ -722,6 +733,8 @@ model BookingTourist {
   actualRoomNumber   String?   @map("actual_room_number") @db.VarChar(20)
   /// Фактичний тип номеру (може відрізнятись від preferred)
   actualRoomType     RoomType? @map("actual_room_type")
+  /// Тип харчування в готелі (OPS-15), проставляється разом з actualRoomNumber
+  mealType           MealType? @map("meal_type")
 
   // ── OPS-03: Додаткові побажання ───────────────────────────────────────────
   /// Побажання по сусіду — free-text, контролюється менеджером
