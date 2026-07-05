@@ -17,6 +17,8 @@ import {
   useRoomStructure, useSetRoomStructure, useApproveRoomStructure, useFinalizeRoomStructure,
   type HotelBookingStructure,
 } from '../hooks/useRoomStructure';
+import { TimelineView } from '../components/ops/TimelineView';
+import { useTourActivities } from '../hooks/useTourActivities';
 
 const TOUR_TYPE_LABELS: Record<string, string> = {
   bus: 'Автобусний', avia: 'Авіатур', combined: 'Комбінований',
@@ -53,6 +55,17 @@ const ChecklistTab: React.FC<{ tourId: string; departureDate: string; canEdit: b
       )}
     </div>
   );
+};
+
+// ─── TAB: ПРОГРАМА (TimelineView) ──────────────────────────────
+
+const ActivitiesTab: React.FC<{ tourId: string }> = ({ tourId }) => {
+  const { data: activities, isLoading, isError } = useTourActivities(tourId);
+
+  if (isLoading) return <p className="text-sm text-slate-400 py-6">Завантаження програми…</p>;
+  if (isError || !activities) return <p className="text-sm text-brand-red py-6">Не вдалося завантажити програму туру.</p>;
+
+  return <TimelineView activities={activities} />;
 };
 
 // ─── TAB: СТРУКТУРА НОМЕРІВ (BR-09/10/OPS-01) ──────────────────
@@ -195,7 +208,7 @@ const TourDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { canSeeMargin, isOpsManager, isAdmin, isDirector, isManager, isAccountant } = useAuth();
   const { data: tour, isLoading, isError } = useTour(id ?? '');
-  const [tab, setTab] = useState<'info' | 'checklist' | 'rooming'>('info');
+  const [tab, setTab] = useState<'info' | 'checklist' | 'rooming' | 'activities'>('info');
 
   const isInternal = isOpsManager || isAdmin || isDirector || isManager || isAccountant;
   const canEditStructure = isOpsManager || isAdmin;
@@ -261,6 +274,7 @@ const TourDetailPage: React.FC = () => {
               { key: 'info' as const, label: 'Інфо' },
               { key: 'checklist' as const, label: 'Чекліст' },
               { key: 'rooming' as const, label: 'Структура номерів' },
+              { key: 'activities' as const, label: 'Програма' },
             ]).map((t) => (
               <button
                 key={t.key}
@@ -286,6 +300,12 @@ const TourDetailPage: React.FC = () => {
         {tab === 'rooming' && (
           <div className="p-6">
             <RoomStructureTab tourId={tour.id} canEdit={canEditStructure} canApprove={canApproveStructure} />
+          </div>
+        )}
+
+        {tab === 'activities' && (
+          <div className="p-6">
+            <ActivitiesTab tourId={tour.id} />
           </div>
         )}
 

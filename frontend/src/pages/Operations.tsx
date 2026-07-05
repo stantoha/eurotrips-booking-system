@@ -13,12 +13,13 @@
 
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, AlertTriangle } from 'lucide-react';
+import { Search, AlertTriangle, List, CalendarDays } from 'lucide-react';
 
 import { useTours } from '../hooks/useTours';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { OccupancyBar, occupancyPct } from '../components/ui/OccupancyBar';
 import { DeadlineIndicator } from '../components/ui/DeadlineIndicator';
+import { CalendarGrid, type CalendarEvent } from '../components/ops/CalendarGrid';
 import type { Tour, TourStatus } from '../types';
 
 // ─── CONSTANTS ────────────────────────────────────────────────
@@ -77,6 +78,8 @@ const Operations: React.FC = () => {
   const navigate = useNavigate();
   const [statusF, setStatusF] = useState<TourStatus | 'all'>('all');
   const [search, setSearch] = useState('');
+  const [view, setView] = useState<'list' | 'calendar'>('list');
+  const [calendarMonth, setCalendarMonth] = useState(() => new Date());
 
   const { data, isLoading, isError } = useTours({
     status: statusF === 'all' ? undefined : statusF,
@@ -85,6 +88,24 @@ const Operations: React.FC = () => {
   });
 
   const tours = useMemo(() => data?.data ?? [], [data]);
+
+  // NOTE: календар будується з того самого списку (ліміт 50, без
+  // фільтра по місяцю в API-запиті) — для туру поза цим вікном подія
+  // у сітці не з'явиться. Прийнятне спрощення для MVP-перегляду;
+  // повноцінний календар вимагатиме dateFrom/dateTo-запиту на бекенд.
+  const calendarEvents: CalendarEvent[] = useMemo(
+    () => tours.map((t) => ({
+      id: t.id,
+      date: t.departure_date,
+      label: `${t.code} (${occupancyPct(t.total_seats - t.available_seats, t.total_seats)}%)`,
+      tone: occupancyPct(t.total_seats - t.available_seats, t.total_seats) >= 80
+        ? 'err'
+        : occupancyPct(t.total_seats - t.available_seats, t.total_seats) >= 60
+        ? 'warn'
+        : 'ok',
+    })),
+    [tours],
+  );
 
   return (
     <div className="p-6">
@@ -97,6 +118,24 @@ const Operations: React.FC = () => {
 
       {/* Filter bar */}
       <div className="flex flex-wrap items-center gap-2 mb-5">
+        <div className="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5 gap-0.5">
+          <button
+            onClick={() => setView('list')}
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+              view === 'list' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm' : 'text-slate-500'
+            }`}
+          >
+            <List size={13} /> Список
+          </button>
+          <button
+            onClick={() => setView('calendar')}
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+              view === 'calendar' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm' : 'text-slate-500'
+            }`}
+          >
+            <CalendarDays size={13} /> Календар
+          </button>
+        </div>
         <select
           value={statusF}
           onChange={(e) => setStatusF(e.target.value as TourStatus | 'all')}
@@ -131,12 +170,21 @@ const Operations: React.FC = () => {
         </div>
       )}
 
-      {!isLoading && tours.length > 0 && (
+      {!isLoading && tours.length > 0 && view === 'list' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {tours.map((tour) => (
             <OpsTourCard key={tour.id} tour={tour} onOpen={(id) => navigate(`/tours/${id}`)} />
           ))}
         </div>
+      )}
+
+      {!isLoading && view === 'calendar' && (
+        <CalendarGrid
+          month={calendarMonth}
+          events={calendarEvents}
+          onMonthChange={setCalendarMonth}
+          onEventClick={(id) => navigate(`/tours/${id}`)}
+        />
       )}
     </div>
   );
