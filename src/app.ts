@@ -22,7 +22,10 @@ import { toSnakeCase } from './shared/utils/case-transform';
 // Маршрути
 import { authRoutes }         from './modules/auth/auth.routes';
 import { tourRoutes }         from './modules/tours/tours.routes';
+import { roomStructureRoutes } from './modules/tours/room-structure.routes';
+import { checklistRoutes }     from './modules/tours/checklist.routes';
 import { bookingRoutes }      from './modules/bookings/bookings.routes';
+import { seatMapRoutes }      from './modules/bookings/seat-map.routes';
 import { financeRoutes }      from './modules/finance/finance.routes';
 import { leadRoutes }         from './modules/leads/leads.routes';
 import { agentRoutes }        from './modules/agents/agents.routes';
@@ -170,8 +173,14 @@ export async function buildApp(app: FastifyInstance) {
       await api.register(authRoutes,    { prefix: '/auth' });
       // Tours — каталог
       await api.register(tourRoutes,    { prefix: '/tours' });
+      // Room structure — OPS-01/09/10 (той самий /tours префікс)
+      await api.register(roomStructureRoutes, { prefix: '/tours' });
+      // Operational checklist — OPS-18 (той самий /tours префікс)
+      await api.register(checklistRoutes, { prefix: '/tours' });
       // Bookings — повна реалізація (BR-01/06/08)
       await api.register(bookingRoutes, { prefix: '/bookings' });
+      // Seat map + preferences — OPS-03/BR-12
+      await api.register(seatMapRoutes, { prefix: '/bookings' });
       // Finance — RBAC (403 для агентів)
       await api.register(financeRoutes, { prefix: '/finance' });
       // Leads / CRM — включно з /convert

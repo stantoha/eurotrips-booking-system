@@ -318,6 +318,20 @@ export class ToursService {
       }
     }
 
+    // OPS-18: тур не може перейти в 'on_tour' (виїзд розпочато) без 100% готовності чекліста
+    if (dto.status === TourStatus.on_tour) {
+      const checklist = await prisma.tourChecklist.findUnique({ where: { tourId: id } });
+      const readinessPercent = checklist?.readinessPercent ?? 0;
+
+      if (readinessPercent < 100) {
+        throw new AppError(
+          'CHECKLIST_NOT_READY',
+          `Тур не може розпочати виїзд: чекліст готовності виконано лише на ${readinessPercent}% (OPS-18)`,
+          422
+        );
+      }
+    }
+
     const updated = await prisma.tour.update({
       where: { id },
       data: { status: dto.status },

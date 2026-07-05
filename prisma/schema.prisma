@@ -547,6 +547,7 @@ model Tour {
   activities      TourActivity[]
   extras          TourExtra[]
   documents       Document[]
+  checklist       TourChecklist?
 
   @@index([status])
   @@index([departureDate])
@@ -1202,4 +1203,46 @@ model TouristInsurance {
   @@index([bookingId])
   @@index([touristId])
   @@map("tourist_insurances")
+}
+
+// =============================================================================
+// MODEL 22: tour_checklists
+// OPS-18: Операційний чекліст готовності виїзду. 9 пунктів, кожен з
+// прапорцем + датою виконання. readinessPercent — авто-розрахунок (count(true)/9×100).
+// Джерело: Eurotrips_OPS_Module_Full.docx (BA, User Stories OPS-18).
+// =============================================================================
+model TourChecklist {
+  id        String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  tourId    String   @unique @map("tour_id") @db.Uuid
+
+  transportConfirmed        Boolean   @default(false) @map("transport_confirmed")
+  transportConfirmedAt      DateTime? @map("transport_confirmed_at")
+  hotelsAllPaid             Boolean   @default(false) @map("hotels_all_paid")
+  hotelsAllPaidAt           DateTime? @map("hotels_all_paid_at")
+  guidesAllConfirmed        Boolean   @default(false) @map("guides_all_confirmed")
+  guidesAllConfirmedAt      DateTime? @map("guides_all_confirmed_at")
+  roomingFinalizedAndSent   Boolean   @default(false) @map("rooming_finalized_and_sent")
+  roomingFinalizedAndSentAt DateTime? @map("rooming_finalized_and_sent_at")
+  documentsGenerated        Boolean   @default(false) @map("documents_generated")
+  documentsGeneratedAt      DateTime? @map("documents_generated_at")
+  touristsNotified          Boolean   @default(false) @map("tourists_notified")
+  touristsNotifiedAt        DateTime? @map("tourists_notified_at")
+  guideAssigned             Boolean   @default(false) @map("guide_assigned")
+  guideAssignedAt           DateTime? @map("guide_assigned_at")
+  emergencyContactsReady    Boolean   @default(false) @map("emergency_contacts_ready")
+  emergencyContactsReadyAt  DateTime? @map("emergency_contacts_ready_at")
+  finalLetterSent           Boolean   @default(false) @map("final_letter_sent")
+  finalLetterSentAt         DateTime? @map("final_letter_sent_at")
+
+  /// count(true пунктів)/9×100, авто-перерахунок при кожному PATCH
+  readinessPercent Int      @default(0) @map("readiness_percent")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  tour Tour @relation(fields: [tourId], references: [id])
+
+  @@index([readinessPercent])
+  @@map("tour_checklists")
 }
