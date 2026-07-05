@@ -61,6 +61,7 @@ export class TouristsService {
         preferredRoomType: bt.preferredRoomType,
         actualRoomNumber: bt.actualRoomNumber,
         actualRoomType: bt.actualRoomType,
+        mealType: bt.mealType,
         specialRequirements: bt.specialRequirements,
         specialNotes: bt.specialNotes,
       };

@@ -19,6 +19,9 @@ import {
 } from '../hooks/useRoomStructure';
 import { TimelineView } from '../components/ops/TimelineView';
 import { useTourActivities, useCreateActivity, usePatchActivity } from '../hooks/useTourActivities';
+import { BusSeatMap } from '../components/ops/BusSeatMap';
+import { useTourSeatMap, useAssignSeat } from '../hooks/useTourSeatMap';
+import { useTourTourists } from '../hooks/useTourTourists';
 
 const TOUR_TYPE_LABELS: Record<string, string> = {
   bus: 'Автобусний', avia: 'Авіатур', combined: 'Комбінований',
@@ -164,6 +167,55 @@ const ActivitiesTab: React.FC<{ tourId: string; canEdit: boolean }> = ({ tourId,
   );
 };
 
+// ─── TAB: РОЗСАДКА (OPS-17) ─────────────────────────────────────
+
+const SeatingTab: React.FC<{ tourId: string; canEdit: boolean }> = ({ tourId, canEdit }) => {
+  const { data: seatMap, isLoading, isError } = useTourSeatMap(tourId);
+  const { data: touristsData } = useTourTourists(tourId);
+  const assignSeat = useAssignSeat(tourId);
+  const [selectedTouristId, setSelectedTouristId] = useState<string>('');
+
+  if (isLoading) return <p className="text-sm text-slate-400 py-6">Завантаження розсадки…</p>;
+  if (isError || !seatMap) return <p className="text-sm text-brand-red py-6">Не вдалося завантажити розсадку.</p>;
+
+  const unassigned = (touristsData?.tourists ?? []).filter((t) => !t.bus_sea_number);
+
+  return (
+    <div>
+      {canEdit && (
+        <div className="flex items-center gap-2 mb-4">
+          <select
+            value={selectedTouristId}
+            onChange={(e) => setSelectedTouristId(e.target.value)}
+            className="text-sm border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1.5 bg-white dark:bg-slate-900"
+          >
+            <option value="">— Оберіть туриста без місця ({unassigned.length}) —</option>
+            {unassigned.map((t) => (
+              <option key={t.tourist_id} value={t.tourist_id}>{t.last_name} {t.first_name}</option>
+            ))}
+          </select>
+          <span className="text-xs text-slate-400">Оберіть туриста, потім клікніть вільне місце</span>
+        </div>
+      )}
+
+      <BusSeatMap
+        seats={seatMap.seats.map((s) => ({
+          seatNumber: s.seat_number,
+          isOccupied: s.is_occupied,
+          touristName: s.tourist_name,
+        }))}
+        onSeatClick={(seatNumber) => {
+          if (!canEdit || !selectedTouristId) return;
+          assignSeat.mutate({ touristId: selectedTouristId, seatNumber }, { onSuccess: () => setSelectedTouristId('') });
+        }}
+      />
+      {assignSeat.isError && (
+        <p className="text-xs text-brand-red mt-2">{apiErrorMessage(assignSeat.error, 'Не вдалося призначити місце.')}</p>
+      )}
+    </div>
+  );
+};
+
 // ─── TAB: СТРУКТУРА НОМЕРІВ (BR-09/10/OPS-01) ──────────────────
 
 const STRUCTURE_STATUS_LABELS: Record<HotelBookingStructure['structure_status'], string> = {
@@ -304,7 +356,7 @@ const TourDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { canSeeMargin, isOpsManager, isAdmin, isDirector, isManager, isAccountant } = useAuth();
   const { data: tour, isLoading, isError } = useTour(id ?? '');
-  const [tab, setTab] = useState<'info' | 'checklist' | 'rooming' | 'activities'>('info');
+  const [tab, setTab] = useState<'info' | 'checklist' | 'rooming' | 'activities' | 'seating'>('info');
 
   const isInternal = isOpsManager || isAdmin || isDirector || isManager || isAccountant;
   const canEditStructure = isOpsManager || isAdmin;
@@ -371,6 +423,7 @@ const TourDetailPage: React.FC = () => {
               { key: 'checklist' as const, label: 'Чекліст' },
               { key: 'rooming' as const, label: 'Структура номерів' },
               { key: 'activities' as const, label: 'Програма' },
+              { key: 'seating' as const, label: 'Розсадка' },
             ]).map((t) => (
               <button
                 key={t.key}
@@ -402,6 +455,12 @@ const TourDetailPage: React.FC = () => {
         {tab === 'activities' && (
           <div className="p-6">
             <ActivitiesTab tourId={tour.id} canEdit={canEditStructure} />
+          </div>
+        )}
+
+        {tab === 'seating' && (
+          <div className="p-6">
+            <SeatingTab tourId={tour.id} canEdit={canEditStructure} />
           </div>
         )}
 

@@ -38,15 +38,26 @@ export class SeatMapService {
       throw Errors.forbidden('Доступ до чужого бронювання заборонено');
     }
 
-    const tour = await prisma.tour.findUnique({ where: { id: booking.tourId } });
-    if (!tour) throw Errors.notFound('Тур', booking.tourId);
+    return this.buildSeatMap(booking.tourId, user);
+  }
+
+  // ── GET /tours/:id/seat-map (OPS-17, без потреби в bookingId) ────────────────
+  async getSeatMapByTour(tourId: string, user: JwtPayload) {
+    const tour = await prisma.tour.findFirst({ where: { id: tourId, isArchived: false } });
+    if (!tour) throw Errors.notFound('Тур', tourId);
+    return this.buildSeatMap(tourId, user);
+  }
+
+  private async buildSeatMap(tourId: string, user: JwtPayload) {
+    const tour = await prisma.tour.findUnique({ where: { id: tourId } });
+    if (!tour) throw Errors.notFound('Тур', tourId);
 
     // Місце в автобусі унікальне в межах усього туру, не одного booking —
     // тому збираємо зайняті місця по ВСІХ бронюваннях цього туру.
     const occupied = await prisma.bookingTourist.findMany({
       where: {
         busSeaNumber: { not: null },
-        booking: { tourId: booking.tourId },
+        booking: { tourId },
       },
       select: {
         busSeaNumber: true,
@@ -76,6 +87,47 @@ export class SeatMapService {
     });
 
     return { tourId: tour.id, totalSeats: tour.totalSeats, seats };
+  }
+
+  // ── PATCH /tours/:id/tourist/:touristId/seat (OPS-17, призначення ops) ───────
+  async assignSeatByTourist(tourId: string, touristId: string, seatNumber: number | null) {
+    const bookingTourist = await prisma.bookingTourist.findFirst({
+      where: { touristId, booking: { tourId } },
+    });
+    if (!bookingTourist) throw Errors.notFound('Учасник туру', touristId);
+
+    if (seatNumber === null) {
+      const updated = await prisma.bookingTourist.update({
+        where: { id: bookingTourist.id },
+        data: { busSeaNumber: null },
+      });
+      return updated;
+    }
+
+    return prisma.$transaction(async (tx) => {
+      await tx.$queryRaw(Prisma.sql`
+        SELECT bt.id FROM booking_tourists bt
+        JOIN bookings b ON b.id = bt.booking_id
+        WHERE b.tour_id = ${tourId}::uuid AND bt.bus_seat_number = ${seatNumber}
+        FOR UPDATE
+      `);
+
+      const conflict = await tx.bookingTourist.findFirst({
+        where: {
+          busSeaNumber: seatNumber,
+          id: { not: bookingTourist.id },
+          booking: { tourId },
+        },
+      });
+      if (conflict) {
+        throw new AppError('SEAT_TAKEN', `Місце ${seatNumber} вже зайняте`, 409);
+      }
+
+      return tx.bookingTourist.update({
+        where: { id: bookingTourist.id },
+        data: { busSeaNumber: seatNumber },
+      });
+    });
   }
 
   // ── PATCH /bookings/:id/tourist/:tId/preferences (BR-12) ─────────────────────
@@ -128,7 +180,7 @@ export class SeatMapService {
         await tx.$queryRaw(Prisma.sql`
           SELECT bt.id FROM booking_tourists bt
           JOIN bookings b ON b.id = bt.booking_id
-          WHERE b.tour_id = ${booking.tourId}::uuid AND bt.bus_sea_number = ${seatNumber}
+          WHERE b.tour_id = ${booking.tourId}::uuid AND bt.bus_seat_number = ${seatNumber}
           FOR UPDATE
         `);
 
