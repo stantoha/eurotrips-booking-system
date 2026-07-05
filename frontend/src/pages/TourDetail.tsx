@@ -18,7 +18,7 @@ import {
   type HotelBookingStructure,
 } from '../hooks/useRoomStructure';
 import { TimelineView } from '../components/ops/TimelineView';
-import { useTourActivities } from '../hooks/useTourActivities';
+import { useTourActivities, useCreateActivity, usePatchActivity } from '../hooks/useTourActivities';
 
 const TOUR_TYPE_LABELS: Record<string, string> = {
   bus: 'Автобусний', avia: 'Авіатур', combined: 'Комбінований',
@@ -59,13 +59,109 @@ const ChecklistTab: React.FC<{ tourId: string; departureDate: string; canEdit: b
 
 // ─── TAB: ПРОГРАМА (TimelineView) ──────────────────────────────
 
-const ActivitiesTab: React.FC<{ tourId: string }> = ({ tourId }) => {
+const NewActivityForm: React.FC<{ tourId: string; onDone: () => void }> = ({ tourId, onDone }) => {
+  const createActivity = useCreateActivity(tourId);
+  const [form, setForm] = useState({
+    city: '', programType: 'Основна', activityDate: '', activityName: '', startTime: '', costEur: '',
+  });
+
+  const set = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+    setForm((f) => ({ ...f, [key]: e.target.value }));
+
+  const submit = () => {
+    if (!form.city || !form.activityDate || !form.activityName) return;
+    createActivity.mutate(
+      {
+        city: form.city,
+        programType: form.programType,
+        activityDate: form.activityDate,
+        activityName: form.activityName,
+        startTime: form.startTime || undefined,
+        costEur: form.costEur ? Number(form.costEur) : undefined,
+      },
+      { onSuccess: onDone }
+    );
+  };
+
+  return (
+    <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 mb-4 flex flex-wrap items-end gap-2">
+      <label className="flex flex-col gap-0.5">
+        <span className="text-[10px] text-slate-400 uppercase">Місто</span>
+        <input value={form.city} onChange={set('city')} className="text-sm border border-slate-200 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900 w-28" />
+      </label>
+      <label className="flex flex-col gap-0.5">
+        <span className="text-[10px] text-slate-400 uppercase">Тип</span>
+        <select value={form.programType} onChange={set('programType')} className="text-sm border border-slate-200 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900">
+          <option value="Основна">Основна</option>
+          <option value="ДОП">ДОП</option>
+        </select>
+      </label>
+      <label className="flex flex-col gap-0.5">
+        <span className="text-[10px] text-slate-400 uppercase">Дата</span>
+        <input type="date" value={form.activityDate} onChange={set('activityDate')} className="text-sm border border-slate-200 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900" />
+      </label>
+      <label className="flex flex-col gap-0.5">
+        <span className="text-[10px] text-slate-400 uppercase">Час</span>
+        <input type="time" value={form.startTime} onChange={set('startTime')} className="text-sm border border-slate-200 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900" />
+      </label>
+      <label className="flex flex-col gap-0.5 flex-1 min-w-[160px]">
+        <span className="text-[10px] text-slate-400 uppercase">Назва активності</span>
+        <input value={form.activityName} onChange={set('activityName')} className="text-sm border border-slate-200 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900 w-full" />
+      </label>
+      <label className="flex flex-col gap-0.5">
+        <span className="text-[10px] text-slate-400 uppercase">Вартість €</span>
+        <input type="number" min={0} value={form.costEur} onChange={set('costEur')} className="text-sm border border-slate-200 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900 w-20" />
+      </label>
+      <button
+        onClick={submit}
+        disabled={createActivity.isPending}
+        className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-cyan text-white hover:bg-brand-cyan-dark disabled:opacity-40"
+      >
+        Додати
+      </button>
+      <button onClick={onDone} className="text-xs text-slate-400 hover:text-slate-600">Скасувати</button>
+      {createActivity.isError && (
+        <p className="w-full text-xs text-brand-red">{apiErrorMessage(createActivity.error, 'Не вдалося додати активність.')}</p>
+      )}
+    </div>
+  );
+};
+
+const ActivitiesTab: React.FC<{ tourId: string; canEdit: boolean }> = ({ tourId, canEdit }) => {
   const { data: activities, isLoading, isError } = useTourActivities(tourId);
+  const patchActivity = usePatchActivity(tourId);
+  const [showForm, setShowForm] = useState(false);
 
   if (isLoading) return <p className="text-sm text-slate-400 py-6">Завантаження програми…</p>;
   if (isError || !activities) return <p className="text-sm text-brand-red py-6">Не вдалося завантажити програму туру.</p>;
 
-  return <TimelineView activities={activities} />;
+  return (
+    <div>
+      {canEdit && (
+        showForm ? (
+          <NewActivityForm tourId={tourId} onDone={() => setShowForm(false)} />
+        ) : (
+          <button
+            onClick={() => setShowForm(true)}
+            className="mb-4 px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-cyan text-white hover:bg-brand-cyan-dark"
+          >
+            + Додати активність
+          </button>
+        )
+      )}
+      <TimelineView
+        activities={activities}
+        canEdit={canEdit}
+        onAssignGuide={(activityId, guideName, guidePhone) =>
+          patchActivity.mutate({ activityId, payload: { guideName, guidePhone } })
+        }
+        onConfirm={(activityId) => patchActivity.mutate({ activityId, payload: { status: 'затверджено' } })}
+      />
+      {patchActivity.isError && (
+        <p className="text-xs text-brand-red mt-2">{apiErrorMessage(patchActivity.error, 'Не вдалося оновити активність.')}</p>
+      )}
+    </div>
+  );
 };
 
 // ─── TAB: СТРУКТУРА НОМЕРІВ (BR-09/10/OPS-01) ──────────────────
@@ -305,7 +401,7 @@ const TourDetailPage: React.FC = () => {
 
         {tab === 'activities' && (
           <div className="p-6">
-            <ActivitiesTab tourId={tour.id} />
+            <ActivitiesTab tourId={tour.id} canEdit={canEditStructure} />
           </div>
         )}
 
