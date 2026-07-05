@@ -1,13 +1,9 @@
 // ============================================================
 // EUROTRIPS — HotelStatusBadge Component
 // Бейдж статусу готельного бронювання — OPS UX C-3 (wireframe 2).
-//
-// ПРИМІТКА: це 5-статусна модель з UX-специфікації
-// (пошук → опція → підтверджено → депозит → фінал_оплачено).
-// Поточна Prisma-модель HotelBooking.status — вільний рядок
-// ("active|confirmed|cancelled|archived"), не цей enum. Компонент
-// готовий для використання, коли з'явиться відповідний
-// backend-workflow або мапінг з реальних полів (status+depositStatus).
+// Підключено в TourDetail.tsx (вкладка "Готелі") через useTourHotels —
+// backend обчислює ui_status з confirmationStatus/depositStatus/
+// factAmountEur (GET/POST/PATCH /tours/:id/hotels, OPS-04/05/06).
 // ============================================================
 
 import React from 'react';

@@ -23,6 +23,9 @@ import { BusSeatMap } from '../components/ops/BusSeatMap';
 import { useTourSeatMap, useAssignSeat } from '../hooks/useTourSeatMap';
 import { useTourTourists } from '../hooks/useTourTourists';
 import { useTourTransport, useCreateTransport, usePatchTransport, type TourTransport } from '../hooks/useTourTransport';
+import { useTourHotels, useCreateHotel, usePatchHotel, type TourHotelBooking } from '../hooks/useTourHotels';
+import { HotelStatusBadge } from '../components/ui/HotelStatusBadge';
+import { DeadlineIndicator } from '../components/ui/DeadlineIndicator';
 
 const TOUR_TYPE_LABELS: Record<string, string> = {
   bus: 'Автобусний', avia: 'Авіатур', combined: 'Комбінований',
@@ -163,6 +166,168 @@ const ActivitiesTab: React.FC<{ tourId: string; canEdit: boolean }> = ({ tourId,
       />
       {patchActivity.isError && (
         <p className="text-xs text-brand-red mt-2">{apiErrorMessage(patchActivity.error, 'Не вдалося оновити активність.')}</p>
+      )}
+    </div>
+  );
+};
+
+// ─── TAB: ГОТЕЛІ (OPS-04/05/06) ──────────────────────────────────
+
+const HotelRow: React.FC<{ tourId: string; hb: TourHotelBooking; canEdit: boolean }> = ({ tourId, hb, canEdit }) => {
+  const patchHotel = usePatchHotel(tourId);
+
+  return (
+    <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 space-y-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{hb.hotel.name}</p>
+          <p className="text-xs text-slate-400">{hb.city} · {new Date(hb.check_in_date).toLocaleDateString('uk-UA')} · {hb.nights_count} ноч.</p>
+        </div>
+        <HotelStatusBadge status={hb.ui_status} />
+      </div>
+
+      {hb.option_deadline && hb.ui_status === 'searching' && (
+        <DeadlineIndicator date={hb.option_deadline} label="Дедлайн опції" />
+      )}
+
+      {canEdit && (
+        <div className="flex flex-wrap items-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+          {hb.ui_status === 'searching' && (
+            <button
+              onClick={() => patchHotel.mutate({ hotelBookingId: hb.id, payload: { confirmationStatus: 'option' } })}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-gold text-white hover:bg-brand-gold-dark"
+            >
+              Є опція
+            </button>
+          )}
+          {(hb.ui_status === 'searching' || hb.ui_status === 'option') && (
+            <button
+              onClick={() => patchHotel.mutate({ hotelBookingId: hb.id, payload: { confirmationStatus: 'confirmed' } })}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-blue text-white hover:bg-brand-blue-dark"
+            >
+              Підтвердити
+            </button>
+          )}
+          {hb.ui_status === 'confirmed' && (
+            <label className="flex flex-col gap-0.5">
+              <span className="text-[10px] text-slate-400 uppercase">Депозит, €</span>
+              <div className="flex gap-1">
+                <input
+                  type="number" min={0} defaultValue={hb.deposit_amount ?? 0}
+                  onBlur={(e) => patchHotel.mutate({ hotelBookingId: hb.id, payload: { depositAmount: Number(e.target.value) } })}
+                  className="text-sm border border-slate-200 dark:border-slate-700 rounded px-1.5 py-1 bg-white dark:bg-slate-900 w-24"
+                />
+                <button
+                  onClick={() => patchHotel.mutate({ hotelBookingId: hb.id, payload: { depositStatus: 'paid' } })}
+                  className="px-2 py-1 rounded-lg text-xs font-semibold bg-brand-cyan text-white hover:bg-brand-cyan-dark"
+                >
+                  Оплачено
+                </button>
+              </div>
+            </label>
+          )}
+          {hb.ui_status === 'deposit_paid' && (
+            <label className="flex flex-col gap-0.5">
+              <span className="text-[10px] text-slate-400 uppercase">Фінальна сума, €</span>
+              <div className="flex gap-1">
+                <input
+                  type="number" min={0} id={`final-${hb.id}`}
+                  className="text-sm border border-slate-200 dark:border-slate-700 rounded px-1.5 py-1 bg-white dark:bg-slate-900 w-24"
+                />
+                <button
+                  onClick={() => {
+                    const el = document.getElementById(`final-${hb.id}`) as HTMLInputElement;
+                    patchHotel.mutate({ hotelBookingId: hb.id, payload: { factAmountEur: Number(el.value || 0) } });
+                  }}
+                  className="px-2 py-1 rounded-lg text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700"
+                >
+                  Закрити оплату
+                </button>
+              </div>
+            </label>
+          )}
+        </div>
+      )}
+      {patchHotel.isError && (
+        <p className="text-xs text-brand-red">{apiErrorMessage(patchHotel.error, 'Не вдалося оновити готель.')}</p>
+      )}
+    </div>
+  );
+};
+
+const NewHotelForm: React.FC<{ tourId: string; onDone: () => void }> = ({ tourId, onDone }) => {
+  const createHotel = useCreateHotel(tourId);
+  const [form, setForm] = useState({ hotelName: '', city: '', checkInDate: '', nightsCount: '7', optionDeadline: '' });
+
+  const submit = () => {
+    if (!form.hotelName || !form.city || !form.checkInDate) return;
+    createHotel.mutate(
+      {
+        hotelName: form.hotelName, city: form.city, checkInDate: form.checkInDate,
+        nightsCount: Number(form.nightsCount) || 1,
+        optionDeadline: form.optionDeadline || undefined,
+      },
+      { onSuccess: onDone }
+    );
+  };
+
+  return (
+    <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 mb-4 flex flex-wrap items-end gap-2">
+      <label className="flex flex-col gap-0.5">
+        <span className="text-[10px] text-slate-400 uppercase">Готель</span>
+        <input value={form.hotelName} onChange={(e) => setForm((f) => ({ ...f, hotelName: e.target.value }))} className="text-sm border border-slate-200 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900" />
+      </label>
+      <label className="flex flex-col gap-0.5">
+        <span className="text-[10px] text-slate-400 uppercase">Місто</span>
+        <input value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))} className="text-sm border border-slate-200 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900" />
+      </label>
+      <label className="flex flex-col gap-0.5">
+        <span className="text-[10px] text-slate-400 uppercase">Заїзд</span>
+        <input type="date" value={form.checkInDate} onChange={(e) => setForm((f) => ({ ...f, checkInDate: e.target.value }))} className="text-sm border border-slate-200 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900" />
+      </label>
+      <label className="flex flex-col gap-0.5">
+        <span className="text-[10px] text-slate-400 uppercase">Ночей</span>
+        <input type="number" min={1} value={form.nightsCount} onChange={(e) => setForm((f) => ({ ...f, nightsCount: e.target.value }))} className="text-sm border border-slate-200 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900 w-16" />
+      </label>
+      <label className="flex flex-col gap-0.5">
+        <span className="text-[10px] text-slate-400 uppercase">Дедлайн опції</span>
+        <input type="date" value={form.optionDeadline} onChange={(e) => setForm((f) => ({ ...f, optionDeadline: e.target.value }))} className="text-sm border border-slate-200 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900" />
+      </label>
+      <button onClick={submit} disabled={createHotel.isPending} className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-cyan text-white hover:bg-brand-cyan-dark disabled:opacity-40">
+        Додати
+      </button>
+      <button onClick={onDone} className="text-xs text-slate-400 hover:text-slate-600">Скасувати</button>
+      {createHotel.isError && (
+        <p className="w-full text-xs text-brand-red">{apiErrorMessage(createHotel.error, 'Не вдалося додати готель.')}</p>
+      )}
+    </div>
+  );
+};
+
+const HotelsTab: React.FC<{ tourId: string; canEdit: boolean }> = ({ tourId, canEdit }) => {
+  const { data: items, isLoading, isError } = useTourHotels(tourId);
+  const [showForm, setShowForm] = useState(false);
+
+  if (isLoading) return <p className="text-sm text-slate-400 py-6">Завантаження готелів…</p>;
+  if (isError || !items) return <p className="text-sm text-brand-red py-6">Не вдалося завантажити готелі.</p>;
+
+  return (
+    <div>
+      {canEdit && (
+        showForm
+          ? <NewHotelForm tourId={tourId} onDone={() => setShowForm(false)} />
+          : (
+            <button onClick={() => setShowForm(true)} className="mb-4 px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-cyan text-white hover:bg-brand-cyan-dark">
+              + Додати готель
+            </button>
+          )
+      )}
+      {items.length === 0 ? (
+        <div className="text-center py-10 text-slate-400 text-sm">Готелі для цього туру ще не додані.</div>
+      ) : (
+        <div className="space-y-3">
+          {items.map((hb) => <HotelRow key={hb.id} tourId={tourId} hb={hb} canEdit={canEdit} />)}
+        </div>
       )}
     </div>
   );
@@ -514,7 +679,7 @@ const TourDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { canSeeMargin, isOpsManager, isAdmin, isDirector, isManager, isAccountant } = useAuth();
   const { data: tour, isLoading, isError } = useTour(id ?? '');
-  const [tab, setTab] = useState<'info' | 'checklist' | 'rooming' | 'activities' | 'seating' | 'transport'>('info');
+  const [tab, setTab] = useState<'info' | 'checklist' | 'rooming' | 'activities' | 'seating' | 'transport' | 'hotels'>('info');
 
   const isInternal = isOpsManager || isAdmin || isDirector || isManager || isAccountant;
   const canEditStructure = isOpsManager || isAdmin;
@@ -583,6 +748,7 @@ const TourDetailPage: React.FC = () => {
               { key: 'activities' as const, label: 'Програма' },
               { key: 'seating' as const, label: 'Розсадка' },
               { key: 'transport' as const, label: 'Транспорт' },
+              { key: 'hotels' as const, label: 'Готелі' },
             ]).map((t) => (
               <button
                 key={t.key}
@@ -626,6 +792,12 @@ const TourDetailPage: React.FC = () => {
         {tab === 'transport' && (
           <div className="p-6">
             <TransportTab tourId={tour.id} canEdit={canEditStructure} />
+          </div>
+        )}
+
+        {tab === 'hotels' && (
+          <div className="p-6">
+            <HotelsTab tourId={tour.id} canEdit={canEditStructure} />
           </div>
         )}
 
