@@ -30,6 +30,7 @@ import { tourSeatMapRoutes }   from './modules/tours/tour-seat-map.routes';
 import { transportRoutes }     from './modules/tours/transport.routes';
 import { hotelBookingsRoutes } from './modules/tours/hotel-bookings.routes';
 import { roomingRoutes }       from './modules/tours/rooming.routes';
+import { documentsRoutes }     from './modules/tours/documents.routes';
 import { bookingRoutes }      from './modules/bookings/bookings.routes';
 import { seatMapRoutes }      from './modules/bookings/seat-map.routes';
 import { financeRoutes }      from './modules/finance/finance.routes';
@@ -195,6 +196,8 @@ export async function buildApp(app: FastifyInstance) {
       await api.register(hotelBookingsRoutes, { prefix: '/tours' });
       // Факт-румінг: розселення + фіналізація (OPS-14/15/16)
       await api.register(roomingRoutes, { prefix: '/tours' });
+      // Автогенерація PDF-документів (OPS-18/19)
+      await api.register(documentsRoutes, { prefix: '/tours' });
       // Bookings — повна реалізація (BR-01/06/08)
       await api.register(bookingRoutes, { prefix: '/bookings' });
       // Seat map + preferences — OPS-03/BR-12

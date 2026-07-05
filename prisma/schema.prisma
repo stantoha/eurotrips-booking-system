@@ -199,6 +199,10 @@ enum DocumentType {
   boarding_list
   letter
   pdf_report
+  /// OPS-18: румінг для готелю (турист → кімната → харчування)
+  rooming_hotel
+  /// OPS-19: пасенджер-ліст для перевізника (паспортні дані)
+  passenger_list
 
   @@map("document_type")
 }

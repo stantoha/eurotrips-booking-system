@@ -44,3 +44,8 @@ coverage/
 .cache/
 tmp/
 temp/
+
+# Згенеровані OPS-документи (PDF) — локальне сховище, не персистентне
+# на Railway між деплоями. TODO: перенести на S3 (див. project memory).
+storage/documents/*
+!storage/documents/.gitkeep

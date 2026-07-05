@@ -27,6 +27,11 @@ import { useTourHotels, useCreateHotel, usePatchHotel, type TourHotelBooking } f
 import { HotelStatusBadge } from '../components/ui/HotelStatusBadge';
 import { DeadlineIndicator } from '../components/ui/DeadlineIndicator';
 import { useAssignRoom, useFinalizeRooming } from '../hooks/useRooming';
+import { DocumentCard, type OpsDocument } from '../components/ops/DocumentCard';
+import {
+  useTourDocuments, useGenerateRoomingPdf, useGeneratePassengerList, openTourDocument,
+  type TourDocument,
+} from '../hooks/useTourDocuments';
 
 const TOUR_TYPE_LABELS: Record<string, string> = {
   bus: 'Автобусний', avia: 'Авіатур', combined: 'Комбінований',
@@ -167,6 +172,78 @@ const ActivitiesTab: React.FC<{ tourId: string; canEdit: boolean }> = ({ tourId,
       />
       {patchActivity.isError && (
         <p className="text-xs text-brand-red mt-2">{apiErrorMessage(patchActivity.error, 'Не вдалося оновити активність.')}</p>
+      )}
+    </div>
+  );
+};
+
+// ─── TAB: ДОКУМЕНТИ (OPS-18/19) ──────────────────────────────────
+
+const DOC_TYPE_LABELS: Record<TourDocument['doc_type'], string> = {
+  rooming_hotel: 'Румінг для готелю',
+  passenger_list: 'Пасенджер-ліст',
+};
+
+const DocumentsTab: React.FC<{ tourId: string; canEdit: boolean }> = ({ tourId, canEdit }) => {
+  const { data: documents, isLoading: loadingDocs } = useTourDocuments(tourId);
+  const { data: hotels } = useTourHotels(tourId);
+  const generateRooming = useGenerateRoomingPdf(tourId);
+  const generatePassengerList = useGeneratePassengerList(tourId);
+
+  if (loadingDocs) return <p className="text-sm text-slate-400 py-6">Завантаження документів…</p>;
+
+  const toOpsDocument = (d: TourDocument): OpsDocument => ({
+    id: d.id,
+    title: d.title,
+    subtitle: DOC_TYPE_LABELS[d.doc_type] ?? d.doc_type,
+    status: d.is_sent ? 'sent' : 'ready',
+    generatedAt: d.generated_at,
+  });
+
+  return (
+    <div>
+      {canEdit && (
+        <div className="flex flex-wrap gap-2 mb-4">
+          {(hotels ?? []).map((hb) => (
+            <button
+              key={hb.id}
+              onClick={() => generateRooming.mutate(hb.id)}
+              disabled={generateRooming.isPending}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-brand-cyan hover:text-brand-cyan-dark disabled:opacity-40"
+            >
+              📄 Румінг PDF — {hb.hotel.name}
+            </button>
+          ))}
+          <button
+            onClick={() => generatePassengerList.mutate()}
+            disabled={generatePassengerList.isPending}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-brand-cyan hover:text-brand-cyan-dark disabled:opacity-40"
+          >
+            👥 Пасенджер-ліст
+          </button>
+        </div>
+      )}
+
+      {(generateRooming.isError || generatePassengerList.isError) && (
+        <p className="text-xs text-brand-red mb-3">
+          {apiErrorMessage(generateRooming.error ?? generatePassengerList.error, 'Не вдалося згенерувати документ.')}
+        </p>
+      )}
+
+      {!documents || documents.length === 0 ? (
+        <div className="text-center py-10 text-slate-400 text-sm">Документи ще не згенеровано.</div>
+      ) : (
+        <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+          {documents.map((d) => (
+            <DocumentCard
+              key={d.id}
+              document={toOpsDocument(d)}
+              onView={() => openTourDocument(tourId, d.id, 'view', d.title)}
+              onDownload={() => openTourDocument(tourId, d.id, 'download', d.title)}
+              onSend={() => alert('Надсилання email для цього типу документа ще не реалізовано.')}
+            />
+          ))}
+        </div>
       )}
     </div>
   );
@@ -791,7 +868,7 @@ const TourDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { canSeeMargin, isOpsManager, isAdmin, isDirector, isManager, isAccountant } = useAuth();
   const { data: tour, isLoading, isError } = useTour(id ?? '');
-  const [tab, setTab] = useState<'info' | 'checklist' | 'rooming' | 'roomAssignment' | 'activities' | 'seating' | 'transport' | 'hotels'>('info');
+  const [tab, setTab] = useState<'info' | 'checklist' | 'rooming' | 'roomAssignment' | 'activities' | 'seating' | 'transport' | 'hotels' | 'documents'>('info');
 
   const isInternal = isOpsManager || isAdmin || isDirector || isManager || isAccountant;
   const canEditStructure = isOpsManager || isAdmin;
@@ -862,6 +939,7 @@ const TourDetailPage: React.FC = () => {
               { key: 'seating' as const, label: 'Розсадка' },
               { key: 'transport' as const, label: 'Транспорт' },
               { key: 'hotels' as const, label: 'Готелі' },
+              { key: 'documents' as const, label: 'Документи' },
             ]).map((t) => (
               <button
                 key={t.key}
@@ -917,6 +995,12 @@ const TourDetailPage: React.FC = () => {
         {tab === 'hotels' && (
           <div className="p-6">
             <HotelsTab tourId={tour.id} canEdit={canEditStructure} />
+          </div>
+        )}
+
+        {tab === 'documents' && (
+          <div className="p-6">
+            <DocumentsTab tourId={tour.id} canEdit={canEditStructure} />
           </div>
         )}
 

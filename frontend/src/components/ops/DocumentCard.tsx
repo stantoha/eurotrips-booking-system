@@ -1,14 +1,11 @@
 // ============================================================
 // EUROTRIPS — DocumentCard Component
 // OPS UX C-3, Wireframe 6 «Документи виїзду».
-//
-// ПРИМІТКА: презентаційний компонент. Prisma-модель Document вже існує,
-// але її DocumentType (voucher/contract/invoice/tourist_list/
-// boarding_list/letter/pdf_report) не покриває OPS-специфічні типи
-// з UX-специфікації (rooming_hotel, passenger_list, addon_list,
-// contact_list, info_letter) — і немає GET /tours/:id/documents.
-// Компонент готовий до підключення після узгодження типів документів
-// між OPS-модулем і генеральною моделлю Document.
+// Підключено в TourDetail.tsx (вкладка "Документи") — DocumentType
+// розширено значеннями rooming_hotel/passenger_list (OPS-18/19),
+// PDF генерується через Puppeteer і зберігається в storage/documents/
+// (локально, не персистентно між деплоями на Railway — TODO S3).
+// onSend поки не реалізовано (немає email-шаблону під ці типи).
 // ============================================================
 
 import React from 'react';
