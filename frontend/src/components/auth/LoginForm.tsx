@@ -9,7 +9,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  Mail, Lock, Eye, EyeOff, AlertCircle, Loader2, MapPin,
+  Mail, Lock, Eye, EyeOff, AlertCircle, Loader2,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -70,7 +70,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
       {/* Logo */}
       <div className="flex items-center gap-2 justify-center mb-8">
         <div className="w-8 h-8 bg-brand-cyan rounded-lg flex items-center justify-center">
-          <MapPin size={16} className="text-white" aria-hidden="true" />
+          <img
+            src="/ET_logo_white.svg"
+            alt="Eurotrips"
+            className="w-8 h-8 object-contain"
+          />
         </div>
         <span className="text-lg font-semibold text-slate-900 dark:text-slate-100">
           Eurotrips
