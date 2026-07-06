@@ -161,6 +161,9 @@ const STATUS_FILTERS: { value: TourStatus | 'all'; label: string }[] = [
 
 // ─── CARD ─────────────────────────────────────────────────────
 
+const formatDate = (iso: string): string =>
+  new Date(iso).toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
 const OpsTourCard: React.FC<{ tour: Tour; onOpen: (id: string) => void }> = ({ tour, onOpen }) => {
   const pct = occupancyPct(tour.total_seats - tour.available_seats, tour.total_seats);
   const isCritical = pct >= 80;
@@ -175,7 +178,8 @@ const OpsTourCard: React.FC<{ tour: Tour; onOpen: (id: string) => void }> = ({ t
           <code className="text-[11px] text-slate-400 font-mono">{tour.code}</code>
           <h3 className="font-medium text-slate-900 dark:text-slate-100 text-sm truncate">{tour.name}</h3>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            {tour.departure_date} → {tour.duration_days ? `+${tour.duration_days}д` : ''}
+            {formatDate(tour.departure_date)} → {formatDate(tour.return_date)}
+            {tour.duration_days ? ` · ${tour.duration_days} дн.` : ''}
           </p>
         </div>
         <StatusBadge status={tour.status} domain="tour" size="xs" />
