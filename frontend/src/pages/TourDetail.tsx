@@ -7,7 +7,7 @@
 
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, MapPin, Calendar, Users, Tag, Plus, Lock, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, Users, Tag, Plus, Lock, CheckCircle2, Search } from 'lucide-react';
 import { useTour } from '../hooks/useTours';
 import { useAuth } from '../hooks/useAuth';
 import { TOUR_STATUS_CONFIG, STATUS_COLOR_CLASSES } from '../constants/statuses';
@@ -172,6 +172,114 @@ const ActivitiesTab: React.FC<{ tourId: string; canEdit: boolean }> = ({ tourId,
       />
       {patchActivity.isError && (
         <p className="text-xs text-brand-red mt-2">{apiErrorMessage(patchActivity.error, 'Не вдалося оновити активність.')}</p>
+      )}
+    </div>
+  );
+};
+
+// ─── TAB: ТУРИСТИ (зведений список виїзду) ──────────────────────
+
+const PAYMENT_STATUS_LABELS: Record<string, string> = {
+  unpaid: 'Не оплачено', deposit_paid: 'Депозит', partially_paid: 'Частково',
+  fully_paid: 'Оплачено', overdue: 'Прострочено',
+};
+
+const TouristsTab: React.FC<{ tourId: string }> = ({ tourId }) => {
+  const [filters, setFilters] = useState({ missingPassport: false, hasDebt: false, noRoom: false });
+  const [search, setSearch] = useState('');
+  const { data, isLoading, isError } = useTourTourists(tourId, filters);
+
+  if (isLoading) return <p className="text-sm text-slate-400 py-6">Завантаження туристів…</p>;
+  if (isError || !data) return <p className="text-sm text-brand-red py-6">Не вдалося завантажити список туристів.</p>;
+
+  const q = search.trim().toLowerCase();
+  const rows = q
+    ? data.tourists.filter((t) => `${t.last_name} ${t.first_name}`.toLowerCase().includes(q))
+    : data.tourists;
+
+  const toggle = (key: keyof typeof filters) => setFilters((f) => ({ ...f, [key]: !f[key] }));
+
+  const filterBtn = (key: keyof typeof filters, label: string) => (
+    <button
+      onClick={() => toggle(key)}
+      className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors ${
+        filters[key]
+          ? 'bg-brand-cyan text-white border-brand-cyan'
+          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-brand-cyan'
+      }`}
+    >
+      {label}
+    </button>
+  );
+
+  return (
+    <div>
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        {filterBtn('missingPassport', 'Без паспорта')}
+        {filterBtn('hasDebt', 'З боргом')}
+        {filterBtn('noRoom', 'Без кімнати')}
+        <div className="relative flex-1 min-w-[160px] max-w-xs ml-auto">
+          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Пошук за іменем…"
+            className="w-full text-sm border border-slate-200 dark:border-slate-700 rounded-lg pl-7 pr-3 py-1.5 bg-white dark:bg-slate-900"
+          />
+        </div>
+      </div>
+
+      <p className="text-xs text-slate-400 mb-2">
+        {rows.length} з {data.total_confirmed} підтверджених туристів
+      </p>
+
+      {rows.length === 0 ? (
+        <div className="text-center py-10 text-slate-400 text-sm">Туристів за обраними фільтрами не знайдено.</div>
+      ) : (
+        <div className="overflow-x-auto border border-slate-200 dark:border-slate-700 rounded-lg">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-[10px] uppercase text-slate-400 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
+                <th className="py-2 px-3">Турист</th>
+                <th className="py-2 px-3">Паспорт</th>
+                <th className="py-2 px-3">Дата народж.</th>
+                <th className="py-2 px-3">Телефон</th>
+                <th className="py-2 px-3">Бронювання</th>
+                <th className="py-2 px-3">Оплата</th>
+                <th className="py-2 px-3">Борг</th>
+                <th className="py-2 px-3">Місце</th>
+                <th className="py-2 px-3">Кімната</th>
+                <th className="py-2 px-3">Харчування</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((t) => (
+                <tr key={t.tourist_id} className="border-b border-slate-100 dark:border-slate-800 last:border-0">
+                  <td className="py-2 px-3 whitespace-nowrap font-medium text-slate-800 dark:text-slate-200">{t.last_name} {t.first_name}</td>
+                  <td className={`py-2 px-3 whitespace-nowrap ${!t.passport_number ? 'text-brand-red' : 'text-slate-600 dark:text-slate-300'}`}>
+                    {t.passport_number ?? 'немає'}
+                  </td>
+                  <td className="py-2 px-3 whitespace-nowrap text-slate-500 dark:text-slate-400">
+                    {t.date_of_birth ? new Date(t.date_of_birth).toLocaleDateString('uk-UA') : '—'}
+                  </td>
+                  <td className="py-2 px-3 whitespace-nowrap text-slate-500 dark:text-slate-400">{t.phone ?? '—'}</td>
+                  <td className="py-2 px-3 whitespace-nowrap font-mono text-xs text-slate-400">{t.booking_number}</td>
+                  <td className="py-2 px-3 whitespace-nowrap text-slate-600 dark:text-slate-300">
+                    {PAYMENT_STATUS_LABELS[t.payment_status] ?? t.payment_status}
+                  </td>
+                  <td className={`py-2 px-3 whitespace-nowrap font-medium ${t.balance_due > 0 ? 'text-brand-red' : 'text-emerald-600'}`}>
+                    {t.balance_due > 0 ? `${t.balance_due.toLocaleString('uk-UA')} €` : '—'}
+                  </td>
+                  <td className="py-2 px-3 whitespace-nowrap text-slate-500 dark:text-slate-400">{t.bus_sea_number ?? '—'}</td>
+                  <td className={`py-2 px-3 whitespace-nowrap ${!t.actual_room_number ? 'text-brand-red' : 'text-slate-500 dark:text-slate-400'}`}>
+                    {t.actual_room_number ?? 'немає'}
+                  </td>
+                  <td className="py-2 px-3 whitespace-nowrap text-slate-500 dark:text-slate-400">{t.meal_type ?? '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );
@@ -868,7 +976,7 @@ const TourDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { canSeeMargin, isOpsManager, isAdmin, isDirector, isManager, isAccountant } = useAuth();
   const { data: tour, isLoading, isError } = useTour(id ?? '');
-  const [tab, setTab] = useState<'info' | 'checklist' | 'rooming' | 'roomAssignment' | 'activities' | 'seating' | 'transport' | 'hotels' | 'documents'>('info');
+  const [tab, setTab] = useState<'info' | 'checklist' | 'rooming' | 'roomAssignment' | 'activities' | 'seating' | 'transport' | 'hotels' | 'documents' | 'tourists'>('info');
 
   const isInternal = isOpsManager || isAdmin || isDirector || isManager || isAccountant;
   const canEditStructure = isOpsManager || isAdmin;
@@ -933,6 +1041,7 @@ const TourDetailPage: React.FC = () => {
             {([
               { key: 'info' as const, label: 'Інфо' },
               { key: 'checklist' as const, label: 'Чекліст' },
+              { key: 'tourists' as const, label: 'Туристи' },
               { key: 'rooming' as const, label: 'Структура номерів' },
               { key: 'roomAssignment' as const, label: 'Розселення' },
               { key: 'activities' as const, label: 'Програма' },
@@ -959,6 +1068,12 @@ const TourDetailPage: React.FC = () => {
         {tab === 'checklist' && (
           <div className="p-6">
             <ChecklistTab tourId={tour.id} departureDate={tour.departure_date} canEdit={canEditStructure} />
+          </div>
+        )}
+
+        {tab === 'tourists' && (
+          <div className="p-6">
+            <TouristsTab tourId={tour.id} />
           </div>
         )}
 

@@ -39,11 +39,23 @@ export interface TourTouristsResponse {
   tourists: TourTouristRow[];
 }
 
-export function useTourTourists(tourId: string) {
+export interface TourTouristsFilters {
+  missingPassport?: boolean;
+  hasDebt?: boolean;
+  noRoom?: boolean;
+}
+
+export function useTourTourists(tourId: string, filters?: TourTouristsFilters) {
   return useQuery({
-    queryKey: ['tours', tourId, 'tourists'],
+    queryKey: ['tours', tourId, 'tourists', filters ?? {}],
     queryFn: async () => {
-      const res = await api.get<{ data: TourTouristsResponse }>(`/tours/${tourId}/tourists`);
+      const res = await api.get<{ data: TourTouristsResponse }>(`/tours/${tourId}/tourists`, {
+        params: {
+          ...(filters?.missingPassport && { missingPassport: 'true' }),
+          ...(filters?.hasDebt && { hasDebt: 'true' }),
+          ...(filters?.noRoom && { noRoom: 'true' }),
+        },
+      });
       return res.data.data;
     },
     enabled: !!tourId,
