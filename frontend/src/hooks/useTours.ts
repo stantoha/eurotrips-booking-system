@@ -1,4 +1,4 @@
-﻿import { useQuery } from '@tanstack/react-query'
+﻿import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../services/api'
 import type { Tour, TourStatus, TourType } from '../types'
 
@@ -55,5 +55,20 @@ export function useTourList(filters?: TourListQueryDto) {
       return res.data.data
     },
     staleTime: 5 * 60 * 1000,
+  })
+}
+
+// PATCH /tours/:id/status — зміна статусу туру [admin, ops, director]
+export function useChangeTourStatus(tourId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: { status: TourStatus; reason?: string }) => {
+      const res = await api.patch<{ data: Tour }>(`/tours/${tourId}/status`, payload)
+      return res.data.data
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(tourKeys.detail(tourId), data)
+      queryClient.invalidateQueries({ queryKey: tourKeys.lists() })
+    },
   })
 }

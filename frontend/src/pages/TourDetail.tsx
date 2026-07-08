@@ -27,6 +27,9 @@ import { useTourHotels, useCreateHotel, usePatchHotel, type TourHotelBooking } f
 import { HotelStatusBadge } from '../components/ui/HotelStatusBadge';
 import { DeadlineIndicator } from '../components/ui/DeadlineIndicator';
 import { useAssignRoom, useFinalizeRooming } from '../hooks/useRooming';
+import { useChangeTourStatus } from '../hooks/useTours';
+import { ScreenStateBanner } from '../components/ops/ScreenStateBanner';
+import { RoomingBoard } from '../components/ops/RoomingBoard';
 import { DocumentCard, type OpsDocument } from '../components/ops/DocumentCard';
 import {
   useTourDocuments, useGenerateRoomingPdf, useGeneratePassengerList, openTourDocument,
@@ -45,18 +48,59 @@ function apiErrorMessage(err: unknown, fallback: string): string {
 
 // ─── TAB: ЧЕКЛІСТ (OPS-18) ──────────────────────────────────────
 
-const ChecklistTab: React.FC<{ tourId: string; departureDate: string; canEdit: boolean }> = ({
-  tourId, departureDate, canEdit,
+const CHECKLIST_TOTAL = 9;
+
+const ChecklistTab: React.FC<{
+  tourId: string; departureDate: string; canEdit: boolean; tourStatus: string; canChangeStatus: boolean;
+}> = ({
+  tourId, departureDate, canEdit, tourStatus, canChangeStatus,
 }) => {
   const { data: checklist, isLoading } = useTourChecklist(tourId);
   const patchItem = usePatchChecklistItem(tourId);
+  const changeStatus = useChangeTourStatus(tourId);
 
   if (isLoading || !checklist) {
     return <p className="text-sm text-slate-400 py-6">Завантаження чекліста…</p>;
   }
 
+  const done = Math.round((checklist.readiness_percent / 100) * CHECKLIST_TOTAL);
+  const daysToDeparture = Math.ceil((new Date(departureDate).getTime() - Date.now()) / 86_400_000);
+
+  const banner = (() => {
+    if (tourStatus === 'completed' || tourStatus === 'on_tour') {
+      return {
+        state: 'post-tour' as const,
+        title: 'Виїзд завершено.' + (tourStatus === 'on_tour' ? ' Триває.' : ' Чекліст закрито.'),
+        subtitle: `Дата: ${new Date(departureDate).toLocaleDateString('uk-UA')}.`,
+      };
+    }
+    if (checklist.readiness_percent === 0) {
+      return { state: 'empty' as const, title: `Виїзд щойно створено. 0/${CHECKLIST_TOTAL} пунктів.`, subtitle: 'Почніть підготовку.' };
+    }
+    if (checklist.readiness_percent === 100) {
+      return { state: 'ready' as const, title: `${CHECKLIST_TOTAL}/${CHECKLIST_TOTAL} ✅ 100% готово.`, subtitle: 'Можна розпочинати виїзд.' };
+    }
+    return {
+      state: 'partial' as const,
+      title: `${done}/${CHECKLIST_TOTAL} ✅. ${daysToDeparture >= 0 ? `${daysToDeparture} дн. до виїзду.` : 'Виїзд вже мав відбутися.'}`,
+      subtitle: !checklist.guides_all_confirmed ? 'Критично: гіди ще не підтверджені.' : undefined,
+    };
+  })();
+
+  const canStartTour = canChangeStatus && checklist.readiness_percent === 100 && tourStatus === 'closed';
+
   return (
     <div>
+      <ScreenStateBanner
+        state={banner.state}
+        title={banner.title}
+        subtitle={banner.subtitle}
+        action={canStartTour ? {
+          label: '✈️ Розпочати виїзд',
+          onClick: () => changeStatus.mutate({ status: 'on_tour' }),
+          disabled: changeStatus.isPending,
+        } : undefined}
+      />
       <ProgressChecklist
         checklist={checklist}
         departureDate={departureDate}
@@ -65,6 +109,9 @@ const ChecklistTab: React.FC<{ tourId: string; departureDate: string; canEdit: b
       />
       {patchItem.isError && (
         <p className="text-xs text-brand-red mt-2">{apiErrorMessage(patchItem.error, 'Не вдалося оновити пункт чекліста.')}</p>
+      )}
+      {changeStatus.isError && (
+        <p className="text-xs text-brand-red mt-2">{apiErrorMessage(changeStatus.error, 'Не вдалося розпочати виїзд.')}</p>
       )}
     </div>
   );
@@ -370,16 +417,62 @@ const RoomingTab: React.FC<{ tourId: string; canEdit: boolean }> = ({ tourId, ca
   const { data: hotels, isLoading: loadingHotels } = useTourHotels(tourId);
   const assignRoom = useAssignRoom(tourId);
   const finalizeRooming = useFinalizeRooming(tourId);
+  const [boardView, setBoardView] = useState<'table' | 'board'>('table');
 
   if (loadingTourists || loadingHotels) return <p className="text-sm text-slate-400 py-6">Завантаження розселення…</p>;
   if (!touristsData || !hotels) return <p className="text-sm text-brand-red py-6">Не вдалося завантажити дані розселення.</p>;
 
-  const alreadyFinalized = hotels.some((hb) => hb.final_rooming_done);
+  const alreadyFinalized = hotels.length > 0 && hotels.every((hb) => hb.final_rooming_done);
   const editable = canEdit && !alreadyFinalized;
   const withoutRoom = touristsData.tourists.filter((t) => !t.actual_room_number).length;
+  const totalTourists = touristsData.tourists.length;
+
+  const banner = (() => {
+    if (totalTourists === 0) {
+      return { state: 'empty' as const, title: 'Туристів ще немає.', subtitle: 'Чекайте підтверджених бронювань.' };
+    }
+    if (alreadyFinalized) {
+      return {
+        state: 'ready' as const,
+        title: `${totalTourists}/${totalTourists} призначено. final_rooming_done ✅`,
+        subtitle: 'Румінг зафіксовано, готель повідомлено окремо через вкладку «Документи».',
+      };
+    }
+    if (withoutRoom > 0) {
+      return {
+        state: 'partial' as const,
+        title: `${totalTourists - withoutRoom} з ${totalTourists} туристів призначено, ${withoutRoom} без кімнати.`,
+        subtitle: '⚠️ Розселення ще не фіналізовано',
+      };
+    }
+    return { state: 'ready' as const, title: `${totalTourists}/${totalTourists} призначено.`, subtitle: 'Можна фіналізувати розселення.' };
+  })();
 
   return (
     <div>
+      <ScreenStateBanner state={banner.state} title={banner.title} subtitle={banner.subtitle} />
+
+      {hotels.length > 0 && totalTourists > 0 && (
+        <div className="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5 gap-0.5 mb-4 w-fit">
+          <button
+            onClick={() => setBoardView('table')}
+            className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${boardView === 'table' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm' : 'text-slate-500'}`}
+          >
+            Таблиця
+          </button>
+          <button
+            onClick={() => setBoardView('board')}
+            className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${boardView === 'board' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm' : 'text-slate-500'}`}
+          >
+            Дошка
+          </button>
+        </div>
+      )}
+
+      {boardView === 'board' && hotels.length > 0 && totalTourists > 0 ? (
+        <RoomingBoard tourId={tourId} canEdit={editable} />
+      ) : (
+      <>
       {hotels.length === 0 ? (
         <p className="text-sm text-slate-400 mb-4">Додайте готель у вкладці "Готелі", щоб розпочати розселення.</p>
       ) : (
@@ -463,6 +556,8 @@ const RoomingTab: React.FC<{ tourId: string; canEdit: boolean }> = ({ tourId, ca
         <p className="text-xs text-brand-red mt-2">
           {apiErrorMessage(assignRoom.error ?? finalizeRooming.error, 'Не вдалося оновити розселення.')}
         </p>
+      )}
+      </>
       )}
     </div>
   );
@@ -601,15 +696,43 @@ const NewHotelForm: React.FC<{ tourId: string; onDone: () => void }> = ({ tourId
   );
 };
 
-const HotelsTab: React.FC<{ tourId: string; canEdit: boolean }> = ({ tourId, canEdit }) => {
+const HotelsTab: React.FC<{ tourId: string; canEdit: boolean; tourStatus: string }> = ({ tourId, canEdit, tourStatus }) => {
   const { data: items, isLoading, isError } = useTourHotels(tourId);
   const [showForm, setShowForm] = useState(false);
 
   if (isLoading) return <p className="text-sm text-slate-400 py-6">Завантаження готелів…</p>;
   if (isError || !items) return <p className="text-sm text-brand-red py-6">Не вдалося завантажити готелі.</p>;
 
+  const confirmedCount = items.filter((hb) => hb.ui_status !== 'searching').length;
+  const finalPaidCount = items.filter((hb) => hb.ui_status === 'final_paid').length;
+  const urgentDeadline = items.find((hb) => {
+    if (hb.ui_status !== 'searching' || !hb.option_deadline) return false;
+    const days = Math.ceil((new Date(hb.option_deadline).getTime() - Date.now()) / 86_400_000);
+    return days <= 3;
+  });
+
+  const banner = (() => {
+    if (items.length === 0) {
+      return { state: 'empty' as const, title: 'Готелі не додані.', subtitle: canEdit ? 'Додайте перший готель нижче.' : undefined };
+    }
+    if (tourStatus === 'completed' && finalPaidCount === items.length) {
+      return { state: 'post-tour' as const, title: 'Всі готелі оплачено.', subtitle: 'Рахунки в архіві.' };
+    }
+    if (finalPaidCount === items.length) {
+      return { state: 'ready' as const, title: `${items.length}/${items.length} готелів final_paid.`, subtitle: 'Румінг-файл можна надсилати.' };
+    }
+    return {
+      state: 'partial' as const,
+      title: `${confirmedCount} з ${items.length} підтверджено.`,
+      subtitle: urgentDeadline
+        ? `⚠️ Дедлайн опції «${urgentDeadline.hotel.name}» — найближчим часом!`
+        : undefined,
+    };
+  })();
+
   return (
     <div>
+      <ScreenStateBanner state={banner.state} title={banner.title} subtitle={banner.subtitle} />
       {canEdit && (
         showForm
           ? <NewHotelForm tourId={tourId} onDone={() => setShowForm(false)} />
@@ -981,6 +1104,7 @@ const TourDetailPage: React.FC = () => {
   const isInternal = isOpsManager || isAdmin || isDirector || isManager || isAccountant;
   const canEditStructure = isOpsManager || isAdmin;
   const canApproveStructure = isAdmin || isDirector;
+  const canChangeStatus = isOpsManager || isAdmin || isDirector;
 
   if (isLoading) {
     return (
@@ -1067,7 +1191,13 @@ const TourDetailPage: React.FC = () => {
 
         {tab === 'checklist' && (
           <div className="p-6">
-            <ChecklistTab tourId={tour.id} departureDate={tour.departure_date} canEdit={canEditStructure} />
+            <ChecklistTab
+              tourId={tour.id}
+              departureDate={tour.departure_date}
+              canEdit={canEditStructure}
+              tourStatus={tour.status}
+              canChangeStatus={canChangeStatus}
+            />
           </div>
         )}
 
@@ -1109,7 +1239,7 @@ const TourDetailPage: React.FC = () => {
 
         {tab === 'hotels' && (
           <div className="p-6">
-            <HotelsTab tourId={tour.id} canEdit={canEditStructure} />
+            <HotelsTab tourId={tour.id} canEdit={canEditStructure} tourStatus={tour.status} />
           </div>
         )}
 

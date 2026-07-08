@@ -21,6 +21,7 @@ import { OccupancyBar, occupancyPct, occupancyColor } from '../components/ui/Occ
 import { DeadlineIndicator } from '../components/ui/DeadlineIndicator';
 import { CalendarGrid, type CalendarEvent } from '../components/ops/CalendarGrid';
 import { useOpsDashboard } from '../hooks/useOpsDashboard';
+import { ScreenStateBanner } from '../components/ops/ScreenStateBanner';
 import type { Tour, TourStatus } from '../types';
 
 // ─── DASHBOARD (/ops) ───────────────────────────────────────────
@@ -216,8 +217,55 @@ const Operations: React.FC = () => {
     search: search || undefined,
     limit: 50,
   });
+  const { data: dashboard } = useOpsDashboard();
 
   const tours = useMemo(() => data?.data ?? [], [data]);
+  const hasActiveFilter = statusF !== 'all' || search !== '';
+
+  // C-4 «Стани екранів»: empty/partial/ready/post-tour для реєстру виїздів.
+  const registryState = useMemo(() => {
+    if (tours.length === 0) {
+      return {
+        state: 'empty' as const,
+        title: hasActiveFilter ? 'Немає виїздів за обраними фільтрами.' : 'Немає виїздів на місяць.',
+        subtitle: hasActiveFilter ? undefined : 'Створіть перший виїзд у каталозі турів.',
+        action: hasActiveFilter
+          ? { label: 'Скинути фільтри', onClick: () => { setStatusF('all'); setSearch(''); } }
+          : { label: '+ Створити перший виїзд', onClick: () => navigate('/tours') },
+      };
+    }
+    const draftCount = tours.filter((t) => t.status === 'draft').length;
+    const activeCount = tours.filter((t) => ['open', 'active', 'almost_full'].includes(t.status)).length;
+    const readinessById = new Map((dashboard?.checklist_progress ?? []).map((c) => [c.tour_id, c.readiness_percent]));
+    const lowReadiness = tours.filter((t) => (readinessById.get(t.id) ?? 100) < 50);
+
+    if (tours.every((t) => t.status === 'completed')) {
+      return {
+        state: 'post-tour' as const,
+        title: 'Виїзди завершені. Статус: completed.',
+        subtitle: 'Доступна аналітика по завершених виїздах.',
+        action: { label: 'До фінансів', onClick: () => navigate('/finance') },
+      };
+    }
+    if (lowReadiness.length > 0) {
+      return {
+        state: 'partial' as const,
+        title: `${tours.length} виїзд(и): ${activeCount} активних, ${draftCount} чернеток.`,
+        subtitle: `⚠️ Чекліст < 50% у ${lowReadiness.length} виїзд(ах)`,
+        action: { label: 'Відкрити дашборд', onClick: () => setMainView('dashboard') },
+      };
+    }
+    const nearest = tours
+      .filter((t) => t.status !== 'completed')
+      .map((t) => Math.ceil((new Date(t.departure_date).getTime() - Date.now()) / 86_400_000))
+      .filter((d) => d >= 0)
+      .sort((a, b) => a - b)[0];
+    return {
+      state: 'ready' as const,
+      title: 'Всі виїзди активні.',
+      subtitle: nearest !== undefined ? `Наступний виїзд за ${nearest} дн.` : undefined,
+    };
+  }, [tours, hasActiveFilter, dashboard, navigate]);
 
   // NOTE: календар будується з того самого списку (ліміт 50, без
   // фільтра по місяцю в API-запиті) — для туру поза цим вікном подія
@@ -318,10 +366,13 @@ const Operations: React.FC = () => {
         <p className="text-sm text-brand-red">Не вдалося завантажити список виїздів.</p>
       )}
 
-      {!isLoading && !isError && tours.length === 0 && (
-        <div className="text-center py-16 text-slate-400">
-          <p className="text-sm">Виїздів за обраними фільтрами не знайдено.</p>
-        </div>
+      {!isLoading && !isError && (
+        <ScreenStateBanner
+          state={registryState.state}
+          title={registryState.title}
+          subtitle={registryState.subtitle}
+          action={registryState.action}
+        />
       )}
 
       {!isLoading && tours.length > 0 && view === 'list' && (
