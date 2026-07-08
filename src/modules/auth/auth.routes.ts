@@ -37,9 +37,28 @@ export async function authRoutes(app: FastifyInstance) {
   const service = new AuthService(app);
 
   // ── POST /auth/login ────────────────────────────────────────────────────
+  // SEC-001: окремий, суворіший ліміт (10/15хв на IP) поверх глобального
+  // rate-limit (config.RATE_LIMIT_MAX/WINDOW, app.ts) — захист від brute-force
+  // підбору пароля, якого глобальний ліміт (200/хв) не покриває.
   app.post<{ Body: LoginDto }>(
     '/login',
     {
+      config: {
+        rateLimit: {
+          max: 10,
+          timeWindow: '15 minutes',
+          keyGenerator: (req) => req.ip ?? 'unknown',
+          // @fastify/rate-limit робить `throw errorResponseBuilder(...)` — об'єкт
+          // летить у app.setErrorHandler (shared/utils/errors.ts), який очікує
+          // ПЛОску форму {statusCode, code, message}, а не {error:{code,message}}
+          // (інакше потрапляє в catch-all і повертає 500 замість 429).
+          errorResponseBuilder: () => ({
+            statusCode: 429,
+            code: 'RATE_LIMIT_EXCEEDED',
+            message: 'Забагато спроб входу. Спробуйте через 15 хвилин.',
+          }),
+        },
+      },
       schema: {
         summary: 'Вхід в систему',
         tags: ['Auth'],
