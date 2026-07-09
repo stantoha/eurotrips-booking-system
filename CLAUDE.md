@@ -1,3 +1,11 @@
+## ⚠️ ОБОВ'ЯЗКОВО ЧИТАТИ НА ПОЧАТКУ КОЖНОЇ СЕСІЇ
+
+1. Цей файл (CLAUDE.md) — правила backend
+2. `EUROTRIPS_PROJECT_CONTEXT.md` — повний контекст проекту поза репо
+3. `frontend/CLAUDE.md` — правила frontend
+
+Без прочитання — не починати жодних змін.
+
 # CLAUDE.md — Eurotrips Booking System (Backend)
 
 > Цей файл читають Codex, Claude Code та всі AI-агенти перед виконанням будь-яких завдань.
