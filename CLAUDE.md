@@ -2,7 +2,7 @@
 
 1. Цей файл (CLAUDE.md) — правила backend
 2. `EUROTRIPS_PROJECT_CONTEXT.md` — повний контекст проекту поза репо
-3. `frontend/CLAUDE.md` — правила frontend
+3. `../frontend/CLAUDE.md` — правила frontend (сусідній репозиторій, НЕ всередині цього repo)
 
 Без прочитання — не починати жодних змін.
 
