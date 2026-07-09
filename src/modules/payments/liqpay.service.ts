@@ -5,14 +5,22 @@
 // Алгоритм:
 //  1. Верифікація підпису SHA1(PRIVATE_KEY + data + PRIVATE_KEY)
 //  2. Декодування base64 → JSON
-//  3. success/sandbox → створити Payment + оновити booking.status
+//  3. success/sandbox → створити Payment + оновити booking (depositPaid/balancePaid/paymentStatus/status)
 //  4. reversed        → записати refund Payment + booking → 'refund'
 //  5. failure/error   → записати в audit_log
+//
+// Поля Payment/Booking/AuditLog/Communication нижче звірені напряму проти
+// prisma/schema.prisma (paymentType/paymentMethod/externalId,
+// depositPaid/balancePaid/balanceAmount/paymentStatus, tableName/recordId/
+// newData на AuditLog, channel:'internal') — попередня версія файлу мала
+// 20 розбіжностей з реальною схемою (type/method/externalPaymentId,
+// booking.amountPaid/totalPrice/balanceDue яких не існує, auditLog з
+// entityType/entityId/details/severity/source яких немає в моделі).
 // =============================================================
 
 import crypto from 'node:crypto';
 import type { FastifyBaseLogger } from 'fastify';
-import type { PrismaClient } from '@prisma/client';
+import type { PrismaClient, Prisma, BookingStatus } from '@prisma/client';
 import type {
   LiqPayWebhookPayload,
   LiqPayCallbackData,
@@ -24,8 +32,12 @@ import type {
 
 const LIQPAY_PRIVATE_KEY = process.env.LIQPAY_PRIVATE_KEY ?? '';
 const LIQPAY_PUBLIC_KEY  = process.env.LIQPAY_PUBLIC_KEY  ?? '';
-const APP_FRONTEND_URL   = process.env.APP_FRONTEND_URL   ?? 'https://eurotrips.ua';
-const API_URL            = process.env.API_URL            ?? 'https://api.eurotrips.ua';
+
+// Системний userId для audit_log у webhook-контексті (немає залогіненого
+// користувача) — AuditLog.userId є обов'язковим полем у схемі. Встановити
+// у Railway Variables (UUID користувача з role=admin). Якщо не встановлено —
+// подія лише логується, без запису в audit_log (не критично для основного flow).
+const SYSTEM_USER_ID = process.env.SYSTEM_USER_ID ?? null;
 
 // =============================================================================
 
@@ -124,9 +136,9 @@ export class LiqPayService {
   // ─── Успішний платіж ────────────────────────────────────────────────────────
 
   /**
-   * Успішна оплата → створити Payment + оновити booking.status.
+   * Успішна оплата → створити Payment + оновити фінансовий стан бронювання.
    *
-   * Idempotency: перевіряємо external_payment_id перед записом.
+   * Idempotency: перевіряємо externalId перед записом.
    * Транзакція: Payment + Booking + Communication — все або нічого.
    */
   private async handleSuccess(data: LiqPayCallbackData): Promise<void> {
@@ -142,18 +154,17 @@ export class LiqPayService {
     if (!booking) {
       this.logger.error({ order_id, bookingId }, 'LiqPay success: бронювання не знайдено');
       await this.writeAuditLog({
-        action: 'LIQPAY_BOOKING_NOT_FOUND',
-        entityType: 'payment',
-        entityId: order_id,
-        details: { payment_id: String(payment_id), order_id },
-        severity: 'error',
+        action:    'LIQPAY_BOOKING_NOT_FOUND',
+        tableName: 'payments',
+        recordId:  order_id,
+        newData:   { payment_id: String(payment_id), order_id, status: 'error' },
       });
       return;
     }
 
     // ── Idempotency check ──
     const existing = await this.prisma.payment.findFirst({
-      where: { externalPaymentId: String(payment_id) },
+      where: { externalId: String(payment_id) },
     });
     if (existing) {
       this.logger.info(
@@ -165,44 +176,53 @@ export class LiqPayService {
 
     // ── Транзакція ──
     await this.prisma.$transaction(async (tx) => {
-      const isDeposit = this.isDepositPayment(order_id, booking.amountPaid.toNumber());
+      const currentDepositPaid = Number(booking.depositPaid);
+      const currentBalancePaid = Number(booking.balancePaid);
+      const totalAmount        = Number(booking.totalAmount);
+      const depositAmount      = Number(booking.depositAmount ?? 0);
+
+      const isDeposit = this.isDepositPayment(order_id, currentDepositPaid);
 
       // Зберегти Payment
       await tx.payment.create({
         data: {
-          bookingId: booking.id,
-          amount:             amount,
-          currency:           currency ?? 'UAH',
-          type:               isDeposit ? 'deposit' : 'final_payment',
-          method:             'liqpay',
-          status:             'completed',
-          externalPaymentId:  String(payment_id),
-          paidAt:             end_date ? new Date(end_date) : new Date(),
+          bookingId:     booking.id,
+          amount,
+          currency:      currency ?? 'UAH',
+          paymentType:   isDeposit ? 'deposit' : 'balance',
+          paymentMethod: 'payment_link',
+          status:        'confirmed',
+          externalId:    String(payment_id),
+          paidAt:        end_date ? new Date(end_date) : new Date(),
           // metadata: free-form JSON для діагностики
           metadata: {
-            liqpay_order_id:  order_id,
-            liqpay_status:    data.status,
+            liqpay_order_id:   order_id,
+            liqpay_status:     data.status,
             liqpay_payment_id: payment_id,
-            card_mask:        data.sender_card_mask2 ?? null,
+            card_mask:         data.sender_card_mask2 ?? null,
           },
         },
       });
 
-      // Перерахувати фінансовий стан
-      const newAmountPaid  = booking.amountPaid.toNumber() + amount;
-      const totalPrice     = booking.totalPrice.toNumber();
-      const newBalanceDue  = Math.max(0, totalPrice - newAmountPaid);
+      // Перерахувати фінансовий стан — депозит/баланс окремо (Booking не
+      // має єдиного amountPaid/balanceDue, тільки depositPaid+balancePaid)
+      const newDepositPaid = isDeposit ? currentDepositPaid + amount : currentDepositPaid;
+      const newBalancePaid = !isDeposit ? currentBalancePaid + amount : currentBalancePaid;
+      const totalPaid       = newDepositPaid + newBalancePaid;
+      const newBalanceAmount = Math.max(0, totalAmount - totalPaid);
 
-      // Наступний статус за BR-06
-      const nextStatus = this.resolveNextStatus(booking.status, newAmountPaid, totalPrice);
+      const newPaymentStatus = this.resolvePaymentStatus(totalPaid, depositAmount, totalAmount);
+      const nextStatus        = this.resolveNextStatus(booking.status, totalPaid, totalAmount);
 
       await tx.booking.update({
         where: { id: booking.id },
         data: {
-          amountPaid:  newAmountPaid,
-          balanceDue:  newBalanceDue,
-          status:      nextStatus,
-          updatedAt:   new Date(),
+          depositPaid:   newDepositPaid,
+          balancePaid:   newBalancePaid,
+          balanceAmount: newBalanceAmount,
+          paymentStatus: newPaymentStatus,
+          status:        nextStatus as BookingStatus,
+          updatedAt:     new Date(),
         },
       });
 
@@ -210,14 +230,16 @@ export class LiqPayService {
       await tx.communication.create({
         data: {
           bookingId:  booking.id,
-          channel:    'system',
+          channel:    'internal',
           direction:  'inbound',
           subject:    `LiqPay платіж: ${amount} ${currency ?? 'UAH'}`,
           body: [
             `order_id: ${order_id}`,
             `payment_id: ${payment_id}`,
+            `тип: ${isDeposit ? 'deposit' : 'balance'}`,
             `статус: success`,
             `новий статус бронювання: ${nextStatus}`,
+            `новий paymentStatus: ${newPaymentStatus}`,
           ].join('\n'),
           status:  'delivered',
           sentAt:  new Date(),
@@ -228,9 +250,10 @@ export class LiqPayService {
         {
           bookingId:  booking.id,
           amount,
-          newAmountPaid,
-          newBalanceDue,
+          totalPaid,
+          newBalanceAmount,
           nextStatus,
+          newPaymentStatus,
         },
         'LiqPay: платіж успішно збережено',
       );
@@ -252,21 +275,25 @@ export class LiqPayService {
       // Від'ємна сума = повернення коштів
       await tx.payment.create({
         data: {
-          bookingId:          bookingId,
-          amount:             -Math.abs(amount),
-          currency:           currency ?? 'UAH',
-          type:               'refund',
-          method:             'liqpay',
-          status:             'completed',
-          externalPaymentId:  `rev_${payment_id}`,
-          paidAt:             new Date(),
-          metadata:           { liqpay_order_id: order_id, reversed: true },
+          bookingId,
+          amount:        -Math.abs(amount),
+          currency:      currency ?? 'UAH',
+          paymentType:   'refund',
+          paymentMethod: 'payment_link',
+          status:        'confirmed',
+          externalId:    `rev_${payment_id}`,
+          paidAt:        new Date(),
+          metadata:      { liqpay_order_id: order_id, reversed: true },
         },
       });
 
       await tx.booking.update({
         where: { id: bookingId },
-        data: { status: 'refund', updatedAt: new Date() },
+        data: {
+          status:        'refund',
+          paymentStatus: 'unpaid',
+          updatedAt:     new Date(),
+        },
       });
     });
 
@@ -288,16 +315,15 @@ export class LiqPayService {
     );
 
     await this.writeAuditLog({
-      action:     `LIQPAY_${status.toUpperCase()}`,
-      entityType: 'payment',
-      entityId:   order_id,
-      details: {
+      action:    `LIQPAY_${status.toUpperCase()}`,
+      tableName: 'payments',
+      recordId:  order_id,
+      newData: {
         payment_id:      String(payment_id),
         status,
         err_code:        err_code ?? null,
         err_description: err_description ?? null,
       },
-      severity: status === 'wait_accept' ? 'info' : 'warning',
     });
   }
 
@@ -305,11 +331,11 @@ export class LiqPayService {
 
   /**
    * Генерує data + signature для HTML-форми LiqPay.
-   * Викликається з /api/v1/bookings/:id/payment (payments service).
+   * Викликається з /api/v1/bookings/:id/payment/liqpay (liqpay.routes.ts).
    *
    * @example
    *   const { data, signature } = liqPayService.generateCheckout({
-   *     orderId: `ET-${bookingId}-deposit`,
+   *     orderId: `${bookingId}-deposit`,
    *     amount: depositAmountUah,
    *     description: `Тур "${tourName}" — передоплата`,
    *     resultUrl: `${APP_FRONTEND_URL}/bookings/${bookingId}/success`,
@@ -345,20 +371,35 @@ export class LiqPayService {
    * Витягує bookingId з order_id.
    *
    * Формати:
-   *   ET-{uuid}              → {uuid}
-   *   ET-{uuid}-deposit      → {uuid}
-   *   ET-{uuid}-final        → {uuid}
-   *   ET-{uuid}-retry_3      → {uuid}
+   *   {uuid}                  → {uuid}
+   *   {uuid}-deposit          → {uuid}
+   *   {uuid}-final_payment    → {uuid}  (тип платежу з liqpay.routes.ts)
+   *   {uuid}-final            → {uuid}
+   *   {uuid}-retry_3          → {uuid}
    */
   extractBookingId(orderId: string): string {
-    return orderId.replace(/-(deposit|final|retry_\d+)$/, '');
+    return orderId.replace(/^ET-/, '').replace(/-(deposit|final_payment|final|retry_\d+)$/, '');
   }
 
   /**
    * Визначає, чи платіж є передоплатою (депозитом).
    */
-  private isDepositPayment(orderId: string, currentAmountPaid: number): boolean {
-    return orderId.includes('-deposit') || currentAmountPaid === 0;
+  private isDepositPayment(orderId: string, currentDepositPaid: number): boolean {
+    return orderId.includes('-deposit') || currentDepositPaid === 0;
+  }
+
+  /**
+   * Визначає paymentStatus бронювання після оплати (BookingPaymentStatus enum).
+   */
+  private resolvePaymentStatus(
+    totalPaid:     number,
+    depositAmount: number,
+    totalAmount:   number,
+  ): 'unpaid' | 'deposit_paid' | 'partially_paid' | 'fully_paid' {
+    if (totalPaid <= 0)              return 'unpaid';
+    if (totalPaid >= totalAmount)    return 'fully_paid';
+    if (totalPaid >= depositAmount)  return 'deposit_paid';
+    return 'partially_paid';
   }
 
   /**
@@ -367,15 +408,15 @@ export class LiqPayService {
    */
   private resolveNextStatus(
     currentStatus: string,
-    newAmountPaid: number,
-    totalPrice: number,
+    totalPaid:     number,
+    totalAmount:   number,
   ): string {
-    if (newAmountPaid >= totalPrice) {
+    if (totalPaid >= totalAmount) {
       // Повністю оплачено — якщо бронювання ще в awaiting_payment або partially_paid
       if (currentStatus === 'awaiting_payment' || currentStatus === 'partially_paid') {
         return 'confirmed';
       }
-    } else if (newAmountPaid > 0) {
+    } else if (totalPaid > 0) {
       // Передоплата сплачена
       if (currentStatus === 'awaiting_payment') {
         return 'partially_paid';
@@ -386,29 +427,35 @@ export class LiqPayService {
   }
 
   /**
-   * Записує подію в audit_log.
+   * Записує подію в audit_log. userId — обов'язкове поле в схемі, тому без
+   * SYSTEM_USER_ID запис лише логується (не критично для основного flow).
    */
   private async writeAuditLog(entry: {
-    action: string;
-    entityType: string;
-    entityId?: string;
-    details: Record<string, unknown>;
-    severity: 'info' | 'warning' | 'error';
+    action:    string;
+    tableName: string;
+    recordId:  string;
+    newData:   Prisma.InputJsonValue;
   }): Promise<void> {
+    if (!SYSTEM_USER_ID) {
+      this.logger.info(
+        { audit: entry },
+        'AuditLog: SYSTEM_USER_ID не встановлено — запис тільки в лог (встановити SYSTEM_USER_ID у Railway Variables)',
+      );
+      return;
+    }
     try {
       await this.prisma.auditLog.create({
         data: {
-          action:     entry.action,
-          entityType: entry.entityType,
-          entityId:   entry.entityId ?? null,
-          details:    entry.details,
-          severity:   entry.severity,
-          source:     'liqpay_webhook',
-          createdAt:  new Date(),
+          userId:    SYSTEM_USER_ID,
+          action:    entry.action,
+          tableName: entry.tableName,
+          recordId:  entry.recordId,
+          newData:   entry.newData,
+          createdAt: new Date(),
         },
       });
     } catch (err) {
-      // audit_log нікoli не повинен падати основний flow
+      // audit_log ніколи не повинен ламати основний flow
       this.logger.error({ err, entry }, 'Не вдалося записати в audit_log');
     }
   }

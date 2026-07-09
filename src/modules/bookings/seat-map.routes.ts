@@ -1,7 +1,7 @@
 // =============================================================================
 // EUROTRIPS — Seat Map & Preferences Routes
 // GET   /bookings/:id/seat-map                       [tourist, manager, ops, admin]
-// PATCH /bookings/:id/tourist/:tId/preferences (BR-12) [manager, ops, admin]
+// PATCH /bookings/:id/tourist/:tId/preferences (BR-12) [tourist (тільки своє), manager, ops, admin]
 // =============================================================================
 
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
@@ -41,8 +41,9 @@ export async function seatMapRoutes(app: FastifyInstance) {
   app.patch<{ Params: { id: string; tId: string }; Body: PatchPreferencesDto }>(
     '/:id/tourist/:tId/preferences',
     {
-      // 'tourist' навмисно виключено — див. коментар у seat-map.service.ts
-      preHandler: [requireAuth, requireRoles('manager', 'ops', 'admin')],
+      // 'tourist' підключено — ownership (тільки свій запис) перевіряється
+      // всередині service.setPreferences() через user.touristId (JWT).
+      preHandler: [requireAuth, requireRoles('tourist', 'manager', 'ops', 'admin')],
       schema: {
         summary: 'Побажання туриста: тип номеру + місце в автобусі (BR-12)',
         tags: ['Rooming'],

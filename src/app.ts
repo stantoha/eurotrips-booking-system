@@ -39,7 +39,7 @@ import { leadRoutes }         from './modules/leads/leads.routes';
 import { agentRoutes }        from './modules/agents/agents.routes';
 import { touristRoutes }      from './modules/tourists/tourists.routes';
 // import { zohoWebhookRoutes }  from './modules/integrations/zoho/zoho.webhook';
-// import { liqPayRoutes }       from './modules/payments/liqpay.routes';
+import { liqPayRoutes }       from './modules/payments/liqpay.routes';
 
 export async function buildApp(app: FastifyInstance) {
 
@@ -217,9 +217,8 @@ export async function buildApp(app: FastifyInstance) {
     { prefix: '/api/v1' }
   );
 
-  // ── 8b. Публічні вебхуки (без JWT) — disabled for MVP ──────────────────
+  // ── 8b. Публічні вебхуки (без JWT) — zoho ще заблоковано ────────────────
   // await app.register(zohoWebhookRoutes, { prefix: '/webhooks/zoho' });
-  // await app.register(liqPayRoutes,      { prefix: '/webhooks/liqpay' });
 
   // ── 9. Prisma — декоруємо app для використання в хуках ─────────────────
   app.decorate('prisma', (await import('./shared/database/prisma')).default);
@@ -227,6 +226,12 @@ export async function buildApp(app: FastifyInstance) {
   app.addHook('onClose', async () => {
     await app.prisma.$disconnect();
   });
+
+  // ── 9b. LiqPay — реєструємо ПІСЛЯ декорації fastify.prisma (плагін
+  // використовує її одразу при виклику). Без prefix — обидва маршрути
+  // плагіна вже абсолютні (/webhooks/liqpay, /api/v1/bookings/.../liqpay);
+  // { prefix: '/webhooks/liqpay' } подвоїло б перший шлях і зламало другий.
+  await app.register(liqPayRoutes);
 
   app.log.info('✅ Fastify application побудовано');
 }

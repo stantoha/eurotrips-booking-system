@@ -3,12 +3,10 @@
 // GET  /bookings/:id/seat-map                          — схема автобуса туру
 // PATCH /bookings/:id/tourist/:tId/preferences (BR-12)  — self-service побажань
 //
-// ПРИМІТКА: роль 'tourist' навмисно НЕ підключена до PATCH preferences —
-// JwtPayload не містить touristId (self-service кабінет туриста був
-// реалізований і відкочений — див. git log). Без touristId неможливо
-// перевірити власність (IDOR), тому зараз побажання вносить тільки
-// manager/ops від імені туриста. Підключити 'tourist' після того як
-// з'явиться touristId у токені.
+// Роль 'tourist' підключена: ownership перевіряється через user.touristId
+// (JWT, User.touristId → Tourist.id) — турист може редагувати побажання
+// ТІЛЬКИ свого запису bookingTourist (:tId param має збігатись з
+// user.touristId), інакше 403 (IDOR-захист).
 // =============================================================================
 
 import { BookingStatus, RoomingStatus, UserRole, Prisma } from '@prisma/client';
@@ -142,6 +140,11 @@ export class SeatMapService {
 
     if (user.role === UserRole.agent && booking.agentId !== user.agentId) {
       throw Errors.forbidden('Доступ до чужого бронювання заборонено');
+    }
+
+    // IDOR: турист редагує тільки власні побажання (touristId з JWT)
+    if (user.role === UserRole.tourist && touristId !== user.touristId) {
+      throw Errors.forbidden('Доступ до чужих побажань заборонено');
     }
 
     const bookingTourist = await prisma.bookingTourist.findFirst({

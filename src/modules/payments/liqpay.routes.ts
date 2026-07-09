@@ -12,6 +12,7 @@ import type { FastifyInstance, FastifyPluginOptions } from 'fastify';
 import { z } from 'zod';
 import { LiqPayService } from './liqpay.service';
 import { requireAuth } from '../../shared/guards/jwt.guard';
+import { config } from '../../config';
 import type { JwtPayload } from '../auth/auth.types';
 
 // Zod-схема для вхідних даних webhook
@@ -87,7 +88,8 @@ export async function liqPayRoutes(
    * POST /api/v1/bookings/:bookingId/payment/liqpay
    *
    * Ініціює платіж: генерує data + signature для LiqPay checkout.
-   * Захищений JWT + roles: tourist, manager, agent.
+   * Захищений JWT (будь-яка роль) — RBAC по бронюванню перевіряється
+   * нижче: agent тільки своє (agentId), tourist тільки своє (contactTouristId).
    *
    * Response: { data, signature } — вставляємо в LiqPay HTML-форму на фронтенді.
    */
@@ -153,6 +155,11 @@ export async function liqPayRoutes(
         return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Доступ заборонено' } });
       }
 
+      // RBAC: tourist оплачує тільки своє бронювання (contactTouristId === JWT touristId)
+      if (user.role === 'tourist' && booking.contactTouristId !== user.touristId) {
+        return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'Доступ заборонено' } });
+      }
+
       // Генеруємо order_id з суфіксом типу платежу
       const orderId = `${bookingId}-${type}`;
 
@@ -160,8 +167,8 @@ export async function liqPayRoutes(
         orderId,
         amount,
         description: `Тур "${booking.tour.name}" — ${type === 'deposit' ? 'передоплата' : 'доплата'}`,
-        resultUrl: `${process.env.APP_FRONTEND_URL}/bookings/${bookingId}/payment-result`,
-        serverUrl: `${process.env.API_URL}/webhooks/liqpay`,
+        resultUrl: `${config.FRONTEND_URL}/bookings/${bookingId}/payment-result`,
+        serverUrl: `${config.APP_URL}/webhooks/liqpay`,
       });
 
       return reply.code(200).send({

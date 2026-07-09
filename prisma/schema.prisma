@@ -294,6 +294,11 @@ model User {
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
 
+  /// Прив'язка акаунту role=tourist до клієнтського запису Tourist
+  /// (self-service кабінет, JWT touristId для ownership-перевірок BR-12).
+  /// NULL для всіх інших ролей — Tourist існує без User-акаунта за замовчуванням.
+  touristId    String?   @unique @map("tourist_id") @db.Uuid
+
   // Relations
   agentProfile       Agent?
   staffProfile       Staff?
@@ -303,6 +308,7 @@ model User {
   generatedDocuments Document[]
   auditLogs          AuditLog[]
   approvedHotelBookings HotelBooking[] @relation("HotelBookingApprover")
+  touristProfile     Tourist?   @relation(fields: [touristId], references: [id])
 
   @@index([role])
   @@index([isActive])
@@ -347,6 +353,8 @@ model Tourist {
   payments              Payment[]
   insurances            TouristInsurance[]
   agent                 Agent?          @relation("TouristAgent", fields: [agentId], references: [id])
+  /// Зворотна сторона User.touristId (self-service акаунт туриста)
+  linkedUser            User?
 
   @@index([email])
   @@index([phone])

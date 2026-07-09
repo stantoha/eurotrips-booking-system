@@ -17,8 +17,6 @@
     "src/modules/communications/email.service.ts",
     "src/modules/communications/email.worker.ts",
     "src/modules/communications/templates/email.templates.ts",
-    "src/modules/payments/liqpay.service.ts",
-    "src/modules/payments/liqpay.routes.ts",
     "src/modules/integrations/zoho/zoho.webhook.ts"
   ]
 }

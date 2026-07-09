@@ -185,6 +185,7 @@ export class AuthService {
       agentId: user.agentProfile?.id ?? null,
       agentType: user.agentProfile?.agentType ?? null,
       networkId: user.agentProfile?.networkId ?? null,
+      touristId: user.touristId ?? null,
     };
   }
 
@@ -196,6 +197,7 @@ export class AuthService {
       agentId: user.agentId,
       agentType: user.agentType,
       networkId: user.networkId,
+      touristId: user.touristId,
     };
 
     const accessToken = this.app.jwt.sign(payload, {
