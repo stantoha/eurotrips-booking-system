@@ -38,6 +38,7 @@ import { financeRoutes }      from './modules/finance/finance.routes';
 import { leadRoutes }         from './modules/leads/leads.routes';
 import { agentRoutes }        from './modules/agents/agents.routes';
 import { touristRoutes }      from './modules/tourists/tourists.routes';
+import { hotelRoutes }        from './modules/hotels/hotels.routes';
 // import { zohoWebhookRoutes }  from './modules/integrations/zoho/zoho.webhook';
 import { liqPayRoutes }       from './modules/payments/liqpay.routes';
 
@@ -213,6 +214,8 @@ export async function buildApp(app: FastifyInstance) {
       await api.register(agentRoutes,  { prefix: '/agents' });
       // Tourists — пошук/створення для форми бронювання
       await api.register(touristRoutes, { prefix: '/tourists' });
+      // Hotels — каталог готелів (563+ з CSV), CLAUDE.md §6
+      await api.register(hotelRoutes, { prefix: '/hotels' });
     },
     { prefix: '/api/v1' }
   );
