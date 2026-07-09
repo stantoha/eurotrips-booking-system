@@ -127,8 +127,11 @@ export async function tourRoutes(app: FastifyInstance) {
     async (req: FastifyRequest<{ Body: CreateTourDto }>, reply: FastifyReply) => {
       const dto = CreateTourSchema.parse(req.body);
       const user = getCurrentUser(req);
-      const tour = await service.createTour(dto, user.sub);
-      return reply.code(201).send({ data: tour });
+      const { tour, warnings } = await service.createTour(dto, user.sub);
+      return reply.code(201).send({
+        data: tour,
+        ...(warnings.length > 0 && { meta: { warnings } }),
+      });
     }
   );
 
@@ -155,8 +158,11 @@ export async function tourRoutes(app: FastifyInstance) {
     ) => {
       const dto = UpdateTourSchema.parse(req.body);
       const user = getCurrentUser(req);
-      const tour = await service.updateTour(req.params.id, dto, user.sub);
-      return reply.code(200).send({ data: tour });
+      const { tour, warnings } = await service.updateTour(req.params.id, dto, user.sub);
+      return reply.code(200).send({
+        data: tour,
+        ...(warnings.length > 0 && { meta: { warnings } }),
+      });
     }
   );
 

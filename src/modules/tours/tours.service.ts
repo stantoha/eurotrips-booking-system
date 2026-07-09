@@ -23,6 +23,7 @@ import {
   type TourAvailability,
 } from './tours.types';
 import type { JwtPayload } from '../auth/auth.types';
+import { checkMarginRisk, NEGATIVE_MARGIN_RISK } from '../../shared/utils/margin-risk';
 
 export class ToursService {
 
@@ -216,7 +217,7 @@ export class ToursService {
     // Логуємо в audit
     await this.audit(createdById, 'CREATE', tour.id, null, { code: tour.code, name: tour.name });
 
-    return tour;
+    return { tour, warnings: this.evaluateMarginRisk(tour) };
   }
 
   // ── UPDATE ────────────────────────────────────────────────────────────────
@@ -285,7 +286,32 @@ export class ToursService {
 
     await this.audit(updatedById, 'UPDATE', id, { status: tour.status }, dto);
 
-    return updated;
+    return { tour: updated, warnings: this.evaluateMarginRisk(updated) };
+  }
+
+  // ── B1: перевірка ризику негативної маржі (CLAUDE.md §15) ──────────────────
+  // Не блокує створення/оновлення — тільки попереджає (meta.warnings) + warn-лог.
+  private evaluateMarginRisk(tour: {
+    code: string;
+    basePrice: Prisma.Decimal;
+    costPrice: Prisma.Decimal | null;
+    agentCommissionPct: Prisma.Decimal;
+  }): string[] {
+    const { isAtRisk, marginPct } = checkMarginRisk({
+      basePrice: Number(tour.basePrice),
+      costPrice: tour.costPrice !== null ? Number(tour.costPrice) : null,
+      agentCommissionPct: Number(tour.agentCommissionPct),
+    });
+
+    if (!isAtRisk) return [];
+
+    console.warn(
+      `[${NEGATIVE_MARGIN_RISK}] Тур "${tour.code}": комісія агента ` +
+      `${(Number(tour.agentCommissionPct) * 100).toFixed(1)}% ≥ маржа оператора ` +
+      `${((marginPct ?? 0) * 100).toFixed(1)}% — потенційно збитковий P&L`
+    );
+
+    return [NEGATIVE_MARGIN_RISK];
   }
 
   // ── CHANGE STATUS ─────────────────────────────────────────────────────────

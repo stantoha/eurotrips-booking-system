@@ -11,9 +11,12 @@ import { requireAuth } from '../../shared/guards/jwt.guard';
 import { requireRoles } from '../../shared/guards/rbac.guard';
 import { getCurrentUser } from '../../shared/guards/jwt.guard';
 import prisma from '../../shared/database/prisma';
+import { checkMarginRisk } from '../../shared/utils/margin-risk';
 
 // Ролі, що мають доступ до фінансів
 const FINANCE_ROLES = ['admin', 'director', 'manager', 'accountant'] as const;
+// B1: margin-alerts — суворіше за FINANCE_ROLES, без manager (собівартість/маржа)
+const MARGIN_ALERT_ROLES = ['admin', 'director', 'accountant'] as const;
 
 export async function financeRoutes(app: FastifyInstance) {
 
@@ -224,6 +227,61 @@ export async function financeRoutes(app: FastifyInstance) {
           bookedSeats, totalSeats: tour.totalSeats, occupancyPct,
           currency: 'EUR',
         },
+      });
+    }
+  );
+
+  // ── GET /finance/margin-alerts (B1, CLAUDE.md §15) ──────────────────────
+  app.get(
+    '/margin-alerts',
+    {
+      preHandler: [requireAuth, requireRoles(...MARGIN_ALERT_ROLES)],
+      schema: {
+        summary: 'Тури з ризиком негативної маржі (комісія агента ≥ маржа оператора)',
+        description: 'BR: commissionPct ≥ (basePrice−costPrice)/basePrice. Доступно: admin, director, accountant.',
+        tags: ['Finance'],
+        security: [{ bearerAuth: [] }],
+      },
+    },
+    async (_req: FastifyRequest, reply: FastifyReply) => {
+      const tours = await prisma.tour.findMany({
+        where: {
+          isArchived: false,
+          status: { not: 'cancelled' },
+          costPrice: { not: null },
+        },
+        select: {
+          id: true, code: true, name: true,
+          basePrice: true, costPrice: true, agentCommissionPct: true,
+          status: true, departureDate: true,
+        },
+      });
+
+      const alerts = tours
+        .map((t) => {
+          const { isAtRisk, marginPct } = checkMarginRisk({
+            basePrice: Number(t.basePrice),
+            costPrice: t.costPrice !== null ? Number(t.costPrice) : null,
+            agentCommissionPct: Number(t.agentCommissionPct),
+          });
+          return { tour: t, isAtRisk, marginPct };
+        })
+        .filter((r) => r.isAtRisk)
+        .map((r) => ({
+          tourId: r.tour.id,
+          code: r.tour.code,
+          name: r.tour.name,
+          status: r.tour.status,
+          departureDate: r.tour.departureDate,
+          basePrice: Number(r.tour.basePrice),
+          costPrice: Number(r.tour.costPrice),
+          agentCommissionPct: Number(r.tour.agentCommissionPct),
+          marginPct: r.marginPct,
+        }));
+
+      return reply.code(200).send({
+        data: alerts,
+        meta: { total: alerts.length },
       });
     }
   );
