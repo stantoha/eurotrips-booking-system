@@ -17,7 +17,7 @@
 import 'dotenv/config';
 import axios, { AxiosError } from 'axios';
 import pino                  from 'pino';
-import { PrismaClient }      from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import {
   ZOHO_DEAL_STAGE_MAP,
   ZOHO_LEAD_STATUS_MAP,
@@ -39,6 +39,10 @@ import {
 // ─── Dry-run flag ─────────────────────────────────────────────────────────────
 
 const DRY_RUN = process.argv.includes('--dry');
+
+// A3: AuditLog.userId — обов'язкове поле в схемі, немає залогіненого юзера
+// в контексті скрипта-міграції. Без нього запис лише логується (не ламає flow).
+const SYSTEM_USER_ID = process.env.SYSTEM_USER_ID ?? null;
 
 // ─── Logger ──────────────────────────────────────────────────────────────────
 
@@ -801,16 +805,20 @@ async function importTravel(stats: MigrationBatchStats): Promise<void> {
           // Зберігаємо orphan travel у staging-таблиці або просто логуємо
           logger.warn({ travelId: travel.id, travelName: travel.Name },
             'Travel: відповідне бронювання не знайдено — запис у metadata orphans');
-          if (!DRY_RUN) {
+          if (!DRY_RUN && SYSTEM_USER_ID) {
+            // A3: entityType/entityId/details/severity/source не існують на
+            // AuditLog — виправлено на tableName/recordId/newData + userId.
             await prisma.auditLog.create({
               data: {
-                action: 'ZOHO_TRAVEL_ORPHAN', entityType: 'travel',
-                entityId: travel.id,
-                details: { travel_name: travel.Name, ...operationalData,
-                           zoho_travel_id: travel.id },
-                severity: 'warning', source: 'zoho_migration', createdAt: new Date(),
+                userId: SYSTEM_USER_ID,
+                action: 'ZOHO_TRAVEL_ORPHAN',
+                tableName: 'bookings',
+                recordId: travel.id,
+                newData: { travel_name: travel.Name, ...operationalData,
+                           zoho_travel_id: travel.id } as Prisma.InputJsonValue,
+                createdAt: new Date(),
               },
-            });
+            }).catch((dbErr) => logger.warn({ dbErr }, 'Не вдалося записати audit_log (ZOHO_TRAVEL_ORPHAN)'));
           }
           stats.skipped++;
         } else {
@@ -959,16 +967,23 @@ async function writeMigrationAuditLog(
   result: MigrationResult,
   errorMessage?: string,
 ): Promise<void> {
+  // A3: userId — обов'язкове поле, без SYSTEM_USER_ID запис лише логується.
+  if (!SYSTEM_USER_ID) {
+    logger.info(
+      { result, errorMessage },
+      'AuditLog: SYSTEM_USER_ID не встановлено — запис ZOHO_MIGRATION_COMPLETED тільки в лог',
+    );
+    return;
+  }
   try {
     await prisma.auditLog.create({
       data: {
-        action:     'ZOHO_MIGRATION_COMPLETED',
-        entityType: 'system',
-        entityId:   null,
-        details:    { ...result, errorMessage: errorMessage ?? null, dry_run: DRY_RUN },
-        severity:   result.success ? 'info' : 'error',
-        source:     'zoho_migration_script',
-        createdAt:  new Date(),
+        userId:    SYSTEM_USER_ID,
+        action:    'ZOHO_MIGRATION_COMPLETED',
+        tableName: 'system',
+        recordId:  'zoho_migration',
+        newData:   { ...result, errorMessage: errorMessage ?? null, dry_run: DRY_RUN } as unknown as Prisma.InputJsonValue,
+        createdAt: new Date(),
       },
     });
   } catch (dbErr) {

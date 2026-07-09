@@ -147,34 +147,52 @@ export async function buildApp(app: FastifyInstance) {
   registerErrorHandler(app);
 
   // ── 7. Health check ─────────────────────────────────────────────────────
-  app.get('/health', { schema: { hide: true } }, async (_req, reply) => {
+  // A4: /api/v1/health раніше завжди відповідав db:'connected' без реальної
+  // перевірки (на відміну від /health) — обидва тепер ходять через один і
+  // той самий реальний чек, просто зберігають свою історичну форму відповіді.
+  const checkServicesHealth = async (): Promise<{ ok: boolean; db: boolean; redis: boolean }> => {
+    let dbOk = false;
     try {
       await app.prisma.$queryRaw`SELECT 1`;
-
-      let redisStatus: string = config.REDIS_URL ? 'ok' : 'disabled';
-      if (app.redis) {
-        await app.redis.ping();
-      }
-
-      return reply.code(200).send({
-        status: 'ok',
-        timestamp: new Date().toISOString(),
-        services: { database: 'ok', redis: redisStatus },
-      });
-    } catch (err) {
-      return reply.code(503).send({
-        status: 'error',
-        timestamp: new Date().toISOString(),
-      });
+      dbOk = true;
+    } catch {
+      dbOk = false;
     }
+
+    let redisOk = !config.REDIS_URL; // немає REDIS_URL → не задіяний, не рахуємо як збій
+    if (app.redis) {
+      try {
+        await app.redis.ping();
+        redisOk = true;
+      } catch {
+        redisOk = false;
+      }
+    }
+
+    return { ok: dbOk && redisOk, db: dbOk, redis: redisOk };
+  };
+
+  app.get('/health', { schema: { hide: true } }, async (_req, reply) => {
+    const { ok, db, redis } = await checkServicesHealth();
+    return reply.code(ok ? 200 : 503).send({
+      status: ok ? 'ok' : 'error',
+      timestamp: new Date().toISOString(),
+      services: {
+        database: db ? 'ok' : 'error',
+        redis: !config.REDIS_URL ? 'disabled' : redis ? 'ok' : 'error',
+      },
+    });
   });
 
-  app.get('/api/v1/health', { schema: { hide: true } }, async () => ({
-    status: 'ok',
-    db: 'connected',
-    redis: config.REDIS_URL ? 'connected' : 'disabled',
-    ts: new Date().toISOString(),
-  }));
+  app.get('/api/v1/health', { schema: { hide: true } }, async (_req, reply) => {
+    const { ok, db, redis } = await checkServicesHealth();
+    return reply.code(ok ? 200 : 503).send({
+      status: ok ? 'ok' : 'error',
+      db: db ? 'connected' : 'error',
+      redis: !config.REDIS_URL ? 'disabled' : redis ? 'connected' : 'error',
+      ts: new Date().toISOString(),
+    });
+  });
 
   // ── 8. API Routes ────────────────────────────────────────────────────────
   await app.register(
