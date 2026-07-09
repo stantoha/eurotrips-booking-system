@@ -23,19 +23,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth }     from '../hooks/useAuth';
 import { api }         from '../services/api';
 import { MOCK_LEADS }  from '../mocks';
+import { LEAD_STATUS_CONFIG, STATUS_COLOR_CLASSES } from '../constants/statuses';
 import type { Lead, LeadStatus, LeadSource } from '../types';
 
 // ─── CONSTANTS ────────────────────────────────────────────────
-
-const STATUS_CONFIG: Record<LeadStatus, { label: string; color: string }> = {
-  new:                 { label: 'Новий',              color: 'bg-blue-50   text-blue-700   border-blue-200   dark:bg-blue-950/40   dark:text-blue-300   dark:border-blue-800'   },
-  in_work:             { label: 'В роботі',           color: 'bg-cyan-50   text-cyan-700   border-cyan-200   dark:bg-cyan-950/40   dark:text-cyan-300   dark:border-cyan-800'   },
-  needs_clarification: { label: 'Уточнення',          color: 'bg-amber-50  text-amber-700  border-amber-200  dark:bg-amber-950/30  dark:text-amber-400  dark:border-amber-800'  },
-  proposal_sent:       { label: 'КП надіслано',       color: 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/30 dark:text-violet-300 dark:border-violet-800' },
-  waiting_decision:    { label: 'Чекає рішення',      color: 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-800' },
-  won:                 { label: 'Конвертовано',        color: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800' },
-  lost:                { label: 'Програно',            color: 'bg-slate-100  text-slate-500  border-slate-200  dark:bg-slate-800     dark:text-slate-400  dark:border-slate-700'  },
-};
+// LEAD_STATUS_CONFIG — з constants/statuses.ts (єдине джерело правди для
+// статусів у всьому фронтенді, синхронізовано з BookingStatus/TourStatus).
 
 const SOURCE_CONFIG: Record<LeadSource, { label: string; icon: React.ReactNode; color: string }> = {
   site:       { label: 'Сайт',      icon: <Globe     size={11} />, color: 'bg-blue-50   text-blue-600   dark:bg-blue-950/30   dark:text-blue-400'   },
@@ -138,9 +131,11 @@ function useConvertLead() {
 
 // ─── STATUS BADGE ─────────────────────────────────────────────
 const LeadStatusBadge: React.FC<{ status: LeadStatus }> = ({ status }) => {
-  const cfg = STATUS_CONFIG[status];
+  const cfg   = LEAD_STATUS_CONFIG[status];
+  const color = STATUS_COLOR_CLASSES[cfg.colorVariant];
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs border font-medium whitespace-nowrap ${cfg.color}`}>
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border font-medium whitespace-nowrap ${color.badge}`}>
+      {cfg.isPulsing && <span className={`w-1.5 h-1.5 rounded-full ${color.dot} animate-pulse`} />}
       {cfg.label}
     </span>
   );
@@ -358,7 +353,7 @@ const LeadsList: React.FC<LeadsListProps> = ({ onOpenBooking, onNewLead }) => {
             value={status}
             onChange={v => { setStatus(v as LeadStatus | ''); setPage(1); }}
             placeholder="Статус"
-            options={Object.entries(STATUS_CONFIG).map(([v, c]) => ({ value: v, label: c.label }))}
+            options={Object.entries(LEAD_STATUS_CONFIG).map(([v, c]) => ({ value: v, label: c.label }))}
           />
 
           {/* Source */}
