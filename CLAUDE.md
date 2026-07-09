@@ -461,9 +461,13 @@ Zoho залишається основним CRM для менеджерів з 
 
 ## 18. Security — відомі невиправлені знахідки
 
-- 🔴 **Rate limiting на `/auth/login`** — зараз тільки глобальний ліміт (200/хв), потрібен окремий `max=10 за 15хв per IP` саме на login (brute-force).
-- 🟠 **Zoho webhook** — при відсутності `ZOHO_WEBHOOK_TOKEN` перевірка обходиться замість `401`.
-- 🟠 **AuditLog** — можлива невідповідність між Prisma-моделлю і сервісом, що її пише.
-- 🟠 **Tourist role** — немає маршруту `/my/*` у фронтенді (пов'язано з п.13 вище, OPS-03).
+- 🟠 **Zoho webhook** — при відсутності `ZOHO_WEBHOOK_TOKEN` перевірка обходиться замість `401` (A2, `zoho.webhook.ts`, роут закоментований в `app.ts` — фікс потрібен ДО увімкнення).
+- 🟠 **Tourist role** — немає маршруту `/my/*` у фронтенді (пов'язано з п.13 вище, OPS-03). Бекенд-основа готова (JWT touristId, BR-12 preferences, LiqPay self-pay — 2026-07-09).
 
 Вже підтверджено ОК: JWT blacklist при logout (Redis TTL), refresh token тільки в HttpOnly Cookie, access token in-memory (не localStorage), IDOR-захист (агент не бачить чужі бронювання), Prisma parameterized queries (без SQL-ін'єкцій), BR-04 server-side (агент не отримує costPrice в відповіді API).
+
+**Виправлено (2026-07-09):**
+- ✅ Rate limiting на `/auth/login` — окремий `max=10/15хв per IP` поверх глобального 200/хв.
+- ✅ CORS `startsWith` (A1) — точне порівняння origin, `src/shared/utils/cors.ts`.
+- ✅ AuditLog (A3) — звірено всі місця запису проти реальної моделі; `zoho-migration.ts` (виключений з `tsconfig.build.json`, тому tsc ніколи не ловив) реально мав entityType/entityId/details/severity/source, яких не існує — виправлено.
+- ✅ `/api/v1/health` (A4) — раніше завжди повертав фіктивний `db:'connected'`, тепер реальна перевірка (спільна з `/health`).
