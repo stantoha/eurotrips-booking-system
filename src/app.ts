@@ -18,6 +18,7 @@ import { registerErrorHandler } from './shared/utils/errors';
 import { requireAuth } from './shared/guards/jwt.guard';
 import { requireRoles } from './shared/guards/rbac.guard';
 import { toSnakeCase } from './shared/utils/case-transform';
+import { isOriginAllowed } from './shared/utils/cors';
 
 // Маршрути
 import { authRoutes }         from './modules/auth/auth.routes';
@@ -58,7 +59,7 @@ export async function buildApp(app: FastifyInstance) {
         config.FRONTEND_URL,
         process.env.CORS_ORIGIN,
       ].filter(Boolean) as string[];
-      if (allowed.some(u => origin.startsWith(u))) {
+      if (isOriginAllowed(origin, allowed)) {
         cb(null, true);
       } else {
         cb(new Error(`CORS blocked: ${origin}`), false);
