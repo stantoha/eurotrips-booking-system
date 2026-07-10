@@ -443,6 +443,24 @@ async function main() {
     },
   });
 
+  // tourist@eurotrips.ua / test1234 → self-service кабінет туриста (WF5, OPS-03)
+  // touristId → touristIvan (Tourist.id) — контактна особа booking2 (ET-2025-04522,
+  // створюється нижче в розділі BOOKINGS), щоб "Моє бронювання" мало реальні дані.
+  await prisma.user.upsert({
+    where: { email: 'tourist@eurotrips.ua' },
+    update: { passwordHash: await hashPassword(SEED_PASSWORD), touristId: touristIvan.id },
+    create: {
+      email: 'tourist@eurotrips.ua',
+      passwordHash: await hashPassword(SEED_PASSWORD),
+      role: UserRole.tourist,
+      firstName: touristIvan.firstName,
+      lastName: touristIvan.lastName,
+      phone: touristIvan.phone,
+      isActive: true,
+      touristId: touristIvan.id,
+    },
+  });
+
   // ── 8. BOOKINGS ──────────────────────────────────────────────────────────
   // booking1: belongs to agent@agency.ua (agentStandard)
   const booking1 = await prisma.booking.upsert({
@@ -474,9 +492,12 @@ async function main() {
   });
 
   // booking2: belongs to agent2@agency.ua (agentNetwork) — для IDOR тесту TC-RBAC-011
+  // status='confirmed' + депозит сплачено — щоб self-service преференсів (C4/OPS-03)
+  // touristIvan мав що показати (seat-map доступний, форма преференсів не заблокована
+  // статусом; блокується тільки відсутньою структурою номерів — реалістичний стан "ще готується")
   const booking2 = await prisma.booking.upsert({
     where: { bookingNumber: 'ET-2025-04522' },
-    update: {},
+    update: { status: 'confirmed', paymentStatus: 'deposit_paid', depositPaid: 178 },
     create: {
       bookingNumber: 'ET-2025-04522',
       tourId: tourAdriaticAug.id,
@@ -487,14 +508,27 @@ async function main() {
       personsCount: 1,
       totalAmount: 890,
       depositAmount: 178,
-      depositPaid: 0,
+      depositPaid: 178,
       depositDeadline: new Date('2026-08-08'),
       balanceAmount: 712,
       balancePaid: 0,
       balanceDeadline: new Date('2026-08-18'),
-      paymentStatus: 'unpaid',
-      status: 'awaiting_payment',
+      paymentStatus: 'deposit_paid',
+      status: 'confirmed',
       sourceChannel: 'agent',
+    },
+  });
+
+  // Учасник booking2 — сам touristIvan (контактна особа = єдиний учасник,
+  // personsCount:1). Без цього запису self-service преференсів (BR-12) не
+  // знайшов би bookingTourist рядок і завжди повертав би 404.
+  await prisma.bookingTourist.upsert({
+    where: { bookingId_touristId: { bookingId: booking2.id, touristId: touristIvan.id } },
+    update: {},
+    create: {
+      bookingId: booking2.id,
+      touristId: touristIvan.id,
+      role: 'contact',
     },
   });
 

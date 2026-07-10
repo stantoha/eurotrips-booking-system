@@ -23,6 +23,8 @@ const BookingNew      = React.lazy(() => import('./pages/BookingNew'));
 const BookingDetail   = React.lazy(() => import('./pages/BookingDetail'));
 const LeadsList       = React.lazy(() => import('./pages/LeadsList'));
 const AgentCabinet    = React.lazy(() => import('./pages/agent/AgentCabinet'));
+const MyBooking       = React.lazy(() => import('./pages/my/MyBooking'));
+const MyPreferences   = React.lazy(() => import('./pages/my/MyPreferences'));
 const FinancePage     = React.lazy(() => import('./pages/Finance'));
 const OperationsPage  = React.lazy(() => import('./pages/Operations'));
 const NotFoundPage    = React.lazy(() => import('./pages/errors/NotFound'));
@@ -45,6 +47,7 @@ const BookingDetailRoute: React.FC = () => {
 // бо не всі ролі мають доступ до /dashboard (agent → ForbiddenScreen).
 const roleHome = (role?: UserRole): string => {
   if (role === 'agent') return '/agent';
+  if (role === 'tourist') return '/my/booking';
   return '/dashboard';
 };
 
@@ -73,6 +76,18 @@ const LoginPage: React.FC = () => {
       <LoginForm onSuccess={handleSuccess} />
     </div>
   );
+};
+
+// ─── ROOT REDIRECT ────────────────────────────────────────────
+// "/" мав жорсткий редірект на /dashboard незалежно від ролі — агент чи
+// турист побачили б ForbiddenScreen там. Ведемо на домівку конкретної ролі.
+
+const RootRedirect: React.FC = () => {
+  const { user, isInitialized, isLoading } = useAuth();
+  // Чекаємо на перевірку Cookie — інакше роль ще не відома і редірект
+  // вихопить дефолт /dashboard раніше, ніж AppInitializer встигне його оновити.
+  if (!isInitialized || isLoading) return null;
+  return <Navigate to={roleHome(user?.role)} replace />;
 };
 
 // ─── APP INIT ─────────────────────────────────────────────────
@@ -133,8 +148,15 @@ export const App: React.FC = () => (
             <Route path="/agent/*" element={<AgentCabinet />} />
           </Route>
 
+          {/* ── Кабінет туриста (C4, WF5, OPS-03) ──────────── */}
+          <Route element={<ProtectedRoute allowedRoles={['tourist']} />}>
+            <Route path="/my/booking"     element={<MyBooking />} />
+            <Route path="/my/preferences" element={<MyPreferences />} />
+            <Route path="/my" element={<Navigate to="/my/booking" replace />} />
+          </Route>
+
           {/* ── Redirects ──────────────────────────────────── */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/" element={<RootRedirect />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </React.Suspense>

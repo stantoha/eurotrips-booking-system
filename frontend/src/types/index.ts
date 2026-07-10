@@ -305,6 +305,7 @@ export interface User {
   agent_id?: string;        // Тільки для role='agent'
   agent_type?: AgentType;   // Тільки для role='agent'
   network_id?: string;      // Тільки для network agents
+  tourist_id?: string;      // Тільки для role='tourist' (C4, OPS-03)
   is_active: boolean;
   created_at: string;
   last_login?: string;

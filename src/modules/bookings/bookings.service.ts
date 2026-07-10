@@ -39,10 +39,15 @@ export class BookingsService {
     const { status, tourId, agentId, managerId, dateFrom, dateTo, search,
             page, limit, sortBy, sortOrder } = query;
 
-    // RBAC: агент бачить тільки свої (TC-RBAC-009)
+    // RBAC: агент бачить тільки свої (TC-RBAC-009); турист — тільки де він
+    // контактна особа (C4, self-service кабінет /my/*). Якщо роль agent/tourist,
+    // але відповідний id відсутній у токені — fail-safe: 0 результатів,
+    // а не "все" (сентинел-значення, що ніколи не збігається з реальним id).
     const rbacFilter: Prisma.BookingWhereInput =
-      user.role === UserRole.agent && user.agentId
-        ? { agentId: user.agentId }
+      user.role === UserRole.agent
+        ? { agentId: user.agentId ?? '00000000-0000-0000-0000-000000000000' }
+        : user.role === UserRole.tourist
+        ? { contactTouristId: user.touristId ?? '00000000-0000-0000-0000-000000000000' }
         : {};
 
     const where: Prisma.BookingWhereInput = {
@@ -125,6 +130,18 @@ export class BookingsService {
     // IDOR: агент бачить тільки своє (TC-RBAC-011)
     if (user.role === UserRole.agent && booking.agentId !== user.agentId) {
       throw Errors.forbidden('Доступ до чужого бронювання заборонено');
+    }
+
+    // IDOR: турист бачить тільки бронювання, де він контактна особа (C4)
+    if (user.role === UserRole.tourist && booking.contactTouristId !== user.touristId) {
+      throw Errors.forbidden('Доступ до чужого бронювання заборонено');
+    }
+
+    // BR-04-подібне обмеження: турист (кінцевий клієнт) не повинен бачити
+    // розмір комісії свого агента — це внутрішня фінансова інформація оператора.
+    if (user.role === UserRole.tourist) {
+      const { commissions, ...rest } = booking;
+      return rest;
     }
 
     return booking;

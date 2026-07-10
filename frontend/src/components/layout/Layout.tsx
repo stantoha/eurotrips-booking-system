@@ -8,7 +8,7 @@ import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, MapPinned, ClipboardList, Users2,
-  Wallet, Wrench, UserCircle2, LogOut, Menu, X
+  Wallet, Wrench, UserCircle2, LogOut, Menu, X, Ticket
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -35,7 +35,7 @@ const ROLE_LABELS: Record<string, string> = {
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const {
     user, signOut,
-    isAdmin, isDirector, isManager, isOpsManager, isAccountant, isAgent,
+    isAdmin, isDirector, isManager, isOpsManager, isAccountant, isAgent, isTourist,
   } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -49,6 +49,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     { to: '/finance',    label: 'Фінанси',       icon: Wallet,          show: isAdmin || isDirector },
     { to: '/operations', label: 'Операції',      icon: Wrench,          show: isInternal },
     { to: '/agent',      label: 'Кабінет агента',icon: UserCircle2,     show: isAgent },
+    { to: '/my/booking', label: 'Моє бронювання',icon: Ticket,          show: isTourist },
   ].filter((item) => item.show);
 
   const handleSignOut = async () => {
