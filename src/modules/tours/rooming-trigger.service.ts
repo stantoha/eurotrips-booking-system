@@ -9,6 +9,7 @@
 // =============================================================================
 
 import { PrismaClient, BookingStatus } from '@prisma/client';
+import { notifyRoomingRequired } from '../communications/telegram.service';
 
 const CONFIRMED_AND_BEYOND: BookingStatus[] = [
   BookingStatus.confirmed,
@@ -38,7 +39,7 @@ export interface RoomingTriggerResult {
  */
 export async function scanRoomingTriggers(
   prisma: PrismaClient,
-  logger: { info: (msg: string, meta?: object) => void },
+  logger: { info: (msg: string, meta?: object) => void; warn: (msg: string, meta?: object) => void },
 ): Promise<RoomingTriggerResult[]> {
   const now = new Date();
 
@@ -86,6 +87,14 @@ export async function scanRoomingTriggers(
     logger.info(
       `🛏 BR-11: тур ${hb.tour.code} потребує румінгу (${result.reason}, ${confirmedTourists} туристів, ${daysToDeparture} днів до виїзду)`
     );
+
+    // C5: Telegram-нотифікація ops (fire-and-forget — збій не повинен зупиняти скан)
+    notifyRoomingRequired(prisma, logger, {
+      tourCode: result.tourCode,
+      reason: result.reason,
+      confirmedTourists: result.confirmedTourists,
+      daysToDeparture: result.daysToDeparture,
+    }).catch((err) => logger.info(`Telegram BR-11 нотифікація: помилка ${err instanceof Error ? err.message : err}`));
   }
 
   return triggered;

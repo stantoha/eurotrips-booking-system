@@ -26,6 +26,10 @@ const envSchema = z.object({
   EMAIL_FROM_NAME: z.string().default('Eurotrips'),
 
   TELEGRAM_BOT_TOKEN: z.string().optional(),
+  /// C5: chat_id внутрішньої ops-групи для нотифікацій (BR-11 румінг, підтвердження
+  /// бронювання) — per-tourist/per-agent chat_id ще не зберігається (потрібна окрема
+  /// міграція + /start-лінкування бота), тому MVP шле все в один внутрішній чат
+  TELEGRAM_OPS_CHAT_ID: z.string().optional(),
   VIBER_AUTH_TOKEN: z.string().optional(),
 
   S3_ENDPOINT: z.string().optional(),

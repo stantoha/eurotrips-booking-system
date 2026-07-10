@@ -31,6 +31,7 @@ import {
   schedulePreDepartureEmail,
   cancelBookingEmailJobs,
 } from '../communications/email.queue';
+import { notifyBookingConfirmed } from '../communications/telegram.service';
 
 export class BookingsService {
 
@@ -343,6 +344,13 @@ export class BookingsService {
       // Email помилки не повинні фейлити основний запит
       console.error('[EmailTrigger] Помилка постановки в чергу:', err);
     });
+
+    // C5: Telegram-нотифікація ops (не залежить від Redis/email-черги — пряма відправка)
+    if (dto.status === BookingStatus.confirmed) {
+      notifyBookingConfirmed(prisma, console, id).catch((err) => {
+        console.error('[TelegramTrigger] Помилка відправки:', err);
+      });
+    }
 
     return updated;
   }
