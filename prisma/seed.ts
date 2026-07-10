@@ -604,6 +604,179 @@ async function main() {
     },
   }).catch(() => {});
 
+  // ── 11. DEMO ДАНІ: розселення / посадка в автобус / конверсія лідів ────────
+  // Раніше на майбутньому турі (tourAdriaticAug) був лише 1 турист без
+  // місця/кімнати — неможливо було наочно показати RoomingBoard, BusSeatMap
+  // чи Kanban-конверсію лідів. Додаємо: 20 туристів у 3 бронюваннях на
+  // tourAdriaticAug (частина вже розселена/розсаджена, частина — ні, щоб
+  // було видно обидва стани), 8 окремих "вільних" туристів для тестування
+  // оформлення нового бронювання, і 7 нових лідів у нетермінальних статусах,
+  // готових для конвертації через Kanban-дошку /leads.
+
+  const DEMO_NAMES: [string, string][] = [
+    ['Олексій', 'Бондаренко'], ['Наталія', 'Ткаченко'], ['Дмитро', 'Мельник'],
+    ['Оксана', 'Шевчук'], ['Сергій', 'Романюк'], ['Тетяна', 'Кравченко'],
+    ['Андрій', 'Поліщук'], ['Юлія', 'Гончаренко'], ['Віталій', 'Савчук'],
+    ['Ірина', 'Литвиненко'], ['Максим', 'Ковальчук'], ['Світлана', 'Марченко'],
+    ['Павло', 'Волошин'], ['Христина', 'Дяченко'], ['Роман', 'Гриценко'],
+    ['Аліна', 'Захарчук'], ['Богдан', 'Іщенко'], ['Вікторія', 'Кузьменко'],
+    ['Ярослав', 'Мороз'], ['Марина', 'Соколова'],
+    // Останні 8 свідомо НЕ прив'язані до жодного бронювання — 7 стають
+    // лідами (конверсія), 1 лишається повністю вільним туристом
+    // (тестування "оформлення бронювання" з нуля).
+    ['Олег', 'Крамаренко'], ['Людмила', 'Осадча'], ['Іван', 'Бабенко'],
+    ['Катерина', 'Руденко'], ['Артем', 'Ковтун'], ['Софія', 'Гуменюк'],
+    ['Микола', 'Панченко'], ['Анастасія', 'Клименко'],
+  ];
+
+  const demoTourists = [];
+  for (let i = 0; i < DEMO_NAMES.length; i++) {
+    const [firstName, lastName] = DEMO_NAMES[i];
+    const idx = String(i + 1).padStart(2, '0');
+    const t = await prisma.tourist.upsert({
+      where: { email: `demo.tourist${idx}@email.com` },
+      update: {},
+      create: {
+        firstName,
+        lastName,
+        email: `demo.tourist${idx}@email.com`,
+        phone: `+38050${String(1000000 + i * 111).padStart(7, '0')}`,
+        nationality: 'Українець',
+        sourceChannel: (['agent', 'site', 'instagram'] as const)[i % 3],
+        isRepeat: i % 5 === 0,
+        passportNumber: `FN${100000 + i}`,
+        dateOfBirth: new Date(1970 + (i % 40), i % 12, (i % 27) + 1),
+      },
+    });
+    demoTourists.push(t);
+  }
+
+  const roomingTourists = demoTourists.slice(0, 20); // на розселення/посадку
+  const leadTourists     = demoTourists.slice(20, 27); // 7 → нові ліди
+  // demoTourists[27] ("Анастасія Клименко") свідомо нічим не зайнята —
+  // вільний турист для тесту оформлення нового бронювання з нуля
+
+  // ── Готель для HotelBooking (беремо перший активний з імпортованих 563) ──
+  const demoHotel = await prisma.hotel.findFirst({ where: { status: 'active' } });
+  if (demoHotel) {
+    await prisma.hotelBooking.upsert({
+      where: { id: '00000000-0000-0000-0003-000000000001' },
+      update: {},
+      create: {
+        id: '00000000-0000-0000-0003-000000000001',
+        tourId: tourAdriaticAug.id,
+        hotelId: demoHotel.id,
+        city: tourAdriaticAug.direction ?? 'Хорватія / Словенія',
+        checkInDate: tourAdriaticAug.departureDate,
+        nightsCount: tourAdriaticAug.durationDays,
+        plannedTwin: 10,
+        plannedTriple: 2,
+        plannedSingle: 4,
+        structureStatus: 'approved',
+        structureApprovedAt: new Date(),
+      },
+    });
+  }
+
+  // ── 3 бронювання (8+6+6=20 осіб) на tourAdriaticAug — для розселення/посадки ──
+  const ROOM_TYPES = ['twin', 'twin', 'triple', 'single'] as const;
+  const roomingBookingsSpec = [
+    { number: 'ET-2025-09001', persons: 8, status: 'confirmed',      payment: 'deposit_paid' },
+    { number: 'ET-2025-09002', persons: 6, status: 'confirmed',      payment: 'deposit_paid' },
+    { number: 'ET-2025-09003', persons: 6, status: 'docs_collected', payment: 'partially_paid' },
+  ] as const;
+
+  let touristCursor = 0;
+  let seatCursor = 1;
+
+  for (const spec of roomingBookingsSpec) {
+    const contact = roomingTourists[touristCursor];
+    const booking = await prisma.booking.upsert({
+      where: { bookingNumber: spec.number },
+      update: {},
+      create: {
+        bookingNumber: spec.number,
+        tourId: tourAdriaticAug.id,
+        bookingType: 'direct',
+        contactTouristId: contact.id,
+        managerId: managerOlena.id,
+        personsCount: spec.persons,
+        totalAmount: 890 * spec.persons,
+        depositAmount: 178 * spec.persons,
+        depositPaid: 178 * spec.persons,
+        balanceAmount: 712 * spec.persons,
+        balancePaid: spec.status === 'docs_collected' ? 712 * spec.persons : 0,
+        paymentStatus: spec.payment,
+        status: spec.status,
+        sourceChannel: 'site',
+      },
+    });
+
+    for (let j = 0; j < spec.persons; j++) {
+      const tourist = roomingTourists[touristCursor];
+      const seq = touristCursor + 1;
+      touristCursor++;
+      // ~2/3 вже розселені (actualRoomNumber), решта — для демо "без кімнати"
+      const isRoomed = seq % 3 !== 0;
+      // ~3/4 вже мають місце в автобусі, решта — вільні місця в BusSeatMap
+      const isSeated = seq % 4 !== 0;
+
+      await prisma.bookingTourist.upsert({
+        where: { bookingId_touristId: { bookingId: booking.id, touristId: tourist.id } },
+        update: {},
+        create: {
+          bookingId: booking.id,
+          touristId: tourist.id,
+          role: tourist.id === contact.id ? 'contact' : 'participant',
+          preferredRoomType: ROOM_TYPES[seq % ROOM_TYPES.length],
+          ...(isRoomed && {
+            actualRoomNumber: String(100 + Math.floor(seq / 2)),
+            actualRoomType: ROOM_TYPES[seq % ROOM_TYPES.length],
+          }),
+          ...(isSeated && { busSeaNumber: seatCursor++ }),
+        },
+      });
+    }
+  }
+
+  // availableSeats туру — абсолютне значення (безпечно при повторному seed):
+  // 52 місця - 1 (booking2/touristIvan) - 20 (demo) = 31
+  await prisma.tour.update({
+    where: { id: tourAdriaticAug.id },
+    data: { availableSeats: 31 },
+  });
+
+  // ── 7 нових лідів у нетермінальних статусах — готові для конвертації ──────
+  const demoLeadsSpec = [
+    { tourist: leadTourists[0], status: 'new',                 source: LeadSource.instagram, tourId: tourAdriaticAug.id, budget: 1800, persons: 2 },
+    { tourist: leadTourists[1], status: 'in_work',              source: LeadSource.site,      tourId: tourAdriaticAug.id, budget: 900,  persons: 1 },
+    { tourist: leadTourists[2], status: 'needs_clarification',  source: LeadSource.telegram,  tourId: tourSwitzerland.id, budget: 1600, persons: 2 },
+    { tourist: leadTourists[3], status: 'proposal_sent',        source: LeadSource.facebook,  tourId: tourSwitzerland.id, budget: 2400, persons: 3 },
+    { tourist: leadTourists[4], status: 'waiting_decision',     source: LeadSource.viber,     tourId: tourAdriaticAug.id, budget: 890,  persons: 1 },
+    { tourist: leadTourists[5], status: 'new',                  source: LeadSource.phone,     tourId: tourAdriaticAug.id, budget: 1780, persons: 2 },
+    { tourist: leadTourists[6], status: 'lost',                 source: LeadSource.email,     tourId: tourSwitzerland.id, budget: 790,  persons: 1, lossReason: 'Обрали пропозицію іншого туроператора' },
+  ] as const;
+
+  for (const spec of demoLeadsSpec) {
+    await prisma.lead.upsert({
+      where: { externalId: `demo-lead-${spec.tourist.id}` },
+      update: {},
+      create: {
+        externalId: `demo-lead-${spec.tourist.id}`,
+        touristId: spec.tourist.id,
+        managerId: managerOlena.id,
+        tourId: spec.tourId,
+        source: spec.source,
+        status: spec.status,
+        interestNote: `${spec.tourist.firstName} ${spec.tourist.lastName} цікавиться туром`,
+        personsCount: spec.persons,
+        budget: spec.budget,
+        nextActionAt: spec.status === 'lost' ? undefined : new Date('2026-07-20T10:00:00Z'),
+        ...('lossReason' in spec && { lossReason: spec.lossReason }),
+      },
+    });
+  }
+
   console.log('✅ Seed завершено успішно!');
   console.log('');
   console.log('👤 Тестові акаунти:');
