@@ -235,10 +235,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
           <div className="mt-2 space-y-1 text-xs text-slate-500 bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3">
             {[
               { role: 'admin',       email: 'admin@eurotrips.ua' },
-              { role: 'manager',     email: 'manager@eurotrips.ua' },
-              { role: 'ops', email: 'ops@eurotrips.ua' },
+              { role: 'director',    email: 'director@eurotrips.ua' },
+              { role: 'manager',     email: 'a.sych@eurotrips.ua' },
+              { role: 'ops',         email: 'ops@eurotrips.ua' },
               { role: 'accountant',  email: 'finance@eurotrips.ua' },
               { role: 'agent',       email: 'agent@agency.ua' },
+              { role: 'agent (network)', email: 'agent2@agency.ua' },
+              { role: 'tourist',     email: 'tourist@eurotrips.ua' },
             ].map(({ role, email }) => (
               <div key={role} className="flex justify-between font-mono">
                 <span className="text-slate-400">{role}</span>

@@ -287,6 +287,22 @@ async function main() {
     },
   });
 
+  // director@eurotrips.ua / test1234 — раніше не існував взагалі, роль
+  // director не мала жодного тестового акаунта для входу
+  const directorUser = await prisma.user.upsert({
+    where: { email: 'director@eurotrips.ua' },
+    update: { passwordHash: await hashPassword(SEED_PASSWORD) },
+    create: {
+      email: 'director@eurotrips.ua',
+      passwordHash: await hashPassword(SEED_PASSWORD),
+      role: UserRole.director,
+      firstName: 'Директор',
+      lastName: 'Компанії',
+      phone: '+380671234500',
+      isActive: true,
+    },
+  });
+
   // Другий менеджер для тестів
   const managerAndrii = await prisma.user.upsert({
     where: { email: 'a.sych@eurotrips.ua' },
