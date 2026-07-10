@@ -2,286 +2,226 @@
 // EUROTRIPS — pages/Dashboard.tsx
 // Маршрут: /dashboard   Ролі: admin, director, manager, ops, accountant
 //
-// Секції:
-//   1. KPI-картки: всього бронювань, підтверджених, доходу, боргу
-//   2. Останні бронювання (10 рядків, без пагінації)
-//   3. Тури найближчого місяця: ємність + кількість місць
-//   4. Активні ліди (для менеджерів)
-//
-// Дані: GET /api/v1/finance/summary + GET /api/v1/bookings?limit=10
-//       + GET /api/v1/tours?status=active&limit=5
-//
-// TODO: підключити TanStack Query хуки
+// Секції (за макетом Eurotrips Prototype.dc.html):
+//   1. KPI-картки: бронювання/підтверджено/дохід/зібрано (useFinanceSummary)
+//   2. Найближчі виїзди (useOpsDashboard → upcoming_tours)
+//   3. Готовність турів (useOpsDashboard → checklist_progress) —
+//      замінює прототипну "Задачі на сьогодні": сутності Task/Todo
+//      у бекенді немає, тому використано реальні дані готовності
+//   4. Ліди по статусах (useLeadsByStatus — клієнтська агрегація,
+//      обмежена перших 100 лідів по системі)
+//   5. Дедлайни готелів (useOpsDashboard → hotel_deadlines)
 // ============================================================
 
-import React, { useEffect, useState } from 'react';
-import {
-  BarChart2, Users, CreditCard, TrendingUp,
-  AlertCircle, CalendarDays, RefreshCw,
-} from 'lucide-react';
+import React from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Users2, AlertOctagon } from 'lucide-react';
+
 import { useAuth } from '../hooks/useAuth';
-import { api }     from '../services/api';
-
-// ─── TYPES ───────────────────────────────────────────────────
-
-interface FinanceSummary {
-  total_bookings:     number;
-  confirmed_bookings: number;
-  total_revenue:      number;
-  collected_revenue:  number;
-  currency:           string;
-  generated_at:       string;
-}
-
-interface RecentBooking {
-  id:             string;
-  booking_number: string;
-  status:         string;
-  total_amount:   number;
-  created_at:     string;
-  contact_tourist?: { first_name: string; last_name: string };
-  tour?:            { name: string; departure_date: string };
-}
-
-interface ActiveTour {
-  id:              string;
-  name:            string;
-  departure_date:  string;
-  available_seats: number;
-  total_seats:     number;
-  status:          string;
-}
+import { useFinanceSummary } from '../hooks/useFinance';
+import { useOpsDashboard } from '../hooks/useOpsDashboard';
+import { useLeadsByStatus } from '../hooks/useDashboard';
+import { StatusDot } from '../components/ui/StatusBadge';
+import { DeadlineIndicator } from '../components/ui/DeadlineIndicator';
+import { occupancyColor } from '../components/ui/OccupancyBar';
+import { LEAD_STATUS_CONFIG } from '../constants/statuses';
+import type { LeadStatus } from '../types';
 
 // ─── KPI CARD ─────────────────────────────────────────────────
 
-const KpiCard: React.FC<{
-  title: string;
-  value: string | number;
-  sub?:  string;
-  icon:  React.ReactNode;
-  color: string;
-}> = ({ title, value, sub, icon, color }) => (
-  <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 flex items-start gap-4">
-    <div className={`p-3 rounded-lg ${color}`}>{icon}</div>
-    <div>
-      <p className="text-sm text-slate-500 dark:text-slate-400">{title}</p>
-      <p className="text-2xl font-bold text-slate-900 dark:text-slate-50 mt-0.5">{value}</p>
-      {sub && <p className="text-xs text-slate-400 mt-1">{sub}</p>}
-    </div>
+const KpiCard: React.FC<{ label: string; value: string | number }> = ({ label, value }) => (
+  <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-4">
+    <p className="text-xs text-slate-400 mb-2">{label}</p>
+    <p className="font-mono text-2xl font-semibold text-slate-900 dark:text-slate-50">{value}</p>
   </div>
 );
 
-// ─── STATUS BADGE (inline) ────────────────────────────────────
+// ─── SECTION HEADER ───────────────────────────────────────────
 
-const STATUS_LABELS: Record<string, string> = {
-  new:              'Новий',
-  in_work:          'В роботі',
-  confirmed:        'Підтверджено',
-  awaiting_payment: 'Очікує оплату',
-  completed:        'Завершено',
-  cancelled_client: 'Скасовано',
-};
-
-const STATUS_COLORS: Record<string, string> = {
-  new:              'bg-slate-100 text-slate-700',
-  in_work:          'bg-blue-100 text-blue-700',
-  confirmed:        'bg-green-100 text-green-700',
-  awaiting_payment: 'bg-amber-100 text-amber-700',
-  completed:        'bg-emerald-100 text-emerald-700',
-  cancelled_client: 'bg-red-100 text-red-700',
-};
-
-const StatusPill: React.FC<{ status: string }> = ({ status }) => (
-  <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[status] ?? 'bg-slate-100 text-slate-600'}`}>
-    {STATUS_LABELS[status] ?? status}
-  </span>
+const SectionHeading: React.FC<{ children: React.ReactNode; to?: string }> = ({ children, to }) => (
+  <div className="flex items-center justify-between mb-3">
+    <h2 className="font-heading text-sm font-semibold text-slate-800 dark:text-slate-200">{children}</h2>
+    {to && (
+      <Link to={to} className="text-xs text-brand-cyan hover:text-brand-cyan-dark transition-colors">
+        Всі →
+      </Link>
+    )}
+  </div>
 );
 
 // ─── MAIN PAGE ────────────────────────────────────────────────
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
-  const [summary,        setSummary]        = useState<FinanceSummary | null>(null);
-  const [recentBookings, setRecentBookings] = useState<RecentBooking[]>([]);
-  const [activeTours,    setActiveTours]    = useState<ActiveTour[]>([]);
-  const [loading,        setLoading]        = useState(true);
-  const [error,          setError]          = useState<string | null>(null);
+  const { data: summary, isLoading: summaryLoading } = useFinanceSummary();
+  const { data: ops, isLoading: opsLoading, isError: opsError } = useOpsDashboard();
+  const { data: leadsByStatus, isLoading: leadsLoading } = useLeadsByStatus();
 
-  const load = async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const [summaryRes, bookingsRes, toursRes] = await Promise.allSettled([
-        api.get<{ data: FinanceSummary }>('/finance/summary'),
-        api.get<{ data: RecentBooking[] }>('/bookings?limit=10'),
-        api.get<{ data: ActiveTour[] }>('/tours?status=active&limit=5'),
-      ]);
-
-      if (summaryRes.status === 'fulfilled') setSummary(summaryRes.value.data.data);
-      if (bookingsRes.status === 'fulfilled') setRecentBookings(bookingsRes.value.data.data ?? []);
-      if (toursRes.status === 'fulfilled')    setActiveTours(toursRes.value.data.data ?? []);
-    } catch {
-      setError('Помилка завантаження даних');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => { load(); }, []);
-
-  const debt = summary
-    ? summary.total_revenue - summary.collected_revenue
-    : 0;
+  const fmtEur = (n: number) => `€ ${n.toLocaleString('uk-UA', { minimumFractionDigits: 0 })}`;
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
 
       {/* ── Заголовок ─────────────────────────────────────────── */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">Дашборд</h1>
-          <p className="text-sm text-slate-500 mt-0.5">
-            Вітаємо, {user?.first_name ?? 'Користувач'} · {' '}
-            {new Date().toLocaleDateString('uk-UA', { weekday: 'long', day: 'numeric', month: 'long' })}
-          </p>
-        </div>
-        <button
-          onClick={load}
-          disabled={loading}
-          className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          Оновити
-        </button>
+      <div>
+        <h1 className="font-heading text-2xl font-bold text-slate-900 dark:text-slate-50">Дашборд</h1>
+        <p className="text-sm text-slate-500 mt-0.5">
+          Вітаємо, {user?.first_name ?? 'Користувач'} · {' '}
+          {new Date().toLocaleDateString('uk-UA', { weekday: 'long', day: 'numeric', month: 'long' })}
+        </p>
       </div>
-
-      {error && (
-        <div className="flex items-center gap-2 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-          <AlertCircle className="w-4 h-4 flex-shrink-0" />
-          {error}
-        </div>
-      )}
 
       {/* ── KPI ───────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <KpiCard label="Всього бронювань"     value={summaryLoading ? '…' : summary?.total_bookings ?? '—'} />
+        <KpiCard label="Підтверджено"          value={summaryLoading ? '…' : summary?.confirmed_bookings ?? '—'} />
+        <KpiCard label="Загальний дохід"       value={summaryLoading || !summary ? '…' : fmtEur(summary.total_revenue)} />
         <KpiCard
-          title="Всього бронювань"
-          value={summary?.total_bookings ?? '—'}
-          icon={<Users className="w-5 h-5 text-blue-600" />}
-          color="bg-blue-50"
-        />
-        <KpiCard
-          title="Підтверджено"
-          value={summary?.confirmed_bookings ?? '—'}
-          sub="зараз в роботі"
-          icon={<BarChart2 className="w-5 h-5 text-green-600" />}
-          color="bg-green-50"
-        />
-        <KpiCard
-          title="Загальний дохід"
-          value={summary ? `€ ${summary.total_revenue.toLocaleString('uk-UA')}` : '—'}
-          sub={summary?.currency}
-          icon={<TrendingUp className="w-5 h-5 text-emerald-600" />}
-          color="bg-emerald-50"
-        />
-        <KpiCard
-          title="Дебіторська заборгованість"
-          value={summary ? `€ ${debt.toLocaleString('uk-UA')}` : '—'}
-          sub="не зібрано"
-          icon={<CreditCard className="w-5 h-5 text-amber-600" />}
-          color="bg-amber-50"
+          label="Дебіторська заборгованість"
+          value={summaryLoading || !summary ? '…' : fmtEur(summary.total_revenue - summary.collected_revenue)}
         />
       </div>
 
-      {/* ── Бронювання + Тури ─────────────────────────────────── */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      {/* ── Основний грід ─────────────────────────────────────── */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
 
-        {/* Останні бронювання */}
-        <div className="xl:col-span-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-          <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
-            <h2 className="font-semibold text-slate-800 dark:text-slate-100">Останні бронювання</h2>
-            <a href="/bookings" className="text-sm text-blue-600 hover:underline">Всі →</a>
-          </div>
+        {/* ЛІВО */}
+        <div className="flex flex-col gap-6">
 
-          {loading ? (
-            <div className="flex items-center justify-center h-48 text-slate-400 text-sm">Завантаження…</div>
-          ) : recentBookings.length === 0 ? (
-            <div className="flex items-center justify-center h-48 text-slate-400 text-sm">Немає бронювань</div>
-          ) : (
-            <div className="divide-y divide-slate-100 dark:divide-slate-700">
-              {recentBookings.map((b) => (
-                <div key={b.id} className="px-5 py-3 flex items-center justify-between gap-3 hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-slate-800 dark:text-slate-100 font-mono">{b.booking_number}</p>
-                    {b.contact_tourist && (
-                      <p className="text-xs text-slate-500 truncate">
-                        {b.contact_tourist.first_name} {b.contact_tourist.last_name}
+          {/* Найближчі виїзди */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-4">
+            <SectionHeading to="/tours">Найближчі виїзди</SectionHeading>
+            {opsLoading ? (
+              <p className="text-xs text-slate-400 py-4 text-center">Завантаження…</p>
+            ) : opsError || !ops || ops.upcoming_tours.length === 0 ? (
+              <p className="text-xs text-slate-400 py-4 text-center">Немає виїздів у найближчі 7 днів</p>
+            ) : (
+              <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                {ops.upcoming_tours.map((t) => (
+                  <div
+                    key={t.tour_id}
+                    onClick={() => navigate(`/tours/${t.tour_id}`)}
+                    className="flex items-center justify-between gap-3 py-2.5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">{t.name}</p>
+                      <p className="text-xs text-slate-400 font-mono">
+                        {t.code} · {new Date(t.departure_date).toLocaleDateString('uk-UA')}
                       </p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-3 flex-shrink-0">
-                    <StatusPill status={b.status} />
-                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-200 w-20 text-right">
-                      € {Number(b.total_amount).toLocaleString('uk-UA', { minimumFractionDigits: 0 })}
+                    </div>
+                    <span className="text-xs text-slate-500 flex-shrink-0">
+                      {t.total_seats - t.available_seats}/{t.total_seats}
                     </span>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Активні тури */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-          <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
-            <h2 className="font-semibold text-slate-800 dark:text-slate-100">Активні тури</h2>
-            <a href="/tours" className="text-sm text-blue-600 hover:underline">Всі →</a>
+                ))}
+              </div>
+            )}
           </div>
 
-          {loading ? (
-            <div className="flex items-center justify-center h-48 text-slate-400 text-sm">Завантаження…</div>
-          ) : activeTours.length === 0 ? (
-            <div className="flex items-center justify-center h-48 text-slate-400 text-sm">Немає активних турів</div>
-          ) : (
-            <div className="divide-y divide-slate-100 dark:divide-slate-700">
-              {activeTours.map((t) => {
-                const occupancy = t.total_seats > 0
-                  ? Math.round(((t.total_seats - t.available_seats) / t.total_seats) * 100)
-                  : 0;
-
-                return (
-                  <div key={t.id} className="px-5 py-3">
-                    <div className="flex items-start gap-2 mb-1.5">
-                      <CalendarDays className="w-4 h-4 text-slate-400 flex-shrink-0 mt-0.5" />
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-slate-800 dark:text-slate-100 leading-tight truncate">{t.name}</p>
-                        <p className="text-xs text-slate-400">
-                          {new Date(t.departure_date).toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' })}
-                        </p>
-                      </div>
+          {/* Готовність турів (заміна прототипної "Задачі на сьогодні" — Task/Todo в БД немає) */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-4">
+            <SectionHeading to="/operations">Готовність турів</SectionHeading>
+            {opsLoading ? (
+              <p className="text-xs text-slate-400 py-4 text-center">Завантаження…</p>
+            ) : opsError || !ops || ops.checklist_progress.length === 0 ? (
+              <p className="text-xs text-slate-400 py-4 text-center">Немає турів у підготовці</p>
+            ) : (
+              <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                {ops.checklist_progress.map((c) => (
+                  <div
+                    key={c.tour_id}
+                    onClick={() => navigate(`/tours/${c.tour_id}`)}
+                    className="flex items-center gap-3 py-2 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                  >
+                    <span className="font-mono text-xs text-slate-400 w-24 shrink-0 truncate">{c.code}</span>
+                    <div className="flex-1 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                      <div className={`h-full rounded-full ${occupancyColor(c.readiness_percent)}`} style={{ width: `${c.readiness_percent}%` }} />
                     </div>
-                    {/* Прогрес заповненості */}
-                    <div className="mt-2">
-                      <div className="flex justify-between text-xs text-slate-500 mb-1">
-                        <span>{t.total_seats - t.available_seats} / {t.total_seats} місць</span>
-                        <span>{occupancy}%</span>
-                      </div>
-                      <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all ${occupancy >= 90 ? 'bg-red-500' : occupancy >= 70 ? 'bg-amber-500' : 'bg-green-500'}`}
-                          style={{ width: `${occupancy}%` }}
-                        />
-                      </div>
-                    </div>
+                    <span className="text-xs font-medium text-slate-600 dark:text-slate-300 w-9 text-right shrink-0">{c.readiness_percent}%</span>
                   </div>
-                );
-              })}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
+        {/* ПРАВО */}
+        <div className="flex flex-col gap-6">
+
+          {/* Ліди по статусах */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-4">
+            <SectionHeading to="/leads">Ліди по статусах</SectionHeading>
+            {leadsLoading || !leadsByStatus ? (
+              <p className="text-xs text-slate-400 py-4 text-center">Завантаження…</p>
+            ) : (
+              <div className="space-y-1.5">
+                {(Object.keys(LEAD_STATUS_CONFIG) as LeadStatus[]).map((status) => (
+                  <div key={status} className="flex items-center gap-2.5 py-1">
+                    <StatusDot status={status} domain="lead" size="sm" />
+                    <span className="text-sm text-slate-700 dark:text-slate-300 flex-1">
+                      {LEAD_STATUS_CONFIG[status].label}
+                    </span>
+                    <span className="font-mono text-sm font-semibold text-slate-800 dark:text-slate-100">
+                      {leadsByStatus[status]}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Дедлайни готелів */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-4">
+            <SectionHeading>
+              <span className="flex items-center gap-1.5"><AlertOctagon size={13} className="text-brand-red" /> Дедлайни готелів</span>
+            </SectionHeading>
+            {opsLoading ? (
+              <p className="text-xs text-slate-400 py-4 text-center">Завантаження…</p>
+            ) : opsError || !ops || ops.hotel_deadlines.length === 0 ? (
+              <p className="text-xs text-slate-400 py-4 text-center">Немає близьких дедлайнів</p>
+            ) : (
+              <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                {ops.hotel_deadlines.map((hd) => (
+                  <div
+                    key={hd.hotel_booking_id}
+                    onClick={() => navigate(`/tours/${hd.tour_id}`)}
+                    className="flex items-center justify-between gap-3 py-2 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                  >
+                    <span className="text-sm text-slate-700 dark:text-slate-300 truncate">
+                      <span className="font-mono text-xs text-slate-400">{hd.tour_code}</span> · {hd.hotel_name}
+                    </span>
+                    <DeadlineIndicator date={hd.option_deadline} />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Нові підтверджені туристи сьогодні */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-4">
+            <SectionHeading>
+              <span className="flex items-center gap-1.5"><Users2 size={13} /> Нові туристи сьогодні</span>
+            </SectionHeading>
+            {opsLoading ? (
+              <p className="text-xs text-slate-400 py-4 text-center">Завантаження…</p>
+            ) : opsError || !ops || ops.new_tourists.length === 0 ? (
+              <p className="text-xs text-slate-400 py-4 text-center">Сьогодні ще немає нових підтверджених бронювань</p>
+            ) : (
+              <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                {ops.new_tourists.map((n) => (
+                  <div key={n.booking_id} className="flex items-center justify-between gap-3 py-2 text-sm">
+                    <span className="text-slate-700 dark:text-slate-300 truncate">
+                      {n.contact_name} <span className="text-slate-400">({n.persons_count} ос.)</span>
+                    </span>
+                    <span className="text-xs text-slate-400 font-mono flex-shrink-0">{n.tour_code} · {n.booking_number}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

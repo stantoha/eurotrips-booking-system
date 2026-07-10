@@ -3,32 +3,45 @@
 // Маршрут: /leads
 // Ролі: admin, director, manager (всі), ops_manager (свої)
 //
-// Фічі:
-//   • Таблиця лідів з фільтрами: статус, джерело, менеджер, дата, пошук
-//   • Сортування по стовпцях: дата, статус, ПІБ
-//   • Пагінація (10/20/50 на сторінку)
-//   • "Конвертувати в бронювання" → PATCH /leads/:id/convert (TanStack mutation)
-//   • Статус "won" та "lost" — термінальні, без конвертації
-//   • BR-04 не застосовується (ліди — без фінансів)
+// Kanban-дошка за макетом Eurotrips Prototype.dc.html: 7 колонок
+// (по одній на LeadStatus), drag-and-drop між колонками через
+// @dnd-kit/core. Перетягування в колонку "won" запускає той самий
+// флоу конвертації (useConvertLead), що й раніше кнопка
+// "Конвертувати" — бо won у цій системі означає "конвертовано",
+// а не просто зміну статусу. Перетягування в будь-яку іншу колонку
+// (включно з lost) — нова мутація useUpdateLeadStatus (PUT /leads/:id,
+// бекенд приймає status без перевірки переходів, на відміну від BR-06
+// для бронювань). Картки зі статусом won/lost більше не draggable.
+//
+// Пагінацію прибрано — дошка одним запитом (limit=100, без фільтра
+// статусу) підвантажує ліди і розподіляє їх по колонках на клієнті;
+// понад 100 лідів по системі дошка не покаже (потрібен бекенд-ендпоінт
+// агрегації/пагінації по колонках для точності при більшому масштабі).
+//
+// Виправлено під час перебудови: фільтри реально надсилались під
+// невірними іменами (manager/date_from/date_to/per_page), тоді як
+// бекенд (leads.schema.ts) очікує managerId/dateFrom/dateTo/limit —
+// раніше ці фільтри тихо не спрацьовували проти реального API.
 // ============================================================
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
-  Search, Filter, X, ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
-  Plus, ArrowRight, RefreshCw, Loader2, Instagram, Globe, Phone,
-  Mail, Users, Calendar, CheckCircle2, AlertTriangle, User,
+  DndContext, useDraggable, useDroppable, DragOverlay,
+  PointerSensor, useSensor, useSensors, type DragEndEvent, type DragStartEvent,
+} from '@dnd-kit/core';
+import {
+  Search, X, ChevronDown, Plus, RefreshCw, Loader2, Instagram, Globe, Phone,
+  Mail, Users, AlertTriangle, User, CheckCircle2,
 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useAuth }     from '../hooks/useAuth';
 import { api }         from '../services/api';
-import { MOCK_LEADS }  from '../mocks';
 import { LEAD_STATUS_CONFIG, STATUS_COLOR_CLASSES } from '../constants/statuses';
 import type { Lead, LeadStatus, LeadSource } from '../types';
 
-// ─── CONSTANTS ────────────────────────────────────────────────
-// LEAD_STATUS_CONFIG — з constants/statuses.ts (єдине джерело правди для
-// статусів у всьому фронтенді, синхронізовано з BookingStatus/TourStatus).
+// ─── SOURCE CONFIG ────────────────────────────────────────────
 
 const SOURCE_CONFIG: Record<LeadSource, { label: string; icon: React.ReactNode; color: string }> = {
   site:       { label: 'Сайт',      icon: <Globe     size={11} />, color: 'bg-blue-50   text-blue-600   dark:bg-blue-950/30   dark:text-blue-400'   },
@@ -44,9 +57,7 @@ const SOURCE_CONFIG: Record<LeadSource, { label: string; icon: React.ReactNode; 
 };
 
 const TERMINAL_STATUSES: LeadStatus[] = ['won', 'lost'];
-const PAGE_SIZE_OPTIONS = [10, 20, 50] as const;
 
-// ─── MOCK MANAGER MAP ─────────────────────────────────────────
 // TODO: підтягнути з GET /users?role=manager
 const MANAGERS: Record<string, string> = {
   'usr-m01': 'Андрій Сич',
@@ -54,8 +65,6 @@ const MANAGERS: Record<string, string> = {
 };
 
 // ─── HELPERS ──────────────────────────────────────────────────
-const fmtDate = (s: string) =>
-  new Date(s).toLocaleDateString('uk-UA', { day:'2-digit', month:'2-digit', year:'2-digit' });
 
 const leadName = (l: Lead) => {
   if (l.first_name || l.last_name) return [l.last_name, l.first_name].filter(Boolean).join(' ');
@@ -66,46 +75,23 @@ const leadName = (l: Lead) => {
 
 interface LeadFilters {
   search?:    string;
-  status?:    LeadStatus;
   source?:    LeadSource;
-  manager?:   string;
-  date_from?: string;
-  date_to?:   string;
-  page?:      number;
-  per_page?:  number;
+  managerId?: string;
+  dateFrom?:  string;
+  dateTo?:    string;
 }
 
-/** useLeads — підтягує ліди з API або fallback-мок у DEV */
-function useLeads(filters?: LeadFilters) {
+/** useLeads — один запит на всю дошку (limit=100, без фільтра статусу) */
+function useLeads(filters: LeadFilters) {
   return useQuery({
-    queryKey: ['leads', 'list', filters ?? {}],
+    queryKey: ['leads', 'kanban', filters],
     queryFn: async () => {
-      try {
-        const { data } = await api.get<{ data: Lead[]; meta: { total: number } }>(
-          '/leads', { params: filters },
-        );
-        return data;
-      } catch (err) {
-        if (import.meta.env.DEV) {
-          console.warn('[useLeads] API unavailable → mock fallback');
-          let result = [...MOCK_LEADS];
-          const q = filters?.search?.toLowerCase().trim() ?? '';
-          if (q)              result = result.filter(l => leadName(l).toLowerCase().includes(q) || l.phone?.includes(q) || l.email?.toLowerCase().includes(q));
-          if (filters?.status)   result = result.filter(l => l.status  === filters.status);
-          if (filters?.source)   result = result.filter(l => l.source  === filters.source);
-          if (filters?.manager)  result = result.filter(l => l.assigned_to === filters.manager);
-          if (filters?.date_from) result = result.filter(l => l.created_at >= filters.date_from!);
-          if (filters?.date_to)   result = result.filter(l => l.created_at <= filters.date_to! + 'T23:59:59Z');
-          const total   = result.length;
-          const page    = filters?.page ?? 1;
-          const perPage = filters?.per_page ?? 10;
-          result = result.slice((page - 1) * perPage, page * perPage);
-          return { data: result, meta: { total } };
-        }
-        throw err;
-      }
+      const { data } = await api.get<{ data: Lead[]; meta: { total: number } }>('/leads', {
+        params: { ...filters, limit: 100 },
+      });
+      return data;
     },
-    staleTime:  30_000,
+    staleTime: 30_000,
     placeholderData: (prev) => prev,
   });
 }
@@ -120,28 +106,26 @@ function useConvertLead() {
       );
       return data.data;
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['leads'] });
-    },
-    onError: (err) => {
-      console.error('[useConvertLead] failed:', err);
-    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['leads'] }),
+    onError: (err) => console.error('[useConvertLead] failed:', err),
   });
 }
 
-// ─── STATUS BADGE ─────────────────────────────────────────────
-const LeadStatusBadge: React.FC<{ status: LeadStatus }> = ({ status }) => {
-  const cfg   = LEAD_STATUS_CONFIG[status];
-  const color = STATUS_COLOR_CLASSES[cfg.colorVariant];
-  return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border font-medium whitespace-nowrap ${color.badge}`}>
-      {cfg.isPulsing && <span className={`w-1.5 h-1.5 rounded-full ${color.dot} animate-pulse`} />}
-      {cfg.label}
-    </span>
-  );
-};
+/** useUpdateLeadStatus — PUT /leads/:id (без перевірки переходів на бекенді) */
+function useUpdateLeadStatus() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: LeadStatus }) => {
+      const { data } = await api.put<{ data: Lead }>(`/leads/${id}`, { status });
+      return data.data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['leads'] }),
+    onError: (err) => console.error('[useUpdateLeadStatus] failed:', err),
+  });
+}
 
 // ─── SOURCE BADGE ─────────────────────────────────────────────
+
 const SourceBadge: React.FC<{ source: LeadSource }> = ({ source }) => {
   const cfg = SOURCE_CONFIG[source];
   return (
@@ -152,174 +136,184 @@ const SourceBadge: React.FC<{ source: LeadSource }> = ({ source }) => {
 };
 
 // ─── FILTER SELECT ────────────────────────────────────────────
+
 const FilterSelect: React.FC<{
   value: string;
   onChange: (v: string) => void;
   options: { value: string; label: string }[];
   placeholder: string;
-  className?: string;
-}> = ({ value, onChange, options, placeholder, className = '' }) => (
+}> = ({ value, onChange, options, placeholder }) => (
   <div className="relative">
     <select
       value={value}
-      onChange={e => onChange(e.target.value)}
-      className={`appearance-none pl-3 pr-7 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 ${className}`}
+      onChange={(e) => onChange(e.target.value)}
+      className="appearance-none pl-3 pr-7 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-cyan"
     >
       <option value="">{placeholder}</option>
-      {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+      {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
     </select>
     <ChevronDown size={12} className="absolute right-2.5 top-3 text-slate-400 pointer-events-none" />
   </div>
 );
 
-// ─── SORT HEADER ──────────────────────────────────────────────
-const SortHeader: React.FC<{
-  label: string;
-  sortKey: string;
-  current: string;
-  direction: 'asc' | 'desc';
-  onSort: (key: string) => void;
-}> = ({ label, sortKey, current, direction, onSort }) => (
-  <button
-    onClick={() => onSort(sortKey)}
-    className="flex items-center gap-1 text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors whitespace-nowrap"
-  >
-    {label}
-    {current === sortKey
-      ? direction === 'asc' ? <ChevronUp size={11} /> : <ChevronDown size={11} />
-      : <span className="w-2.5" />
-    }
-  </button>
-);
+// ─── LEAD CARD ────────────────────────────────────────────────
 
-// ─── CONVERT BUTTON ───────────────────────────────────────────
-const ConvertButton: React.FC<{
-  lead: Lead;
-  onNavigate: (bookingId: string) => void;
-}> = ({ lead, onNavigate }) => {
-  const mutation = useConvertLead();
-  const [converted, setConverted] = useState<{ bookingId: string; number: string } | null>(null);
+const LeadCard: React.FC<{ lead: Lead; onOpenBooking: (bookingId: string) => void }> = ({ lead, onOpenBooking }) => {
+  const isTerminal = TERMINAL_STATUSES.includes(lead.status);
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: lead.id,
+    data: { status: lead.status },
+    disabled: isTerminal,
+  });
 
-  if (TERMINAL_STATUSES.includes(lead.status)) {
-    if (lead.status === 'won' && lead.booking_id) {
-      return (
+  const style = transform
+    ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` }
+    : undefined;
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...(isTerminal ? {} : listeners)}
+      {...(isTerminal ? {} : attributes)}
+      className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-3 ${
+        isTerminal ? '' : 'cursor-grab active:cursor-grabbing'
+      } ${isDragging ? 'opacity-40' : ''}`}
+    >
+      <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">{leadName(lead)}</p>
+      <p className="text-xs text-slate-400 truncate mt-0.5">{lead.tour?.name ?? 'Тур не обрано'}</p>
+      <div className="flex items-center justify-between mt-2 gap-2">
+        <SourceBadge source={lead.source} />
+        {lead.budget_eur !== undefined && (
+          <span className="font-mono text-xs font-semibold text-slate-700 dark:text-slate-300 flex-shrink-0">
+            {lead.budget_eur.toLocaleString('uk-UA')} EUR
+          </span>
+        )}
+      </div>
+      {lead.status === 'won' && lead.booking_id && (
         <button
-          onClick={() => onNavigate(lead.booking_id!)}
-          className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 hover:underline"
+          onClick={() => onOpenBooking(lead.booking_id!)}
+          className="mt-2 flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 hover:underline"
         >
           <CheckCircle2 size={11} /> Перейти до броні
         </button>
-      );
-    }
-    return null;
-  }
+      )}
+      {lead.status === 'lost' && lead.lost_reason && (
+        <p className="text-xs text-slate-400 mt-1.5 truncate" title={lead.lost_reason}>{lead.lost_reason}</p>
+      )}
+    </div>
+  );
+};
 
-  if (converted) {
-    return (
-      <button
-        onClick={() => onNavigate(converted.bookingId)}
-        className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 hover:underline"
-      >
-        <CheckCircle2 size={11} /> {converted.number}
-      </button>
-    );
-  }
+// ─── LEAD COLUMN ──────────────────────────────────────────────
+
+const LeadColumn: React.FC<{
+  status: LeadStatus;
+  leads: Lead[];
+  onOpenBooking: (bookingId: string) => void;
+}> = ({ status, leads, onOpenBooking }) => {
+  const cfg = LEAD_STATUS_CONFIG[status];
+  const color = STATUS_COLOR_CLASSES[cfg.colorVariant];
+  const { setNodeRef, isOver } = useDroppable({ id: status });
 
   return (
-    <button
-      onClick={async () => {
-        try {
-          const res = await mutation.mutateAsync(lead.id);
-          setConverted({ bookingId: res.booking_id, number: res.booking_number });
-        } catch {/* handled in mutation.onError */}
-      }}
-      disabled={mutation.isPending}
-      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-950 disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
-    >
-      {mutation.isPending
-        ? <><Loader2 size={11} className="animate-spin" /> Конвертація…</>
-        : <><ArrowRight size={11} /> Конвертувати</>
-      }
-    </button>
+    <div className="w-[230px] flex-shrink-0 flex flex-col">
+      <div className="flex items-center justify-between px-1 pb-2">
+        <div className="flex items-center gap-1.5">
+          <span className={`w-2 h-2 rounded-full ${color.dot}`} />
+          <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">{cfg.label}</span>
+        </div>
+        <span className="font-mono text-xs text-slate-400">{leads.length}</span>
+      </div>
+      <div
+        ref={setNodeRef}
+        className={`flex-1 flex flex-col gap-2 rounded-lg p-1.5 min-h-[80px] transition-colors ${
+          isOver ? 'bg-brand-cyan/10 ring-2 ring-brand-cyan/40' : ''
+        }`}
+      >
+        {leads.map((lead) => (
+          <LeadCard key={lead.id} lead={lead} onOpenBooking={onOpenBooking} />
+        ))}
+      </div>
+    </div>
   );
 };
 
 // ─── MAIN PAGE ────────────────────────────────────────────────
 
 interface LeadsListProps {
-  onOpenBooking?: (bookingId: string) => void;
-  onNewLead?:     () => void;
+  onNewLead?: () => void;
 }
 
-const LeadsList: React.FC<LeadsListProps> = ({ onOpenBooking, onNewLead }) => {
-  const { isAdmin, isManager, isOpsManager, user } = useAuth();
+const LeadsList: React.FC<LeadsListProps> = ({ onNewLead }) => {
+  const { isAdmin, isManager } = useAuth();
+  const navigate = useNavigate();
 
-  // ── Filters state ─────────────────────────────────────────
-  const [search,   setSearch]   = useState('');
-  const [status,   setStatus]   = useState<LeadStatus | ''>('');
-  const [source,   setSource]   = useState<LeadSource | ''>('');
-  const [manager,  setManager]  = useState('');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo,   setDateTo]   = useState('');
-  const [page,     setPage]     = useState(1);
-  const [perPage,  setPerPage]  = useState<typeof PAGE_SIZE_OPTIONS[number]>(10);
-  const [sortBy,   setSortBy]   = useState('created_at');
-  const [sortDir,  setSortDir]  = useState<'asc' | 'desc'>('desc');
+  const [search, setSearch]       = useState('');
+  const [source, setSource]       = useState<LeadSource | ''>('');
+  const [managerId, setManagerId] = useState('');
+  const [dateFrom, setDateFrom]   = useState('');
+  const [dateTo, setDateTo]       = useState('');
 
-  const activeFiltersCount = [search, status, source, manager, dateFrom, dateTo].filter(Boolean).length;
+  const activeFiltersCount = [search, source, managerId, dateFrom, dateTo].filter(Boolean).length;
+  const clearFilters = () => { setSearch(''); setSource(''); setManagerId(''); setDateFrom(''); setDateTo(''); };
 
-  const clearFilters = () => {
-    setSearch(''); setStatus(''); setSource(''); setManager('');
-    setDateFrom(''); setDateTo(''); setPage(1);
-  };
-
-  const handleSort = (key: string) => {
-    if (sortBy === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
-    else { setSortBy(key); setSortDir('desc'); }
-    setPage(1);
-  };
-
-  // ── Data ──────────────────────────────────────────────────
   const filters: LeadFilters = useMemo(() => ({
-    ...(search   && { search   }),
-    ...(status   && { status   }),
-    ...(source   && { source   }),
-    ...(manager  && { manager  }),
-    ...(dateFrom && { date_from: dateFrom }),
-    ...(dateTo   && { date_to:   dateTo   }),
-    page,
-    per_page: perPage,
-  }), [search, status, source, manager, dateFrom, dateTo, page, perPage]);
+    ...(search    && { search }),
+    ...(source    && { source }),
+    ...(managerId && { managerId }),
+    ...(dateFrom  && { dateFrom }),
+    ...(dateTo    && { dateTo }),
+  }), [search, source, managerId, dateFrom, dateTo]);
 
   const { data, isLoading, isError, refetch, isFetching } = useLeads(filters);
   const leads = data?.data ?? [];
   const total = data?.meta.total ?? 0;
-  const totalPages = Math.max(1, Math.ceil(total / perPage));
 
-  // ── Client-side sort (для mock; сервер сортує нативно) ────
-  const sorted = useMemo(() => {
-    if (!leads.length) return leads;
-    return [...leads].sort((a, b) => {
-      let av = '', bv = '';
-      if (sortBy === 'created_at')   { av = a.created_at;     bv = b.created_at;    }
-      if (sortBy === 'name')         { av = leadName(a);       bv = leadName(b);      }
-      if (sortBy === 'status')       { av = a.status;          bv = b.status;         }
-      if (sortBy === 'next_contact') { av = a.next_contact_at ?? ''; bv = b.next_contact_at ?? ''; }
-      return sortDir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
-    });
-  }, [leads, sortBy, sortDir]);
+  const leadsByStatus = useMemo(() => {
+    const grouped = Object.fromEntries(
+      Object.keys(LEAD_STATUS_CONFIG).map((s) => [s, [] as Lead[]]),
+    ) as Record<LeadStatus, Lead[]>;
+    for (const lead of leads) {
+      if (lead.status in grouped) grouped[lead.status].push(lead);
+    }
+    return grouped;
+  }, [leads]);
 
-  const handleNavigate = useCallback((bookingId: string) => {
-    onOpenBooking?.(bookingId);
-  }, [onOpenBooking]);
+  const convertLead = useConvertLead();
+  const updateStatus = useUpdateLeadStatus();
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+
+  const activeLead = activeId ? leads.find((l) => l.id === activeId) ?? null : null;
+
+  const handleDragStart = (e: DragStartEvent) => setActiveId(String(e.active.id));
+
+  const handleDragEnd = (e: DragEndEvent) => {
+    setActiveId(null);
+    const { active, over } = e;
+    if (!over) return;
+
+    const leadId = String(active.id);
+    const fromStatus = active.data.current?.status as LeadStatus | undefined;
+    const toStatus = over.id as LeadStatus;
+    if (!fromStatus || fromStatus === toStatus) return;
+
+    if (toStatus === 'won') {
+      convertLead.mutate(leadId);
+    } else {
+      updateStatus.mutate({ id: leadId, status: toStatus });
+    }
+  };
 
   return (
-    <div className="p-6 max-w-screen-xl mx-auto">
+    <div className="p-6 max-w-screen-2xl mx-auto">
 
       {/* ── HEADER ── */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
         <div>
-          <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Ліди</h1>
+          <h1 className="font-heading text-xl font-semibold text-slate-900 dark:text-slate-100">CRM · Ліди</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
             {isLoading ? '…' : `${total} ${total === 1 ? 'лід' : total < 5 ? 'ліди' : 'лідів'}`}
             {isFetching && !isLoading && <span className="ml-2 text-slate-400"><Loader2 size={11} className="inline animate-spin" /></span>}
@@ -327,7 +321,7 @@ const LeadsList: React.FC<LeadsListProps> = ({ onOpenBooking, onNewLead }) => {
         </div>
         <button
           onClick={onNewLead}
-          className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 hover:opacity-80 transition-opacity"
+          className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium bg-brand-cyan text-brand-dark hover:bg-brand-cyan-dark transition-colors"
         >
           <Plus size={14} /> Новий лід
         </button>
@@ -336,62 +330,44 @@ const LeadsList: React.FC<LeadsListProps> = ({ onOpenBooking, onNewLead }) => {
       {/* ── FILTERS ── */}
       <div className="border border-slate-200 dark:border-slate-700 rounded-xl p-3 mb-4 bg-white dark:bg-slate-900">
         <div className="flex flex-wrap gap-2 items-center">
-
-          {/* Search */}
           <div className="relative flex-1 min-w-[200px]">
             <Search size={14} className="absolute left-3 top-2.5 text-slate-400" />
             <input
               value={search}
-              onChange={e => { setSearch(e.target.value); setPage(1); }}
+              onChange={(e) => setSearch(e.target.value)}
               placeholder="Пошук: ПІБ, телефон, email…"
-              className="w-full pl-8 pr-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-8 pr-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-cyan"
             />
           </div>
 
-          {/* Status */}
-          <FilterSelect
-            value={status}
-            onChange={v => { setStatus(v as LeadStatus | ''); setPage(1); }}
-            placeholder="Статус"
-            options={Object.entries(LEAD_STATUS_CONFIG).map(([v, c]) => ({ value: v, label: c.label }))}
-          />
-
-          {/* Source */}
           <FilterSelect
             value={source}
-            onChange={v => { setSource(v as LeadSource | ''); setPage(1); }}
+            onChange={(v) => setSource(v as LeadSource | '')}
             placeholder="Джерело"
             options={Object.entries(SOURCE_CONFIG).map(([v, c]) => ({ value: v, label: c.label }))}
           />
 
-          {/* Manager (тільки admin/director) */}
           {(isAdmin || isManager) && (
             <FilterSelect
-              value={manager}
-              onChange={v => { setManager(v); setPage(1); }}
+              value={managerId}
+              onChange={setManagerId}
               placeholder="Менеджер"
               options={Object.entries(MANAGERS).map(([v, label]) => ({ value: v, label }))}
             />
           )}
 
-          {/* Date from */}
           <input
-            type="date"
-            value={dateFrom}
-            onChange={e => { setDateFrom(e.target.value); setPage(1); }}
-            className="px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
+            className="px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-cyan"
             title="Дата від"
           />
           <span className="text-slate-400 text-sm">—</span>
           <input
-            type="date"
-            value={dateTo}
-            onChange={e => { setDateTo(e.target.value); setPage(1); }}
-            className="px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
+            className="px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-cyan"
             title="Дата до"
           />
 
-          {/* Clear */}
           {activeFiltersCount > 0 && (
             <button
               onClick={clearFilters}
@@ -403,221 +379,41 @@ const LeadsList: React.FC<LeadsListProps> = ({ onOpenBooking, onNewLead }) => {
         </div>
       </div>
 
-      {/* ── TABLE ── */}
-      <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
-        {isLoading ? (
-          <div className="divide-y divide-slate-100 dark:divide-slate-700">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-4 px-4 py-3 animate-pulse">
-                <div className="flex-1 space-y-1.5">
-                  <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-32" />
-                  <div className="h-2.5 bg-slate-100 dark:bg-slate-800 rounded w-48" />
-                </div>
-                <div className="h-5 bg-slate-200 dark:bg-slate-700 rounded w-20" />
-                <div className="h-5 bg-slate-100 dark:bg-slate-800 rounded w-24" />
-                <div className="h-5 bg-slate-200 dark:bg-slate-700 rounded w-16" />
-              </div>
-            ))}
-          </div>
-        ) : isError ? (
-          <div className="flex flex-col items-center py-12 text-slate-400">
-            <AlertTriangle size={28} className="mb-2 text-red-400" />
-            <p className="text-sm mb-3">Помилка завантаження лідів</p>
-            <button onClick={() => refetch()} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-              <RefreshCw size={11} /> Повторити
-            </button>
-          </div>
-        ) : sorted.length === 0 ? (
-          <div className="flex flex-col items-center py-16 text-slate-400">
-            <Filter size={28} className="mb-2 opacity-40" />
-            <p className="text-sm">Лідів за фільтрами не знайдено</p>
-            {activeFiltersCount > 0 && (
-              <button onClick={clearFilters} className="mt-2 text-xs text-blue-500 hover:underline">Скинути фільтри</button>
-            )}
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              {/* Header */}
-              <thead className="bg-slate-50 dark:bg-slate-800/60">
-                <tr>
-                  {[
-                    { key: 'name',         label: 'ПІБ / Контакт'    },
-                    { key: 'source',       label: 'Джерело'           },
-                    { key: 'status',       label: 'Статус'            },
-                    { key: null,           label: 'Тур'               },
-                    { key: null,           label: 'Менеджер'          },
-                    { key: 'next_contact', label: 'Наступний контакт' },
-                    { key: 'created_at',   label: 'Дата'              },
-                    { key: null,           label: ''                  },
-                  ].map((col, i) => (
-                    <th key={i} className="px-4 py-2.5 text-left border-b border-slate-200 dark:border-slate-700">
-                      {col.key ? (
-                        <SortHeader
-                          label={col.label}
-                          sortKey={col.key}
-                          current={sortBy}
-                          direction={sortDir}
-                          onSort={handleSort}
-                        />
-                      ) : (
-                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                          {col.label}
-                        </span>
-                      )}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-
-              {/* Rows */}
-              <tbody>
-                {sorted.map(lead => (
-                  <tr
-                    key={lead.id}
-                    className="border-b border-slate-100 dark:border-slate-700 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
-                  >
-                    {/* ПІБ / Контакт */}
-                    <td className="px-4 py-3">
-                      <p className="text-sm font-medium text-slate-900 dark:text-slate-100 whitespace-nowrap">
-                        {leadName(lead)}
-                      </p>
-                      <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-400">
-                        {lead.phone && <span>{lead.phone}</span>}
-                        {lead.email && <span className="truncate max-w-[140px]">{lead.email}</span>}
-                        {lead.pax_count > 1 && (
-                          <span className="flex items-center gap-1">
-                            <Users size={10} />{lead.pax_count} ос.
-                          </span>
-                        )}
-                      </div>
-                    </td>
-
-                    {/* Джерело */}
-                    <td className="px-4 py-3">
-                      <SourceBadge source={lead.source} />
-                    </td>
-
-                    {/* Статус */}
-                    <td className="px-4 py-3">
-                      <LeadStatusBadge status={lead.status} />
-                      {lead.status === 'lost' && lead.lost_reason && (
-                        <p className="text-xs text-slate-400 mt-0.5 max-w-[160px] truncate" title={lead.lost_reason}>
-                          {lead.lost_reason}
-                        </p>
-                      )}
-                    </td>
-
-                    {/* Тур */}
-                    <td className="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">
-                      {lead.tour_id
-                        ? <span className="text-xs">{lead.tour_date ?? '—'}</span>
-                        : <span className="text-xs text-slate-300 dark:text-slate-600">Не обрано</span>}
-                      {lead.budget_eur && (
-                        <span className="block text-xs text-slate-400">до {lead.budget_eur.toLocaleString()} EUR</span>
-                      )}
-                    </td>
-
-                    {/* Менеджер */}
-                    <td className="px-4 py-3 text-sm text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                      {lead.assigned_to ? MANAGERS[lead.assigned_to] ?? lead.assigned_to : (
-                        <span className="text-slate-300 dark:text-slate-600">—</span>
-                      )}
-                    </td>
-
-                    {/* Наступний контакт */}
-                    <td className="px-4 py-3">
-                      {lead.next_contact_at ? (
-                        <span className={`flex items-center gap-1 text-xs whitespace-nowrap ${
-                          new Date(lead.next_contact_at) < new Date()
-                            ? 'text-red-500 dark:text-red-400'
-                            : 'text-slate-500 dark:text-slate-400'
-                        }`}>
-                          <Calendar size={11} />
-                          {fmtDate(lead.next_contact_at)}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-slate-300 dark:text-slate-600">—</span>
-                      )}
-                    </td>
-
-                    {/* Дата */}
-                    <td className="px-4 py-3 text-xs text-slate-400 dark:text-slate-500 whitespace-nowrap">
-                      {fmtDate(lead.created_at)}
-                    </td>
-
-                    {/* Дії */}
-                    <td className="px-4 py-3">
-                      <ConvertButton lead={lead} onNavigate={handleNavigate} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      {/* ── PAGINATION ── */}
-      {total > 0 && (
-        <div className="flex items-center justify-between mt-4 text-sm">
-          <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
-            <span>На сторінці:</span>
-            {PAGE_SIZE_OPTIONS.map(n => (
-              <button
-                key={n}
-                onClick={() => { setPerPage(n); setPage(1); }}
-                className={`px-2 py-0.5 rounded text-xs border transition-colors ${
-                  perPage === n
-                    ? 'border-slate-900 dark:border-slate-100 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900'
-                    : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
-                }`}
-              >
-                {n}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-slate-500 dark:text-slate-400">
-              {((page - 1) * perPage) + 1}–{Math.min(page * perPage, total)} з {total}
-            </span>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                <ChevronLeft size={14} />
-              </button>
-              {/* Page numbers — показуємо max 5 */}
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                const start = Math.max(1, Math.min(page - 2, totalPages - 4));
-                const p = start + i;
-                return (
-                  <button
-                    key={p}
-                    onClick={() => setPage(p)}
-                    className={`w-7 h-7 rounded-lg text-xs border transition-colors ${
-                      page === p
-                        ? 'border-slate-900 dark:border-slate-100 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900'
-                        : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
-                    }`}
-                  >
-                    {p}
-                  </button>
-                );
-              })}
-              <button
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                disabled={page >= totalPages}
-                className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                <ChevronRight size={14} />
-              </button>
+      {/* ── BOARD ── */}
+      {isLoading ? (
+        <div className="flex gap-3 overflow-x-auto pb-2">
+          {Array.from({ length: 7 }).map((_, i) => (
+            <div key={i} className="w-[230px] flex-shrink-0 space-y-2 animate-pulse">
+              <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-24" />
+              <div className="h-16 bg-slate-100 dark:bg-slate-800 rounded-lg" />
+              <div className="h-16 bg-slate-100 dark:bg-slate-800 rounded-lg" />
             </div>
-          </div>
+          ))}
         </div>
+      ) : isError ? (
+        <div className="flex flex-col items-center py-16 text-slate-400">
+          <AlertTriangle size={28} className="mb-2 text-brand-red" />
+          <p className="text-sm mb-3">Помилка завантаження лідів</p>
+          <button onClick={() => refetch()} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+            <RefreshCw size={11} /> Повторити
+          </button>
+        </div>
+      ) : (
+        <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+          <div className="flex gap-3 overflow-x-auto pb-2">
+            {(Object.keys(LEAD_STATUS_CONFIG) as LeadStatus[]).map((status) => (
+              <LeadColumn
+                key={status}
+                status={status}
+                leads={leadsByStatus[status]}
+                onOpenBooking={(bookingId) => navigate(`/bookings/${bookingId}`)}
+              />
+            ))}
+          </div>
+          <DragOverlay>
+            {activeLead && <LeadCard lead={activeLead} onOpenBooking={() => {}} />}
+          </DragOverlay>
+        </DndContext>
       )}
     </div>
   );

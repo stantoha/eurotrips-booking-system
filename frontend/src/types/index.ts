@@ -268,6 +268,8 @@ export interface Lead {
   phone?: string;
   tour_id?: string;
   tour_date?: string;
+  /** Вкладений тур з реальної відповіді GET /leads (Prisma include) — назва/код для карток Kanban */
+  tour?: { code: string; name: string; departure_date: string };
   pax_count: number;
   budget_eur?: number;
   message?: string;

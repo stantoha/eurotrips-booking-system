@@ -7,11 +7,11 @@ import { BookingStatus, TourStatus, LeadStatus, PaymentStatus, CommissionStatus 
 
 // Кольорові групи для Tailwind CSS (light + dark mode)
 export type StatusColorVariant =
-  | 'info'       // blue  — нові / в роботі
-  | 'warning'    // amber — потребує уваги / очікує оплату
-  | 'success'    // green — підтверджено / завершено-позитивно
-  | 'danger'     // red   — скасовано / no-show / refund
-  | 'secondary'; // gray  — завершено / нейтральні
+  | 'info'       // blue    — нові / в роботі
+  | 'warning'    // amber   — потребує уваги / очікує оплату
+  | 'success'    // emerald — підтверджено / завершено-позитивно
+  | 'danger'     // red     — скасовано / no-show / refund
+  | 'neutral';   // slate   — завершено / нейтральні
 
 export interface StatusConfig {
   label: string;
@@ -46,7 +46,7 @@ export const BOOKING_STATUS_CONFIG: Record<BookingStatus, StatusConfig> = {
   pre_booked: {
     label: 'Попередньо заброньовано',
     icon: 'Bookmark',
-    colorVariant: 'secondary',
+    colorVariant: 'neutral',
     description: 'Місце зарезервовано, оплата ще не надійшла',
   },
   awaiting_payment: {
@@ -90,7 +90,7 @@ export const BOOKING_STATUS_CONFIG: Record<BookingStatus, StatusConfig> = {
   completed: {
     label: 'Завершено',
     icon: 'Archive',
-    colorVariant: 'secondary',
+    colorVariant: 'neutral',
     description: 'Тур завершено успішно. Комісія агента: до виплати (BR-03)',
   },
   cancelled_client: {
@@ -126,48 +126,48 @@ export const STATUS_COLOR_CLASSES: Record<StatusColorVariant, {
   dot: string;
   text: string;
 }> = {
-  // cyan = активні/підтверджені (brand-cyan)
+  // blue — нові / в роботі
   info: {
-    badge: 'bg-brand-cyan/10 text-brand-cyan-dark border-brand-cyan/30',
-    dot: 'bg-brand-cyan',
-    text: 'text-brand-cyan-dark',
+    badge: 'bg-[#eff6ff] text-[#1d4ed8] border-[#bfdbfe] dark:bg-[rgba(59,130,246,.16)] dark:text-[#93c5fd] dark:border-[rgba(59,130,246,.35)]',
+    dot: 'bg-[#3b82f6] dark:bg-[#60a5fa]',
+    text: 'text-[#1d4ed8] dark:text-[#93c5fd]',
   },
-  // cyan = підтверджено/в поїздці (brand-cyan)
-  success: {
-    badge: 'bg-brand-cyan/10 text-brand-cyan-dark border-brand-cyan/30',
-    dot: 'bg-brand-cyan',
-    text: 'text-brand-cyan-dark',
-  },
-  // gold = очікування/попередження (brand-gold)
+  // amber — очікування/попередження
   warning: {
-    badge: 'bg-brand-gold/10 text-brand-gold-dark border-brand-gold/30',
-    dot: 'bg-brand-gold',
-    text: 'text-brand-gold-dark',
+    badge: 'bg-[#fffbeb] text-[#b45309] border-[#fde68a] dark:bg-[rgba(245,158,11,.16)] dark:text-[#fcd34d] dark:border-[rgba(245,158,11,.35)]',
+    dot: 'bg-[#f59e0b]',
+    text: 'text-[#b45309] dark:text-[#fcd34d]',
   },
-  // red = скасовані/помилки (brand-red)
+  // emerald — підтверджено / завершено-позитивно
+  success: {
+    badge: 'bg-[#ecfdf5] text-[#047857] border-[#a7f3d0] dark:bg-[rgba(16,185,129,.16)] dark:text-[#6ee7b7] dark:border-[rgba(16,185,129,.35)]',
+    dot: 'bg-[#10b981] dark:bg-[#34d399]',
+    text: 'text-[#047857] dark:text-[#6ee7b7]',
+  },
+  // red — скасовано / no-show / refund
   danger: {
-    badge: 'bg-brand-red/10 text-brand-red-dark border-brand-red/30',
-    dot: 'bg-brand-red',
-    text: 'text-brand-red-dark',
+    badge: 'bg-[#fef2f2] text-[#b91c1c] border-[#fecaca] dark:bg-[rgba(239,68,68,.16)] dark:text-[#fca5a5] dark:border-[rgba(239,68,68,.35)]',
+    dot: 'bg-[#ef4444] dark:bg-[#f87171]',
+    text: 'text-[#b91c1c] dark:text-[#fca5a5]',
   },
-  // blue = завершені/архів (brand-blue)
-  secondary: {
-    badge: 'bg-brand-blue/10 text-brand-blue-dark border-brand-blue/30 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700',
-    dot: 'bg-brand-blue',
-    text: 'text-brand-blue-dark',
+  // slate — завершено / нейтральні
+  neutral: {
+    badge: 'bg-[#f1f5f9] text-[#475569] border-[#e2e8f0] dark:bg-[rgba(100,116,139,.18)] dark:text-[#cbd5e1] dark:border-[rgba(100,116,139,.35)]',
+    dot: 'bg-[#64748b] dark:bg-[#94a3b8]',
+    text: 'text-[#475569] dark:text-[#cbd5e1]',
   },
 };
 
 // ─── TOUR STATUSES ───────────────────────────────────────────
 
 export const TOUR_STATUS_CONFIG: Record<TourStatus, StatusConfig> = {
-  draft:       { label: 'Чернетка',                icon: 'FileEdit',      colorVariant: 'secondary' },
+  draft:       { label: 'Чернетка',                icon: 'FileEdit',      colorVariant: 'neutral' },
   open:        { label: 'Відкрито для продажу',    icon: 'DoorOpen',      colorVariant: 'info' },
   active:      { label: 'Активно продається',      icon: 'TrendingUp',    colorVariant: 'success', isPulsing: true },
   almost_full: { label: 'Майже заповнений',        icon: 'AlertTriangle', colorVariant: 'warning', isPulsing: true },
-  closed:      { label: 'Закрито',                 icon: 'Lock',          colorVariant: 'secondary' },
+  closed:      { label: 'Закрито',                 icon: 'Lock',          colorVariant: 'neutral' },
   on_tour:     { label: 'У виїзді',                icon: 'Route',         colorVariant: 'success', isPulsing: true },
-  completed:   { label: 'Завершено',               icon: 'CheckCircle2',  colorVariant: 'secondary' },
+  completed:   { label: 'Завершено',               icon: 'CheckCircle2',  colorVariant: 'neutral' },
   cancelled:   { label: 'Скасовано',               icon: 'XCircle',       colorVariant: 'danger' },
 };
 
@@ -197,7 +197,7 @@ export const LEAD_STATUS_CONFIG: Record<LeadStatus, StatusConfig> = {
 
 export const COMMISSION_STATUS_CONFIG: Record<CommissionStatus, StatusConfig> = {
   pending:   { label: 'Нараховано',     icon: 'Clock',         colorVariant: 'warning' },
-  frozen:    { label: 'Заморожено',     icon: 'Snowflake',     colorVariant: 'secondary' },
+  frozen:    { label: 'Заморожено',     icon: 'Snowflake',     colorVariant: 'neutral' },
   to_pay:    { label: 'До виплати',     icon: 'Banknote',      colorVariant: 'success', isPulsing: true },
   paid:      { label: 'Виплачено',      icon: 'CircleCheckBig',colorVariant: 'success' },
   cancelled: { label: 'Скасовано',      icon: 'XCircle',       colorVariant: 'danger' },
@@ -206,7 +206,7 @@ export const COMMISSION_STATUS_CONFIG: Record<CommissionStatus, StatusConfig> = 
 // ─── AGENT TYPE LABELS ───────────────────────────────────────
 
 export const AGENT_TYPE_CONFIG: Record<string, { label: string; icon: string; colorVariant: StatusColorVariant }> = {
-  standard: { label: 'Стандартний агент', icon: 'User',    colorVariant: 'secondary' },
+  standard: { label: 'Стандартний агент', icon: 'User',    colorVariant: 'neutral' },
   network:  { label: 'Мережевий агент',   icon: 'Network', colorVariant: 'info' },
 };
 

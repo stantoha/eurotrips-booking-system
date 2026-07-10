@@ -89,7 +89,7 @@ const BRow: React.FC<{
   showAgent:  boolean;
 }> = ({ booking: b, expanded, onToggle, showAgent }) => {
   const cfg = BOOKING_STATUS_CONFIG[b.status];
-  const cc  = cfg ? STATUS_COLOR_CLASSES[cfg.colorVariant] : STATUS_COLOR_CLASSES.secondary;
+  const cc  = cfg ? STATUS_COLOR_CLASSES[cfg.colorVariant] : STATUS_COLOR_CLASSES.neutral;
 
   return (
     <Fragment key={b.id}>
