@@ -38,6 +38,8 @@ export interface UseAuthReturn {
   isAccountant:    boolean;
   isAgent:         boolean;
   isTourist:       boolean;
+  isProductManager: boolean;
+  isLogist:        boolean;
   isNetworkAgent:  boolean;
   canSeeMargin:    boolean;   // false для агентів (BR-04)
   canSeeAllAgents: boolean;   // тільки admin/director/manager/accountant
@@ -124,6 +126,8 @@ export function useAuth(): UseAuthReturn {
   const isAccountant  = hasRole('accountant');
   const isAgent       = hasRole('agent');
   const isTourist     = hasRole('tourist');
+  const isProductManager = hasRole('product_manager');
+  const isLogist      = hasRole('logist');
 
   // Мережевий агент має royalty_pct > 0 (ADR-001 §3.4)
   const isNetworkAgent = isAgent && user?.agent_type === 'network';
@@ -153,6 +157,8 @@ export function useAuth(): UseAuthReturn {
     isAccountant,
     isAgent,
     isTourist,
+    isProductManager,
+    isLogist,
     isNetworkAgent,
     canSeeMargin,
     canSeeAllAgents,

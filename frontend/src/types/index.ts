@@ -287,7 +287,8 @@ export interface Lead {
 // ─── AUTH / USERS ────────────────────────────────────────────
 
 /**
- * 7 ролей згідно ТЗ-скелету (розділ 3) та ADR-001 (§6)
+ * 9 ролей: 7 згідно ТЗ-скелету (розділ 3) та ADR-001 (§6)
+ * + product_manager, logist (додано пізніше)
  */
 export type UserRole =
   | 'admin'
@@ -296,7 +297,9 @@ export type UserRole =
   | 'ops'
   | 'accountant'
   | 'agent'
-  | 'tourist';
+  | 'tourist'
+  | 'product_manager'
+  | 'logist';
 
 export interface User {
   id: string;

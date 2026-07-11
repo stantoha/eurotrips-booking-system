@@ -346,6 +346,36 @@ async function main() {
     },
   });
 
+  // product_manager@eurotrips.ua / test1234
+  const productManagerUser = await prisma.user.upsert({
+    where: { email: 'product_manager@eurotrips.ua' },
+    update: { passwordHash: await hashPassword(SEED_PASSWORD) },
+    create: {
+      email: 'product_manager@eurotrips.ua',
+      passwordHash: await hashPassword(SEED_PASSWORD),
+      role: UserRole.product_manager,
+      firstName: 'Продакт',
+      lastName: 'Менеджер',
+      phone: '+380671234600',
+      isActive: true,
+    },
+  });
+
+  // logist@eurotrips.ua / test1234
+  const logistUser = await prisma.user.upsert({
+    where: { email: 'logist@eurotrips.ua' },
+    update: { passwordHash: await hashPassword(SEED_PASSWORD) },
+    create: {
+      email: 'logist@eurotrips.ua',
+      passwordHash: await hashPassword(SEED_PASSWORD),
+      role: UserRole.logist,
+      firstName: 'Логіст',
+      lastName: 'Операційний',
+      phone: '+380671234700',
+      isActive: true,
+    },
+  });
+
   // agent@agency.ua / test1234 → name: "Тестовий Агент"
   const agentUserStandard = await prisma.user.upsert({
     where: { email: 'agent@agency.ua' },

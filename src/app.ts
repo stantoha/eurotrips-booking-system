@@ -41,6 +41,9 @@ import { agentRoutes }        from './modules/agents/agents.routes';
 import { touristRoutes }      from './modules/tourists/tourists.routes';
 import { hotelRoutes }        from './modules/hotels/hotels.routes';
 import { analyticsRoutes }    from './modules/analytics/analytics.routes';
+import { staffRoutes }        from './modules/staff/staff.routes';
+import { tourDriversRoutes }  from './modules/tours/tour-drivers.routes';
+import { tourExtrasRoutes }   from './modules/tours/tour-extras.routes';
 // import { zohoWebhookRoutes }  from './modules/integrations/zoho/zoho.webhook';
 import { liqPayRoutes }       from './modules/payments/liqpay.routes';
 
@@ -238,6 +241,12 @@ export async function buildApp(app: FastifyInstance) {
       await api.register(hotelRoutes, { prefix: '/hotels' });
       // Analytics — базова аналітика MVP (CLAUDE.md §16, Реліз 1)
       await api.register(analyticsRoutes, { prefix: '/analytics' });
+      // Staff — турлідери/гіди/водії/координатори (product_manager)
+      await api.register(staffRoutes, { prefix: '/staff' });
+      // Призначення водіїв на тур (той самий /tours префікс, ліміт 2)
+      await api.register(tourDriversRoutes, { prefix: '/tours' });
+      // ДОПи туру (той самий /tours префікс)
+      await api.register(tourExtrasRoutes, { prefix: '/tours' });
     },
     { prefix: '/api/v1' }
   );

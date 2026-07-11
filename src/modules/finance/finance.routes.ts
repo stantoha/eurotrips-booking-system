@@ -109,7 +109,7 @@ export async function financeRoutes(app: FastifyInstance) {
   app.get<{ Params: { id: string } }>(
     '/tours/:id/summary',
     {
-      preHandler: [requireAuth, requireRoles('admin', 'director', 'manager')],
+      preHandler: [requireAuth, requireRoles('admin', 'director', 'manager', 'product_manager')],
       schema: {
         summary: 'Фінансове зведення по туру',
         description: 'Доходи, витрати, прибуток по конкретному туру. Агент → 403 (BR-04).',
@@ -185,7 +185,7 @@ export async function financeRoutes(app: FastifyInstance) {
   app.get<{ Params: { id: string } }>(
     '/tours/:id/pnl',
     {
-      preHandler: [requireAuth, requireRoles('admin', 'director', 'accountant')],
+      preHandler: [requireAuth, requireRoles('admin', 'director', 'accountant', 'product_manager')],
       schema: {
         summary: 'P&L по туру',
         tags: ['Finance'],

@@ -8,7 +8,13 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, MapPin, Calendar, Users, Tag, Plus, Lock, CheckCircle2, Search } from 'lucide-react';
-import { useTour } from '../hooks/useTours';
+import { useTour, useUpdateTour } from '../hooks/useTours';
+import { useStaffList, type Staff } from '../hooks/useStaff';
+import { useTourDrivers, useAssignDriver, useUnassignDriver } from '../hooks/useTourDrivers';
+import {
+  useTourExtras, useCreateTourExtra, usePatchTourExtra, useCancelTourExtra,
+  type TourExtra,
+} from '../hooks/useTourExtras';
 import { useAuth } from '../hooks/useAuth';
 import { TOUR_STATUS_CONFIG, STATUS_COLOR_CLASSES } from '../constants/statuses';
 import { ProgressChecklist } from '../components/ops/ProgressChecklist';
@@ -1094,17 +1100,234 @@ const RoomStructureTab: React.FC<{ tourId: string; canEdit: boolean; canApprove:
   );
 };
 
+// ─── TAB: ПЕРСОНАЛ (турлідер, водії, ДОПи) — product_manager ──────────────
+
+const COST_FIELDS: { snakeKey: keyof TourExtra; camelKey: string; label: string }[] = [
+  { snakeKey: 'guide_cost', camelKey: 'guideCost', label: 'Гід' },
+  { snakeKey: 'parking_cost', camelKey: 'parkingCost', label: 'Парковки' },
+  { snakeKey: 'city_entries_cost', camelKey: 'cityEntriesCost', label: "В'їзди" },
+  { snakeKey: 'gifts_cost', camelKey: 'giftsCost', label: 'Подарунки' },
+  { snakeKey: 'insurance_cost', camelKey: 'insuranceCost', label: 'Страховка' },
+  { snakeKey: 'other_cost', camelKey: 'otherCost', label: 'Інше' },
+];
+
+const TourGuideSection: React.FC<{ tourId: string; guideId?: string; guideName?: string }> = ({
+  tourId, guideId, guideName,
+}) => {
+  const { data: leaders } = useStaffList({ role: 'tour_leader' });
+  const updateTour = useUpdateTour(tourId);
+  const [selected, setSelected] = useState(guideId ?? '');
+
+  const handleSave = () => {
+    if (!selected || selected === guideId) return;
+    updateTour.mutate({ guideId: selected });
+  };
+
+  return (
+    <div>
+      <h3 className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-2">Турлідер</h3>
+      {guideName && (
+        <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Поточний: {guideName}</p>
+      )}
+      <div className="flex gap-2">
+        <select
+          value={selected}
+          onChange={(e) => setSelected(e.target.value)}
+          className="flex-1 px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
+        >
+          <option value="">— оберіть турлідера —</option>
+          {(leaders?.data ?? []).map((s: Staff) => (
+            <option key={s.id} value={s.id}>{s.first_name} {s.last_name}</option>
+          ))}
+        </select>
+        <button
+          onClick={handleSave}
+          disabled={!selected || selected === guideId || updateTour.isPending}
+          className="px-4 py-2 text-sm rounded-pill font-semibold bg-brand-red text-white hover:bg-brand-red-dark disabled:opacity-40 transition-colors"
+        >
+          Призначити
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const TourDriversSection: React.FC<{ tourId: string }> = ({ tourId }) => {
+  const { data: drivers, isLoading } = useTourDrivers(tourId);
+  const { data: allDrivers } = useStaffList({ role: 'driver' });
+  const assignDriver = useAssignDriver(tourId);
+  const unassignDriver = useUnassignDriver(tourId);
+  const [selected, setSelected] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  const assignedIds = new Set((drivers ?? []).map((d) => d.staff_id));
+  const availableDrivers = (allDrivers?.data ?? []).filter((s: Staff) => !assignedIds.has(s.id));
+  const atLimit = (drivers?.length ?? 0) >= 2;
+
+  const handleAssign = async () => {
+    if (!selected) return;
+    setError(null);
+    try {
+      await assignDriver.mutateAsync(selected);
+      setSelected('');
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Не вдалося призначити водія'));
+    }
+  };
+
+  return (
+    <div>
+      <h3 className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-2">Водії (максимум 2)</h3>
+      {isLoading && <p className="text-xs text-slate-400">Завантаження…</p>}
+      <div className="space-y-1.5 mb-3">
+        {(drivers ?? []).map((d) => (
+          <div key={d.id} className="flex items-center justify-between px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700">
+            <span className="text-sm text-slate-800 dark:text-slate-200">{d.staff.first_name} {d.staff.last_name}</span>
+            <button
+              onClick={() => unassignDriver.mutate(d.staff_id)}
+              className="text-xs text-brand-red hover:underline"
+            >
+              Зняти
+            </button>
+          </div>
+        ))}
+        {(drivers?.length ?? 0) === 0 && !isLoading && (
+          <p className="text-xs text-slate-400">Водіїв ще не призначено.</p>
+        )}
+      </div>
+
+      {error && <p className="text-xs text-red-500 mb-2">{error}</p>}
+
+      {!atLimit && (
+        <div className="flex gap-2">
+          <select
+            value={selected}
+            onChange={(e) => setSelected(e.target.value)}
+            className="flex-1 px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
+          >
+            <option value="">— оберіть водія —</option>
+            {availableDrivers.map((s: Staff) => (
+              <option key={s.id} value={s.id}>{s.first_name} {s.last_name}</option>
+            ))}
+          </select>
+          <button
+            onClick={handleAssign}
+            disabled={!selected || assignDriver.isPending}
+            className="px-4 py-2 text-sm rounded-pill font-semibold bg-brand-red text-white hover:bg-brand-red-dark disabled:opacity-40 transition-colors"
+          >
+            Призначити
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const TourExtrasSection: React.FC<{ tourId: string }> = ({ tourId }) => {
+  const { data: extras, isLoading } = useTourExtras(tourId);
+  const createExtra = useCreateTourExtra(tourId);
+  const cancelExtra = useCancelTourExtra(tourId);
+  const [showForm, setShowForm] = useState(false);
+  const [costs, setCosts] = useState<Record<string, string>>({});
+
+  const activeExtras = (extras ?? []).filter((e) => e.status !== 'відмінено');
+
+  const handleCreate = async () => {
+    const payload = Object.fromEntries(
+      Object.entries(costs)
+        .filter(([, v]) => v !== '')
+        .map(([k, v]) => [k, Number(v)])
+    );
+    await createExtra.mutateAsync(payload);
+    setCosts({});
+    setShowForm(false);
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-sm font-medium text-slate-900 dark:text-slate-100">ДОПи туру</h3>
+        <button onClick={() => setShowForm((v) => !v)} className="text-xs text-brand-cyan-dark dark:text-brand-cyan hover:underline">
+          {showForm ? 'Скасувати' : '+ Додати ДОП'}
+        </button>
+      </div>
+
+      {isLoading && <p className="text-xs text-slate-400">Завантаження…</p>}
+
+      <div className="space-y-2 mb-3">
+        {activeExtras.map((extra: TourExtra) => (
+          <div key={extra.id} className="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                {(extra.total_cost ?? 0).toLocaleString('uk-UA')} EUR
+              </span>
+              <button onClick={() => cancelExtra.mutate(extra.id)} className="text-xs text-brand-red hover:underline">
+                Скасувати
+              </button>
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              {COST_FIELDS
+                .filter(({ snakeKey }) => Number(extra[snakeKey] ?? 0) > 0)
+                .map(({ snakeKey, label }) => `${label}: ${extra[snakeKey]}`)
+                .join(' · ') || '—'}
+            </p>
+          </div>
+        ))}
+        {activeExtras.length === 0 && !isLoading && (
+          <p className="text-xs text-slate-400">ДОПів ще не додано.</p>
+        )}
+      </div>
+
+      {showForm && (
+        <div className="p-3 rounded-lg border border-slate-200 dark:border-slate-700 space-y-2">
+          <div className="grid grid-cols-2 gap-2">
+            {COST_FIELDS.map(({ camelKey, label }) => (
+              <input
+                key={camelKey}
+                type="number"
+                min="0"
+                placeholder={label}
+                value={costs[camelKey] ?? ''}
+                onChange={(e) => setCosts((c) => ({ ...c, [camelKey]: e.target.value }))}
+                className="px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
+              />
+            ))}
+          </div>
+          <button
+            onClick={handleCreate}
+            disabled={createExtra.isPending}
+            className="px-4 py-2 text-sm rounded-pill font-semibold bg-brand-red text-white hover:bg-brand-red-dark disabled:opacity-40 transition-colors"
+          >
+            Зберегти
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const StaffAssignmentTab: React.FC<{ tourId: string; guideId?: string; guideName?: string }> = ({
+  tourId, guideId, guideName,
+}) => (
+  <div className="space-y-8">
+    <TourGuideSection tourId={tourId} guideId={guideId} guideName={guideName} />
+    <TourDriversSection tourId={tourId} />
+    <TourExtrasSection tourId={tourId} />
+  </div>
+);
+
 const TourDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { canSeeMargin, isOpsManager, isAdmin, isDirector, isManager, isAccountant } = useAuth();
+  const { canSeeMargin, isOpsManager, isAdmin, isDirector, isManager, isAccountant, isProductManager } = useAuth();
   const { data: tour, isLoading, isError } = useTour(id ?? '');
-  const [tab, setTab] = useState<'info' | 'checklist' | 'rooming' | 'roomAssignment' | 'activities' | 'seating' | 'transport' | 'hotels' | 'documents' | 'tourists'>('info');
+  const [tab, setTab] = useState<'info' | 'checklist' | 'rooming' | 'roomAssignment' | 'activities' | 'seating' | 'transport' | 'hotels' | 'documents' | 'tourists' | 'staff'>('info');
 
   const isInternal = isOpsManager || isAdmin || isDirector || isManager || isAccountant;
   const canEditStructure = isOpsManager || isAdmin;
   const canApproveStructure = isAdmin || isDirector;
   const canChangeStatus = isOpsManager || isAdmin || isDirector;
+  const canSeeStaffTab = isAdmin || isProductManager;
 
   if (isLoading) {
     return (
@@ -1160,20 +1383,21 @@ const TourDetailPage: React.FC = () => {
           </p>
         </div>
 
-        {isInternal && (
+        {(isInternal || isProductManager) && (
           <div className="flex border-b border-slate-100 dark:border-slate-700 px-6">
             {([
-              { key: 'info' as const, label: 'Інфо' },
-              { key: 'checklist' as const, label: 'Чекліст' },
-              { key: 'tourists' as const, label: 'Туристи' },
-              { key: 'rooming' as const, label: 'Структура номерів' },
-              { key: 'roomAssignment' as const, label: 'Розселення' },
-              { key: 'activities' as const, label: 'Програма' },
-              { key: 'seating' as const, label: 'Розсадка' },
-              { key: 'transport' as const, label: 'Транспорт' },
-              { key: 'hotels' as const, label: 'Готелі' },
-              { key: 'documents' as const, label: 'Документи' },
-            ]).map((t) => (
+              { key: 'info' as const, label: 'Інфо', show: true },
+              { key: 'checklist' as const, label: 'Чекліст', show: true },
+              { key: 'staff' as const, label: 'Персонал', show: canSeeStaffTab },
+              { key: 'tourists' as const, label: 'Туристи', show: isInternal },
+              { key: 'rooming' as const, label: 'Структура номерів', show: isInternal },
+              { key: 'roomAssignment' as const, label: 'Розселення', show: isInternal },
+              { key: 'activities' as const, label: 'Програма', show: isInternal },
+              { key: 'seating' as const, label: 'Розсадка', show: isInternal },
+              { key: 'transport' as const, label: 'Транспорт', show: isInternal },
+              { key: 'hotels' as const, label: 'Готелі', show: isInternal },
+              { key: 'documents' as const, label: 'Документи', show: isInternal },
+            ]).filter((t) => t.show).map((t) => (
               <button
                 key={t.key}
                 onClick={() => setTab(t.key)}
@@ -1198,6 +1422,12 @@ const TourDetailPage: React.FC = () => {
               tourStatus={tour.status}
               canChangeStatus={canChangeStatus}
             />
+          </div>
+        )}
+
+        {tab === 'staff' && (
+          <div className="p-6">
+            <StaffAssignmentTab tourId={tour.id} guideId={tour.guide_id} guideName={tour.guide_name} />
           </div>
         )}
 

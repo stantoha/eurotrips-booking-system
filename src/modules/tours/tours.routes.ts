@@ -3,9 +3,10 @@
 // GET    /api/v1/tours
 // GET    /api/v1/tours/:id
 // GET    /api/v1/tours/:id/availability
-// POST   /api/v1/tours               [admin, ops]
-// PUT    /api/v1/tours/:id           [admin, ops]
-// PATCH  /api/v1/tours/:id/status    [admin, ops, director]
+// POST   /api/v1/tours               [admin, ops, product_manager]
+// PUT    /api/v1/tours/:id           [admin, ops, product_manager]
+// PATCH  /api/v1/tours/:id/status    [admin, ops, director, product_manager]
+// DELETE /api/v1/tours/:id/archive   [admin, product_manager]
 // =============================================================================
 
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
@@ -117,7 +118,7 @@ export async function tourRoutes(app: FastifyInstance) {
   app.post<{ Body: CreateTourDto }>(
     '/',
     {
-      preHandler: [requireAuth, requireRoles('admin', 'ops')],
+      preHandler: [requireAuth, requireRoles('admin', 'ops', 'product_manager')],
       schema: {
         summary: 'Створити тур',
         tags: ['Tours'],
@@ -139,7 +140,7 @@ export async function tourRoutes(app: FastifyInstance) {
   app.put<{ Params: { id: string }; Body: UpdateTourDto }>(
     '/:id',
     {
-      preHandler: [requireAuth, requireRoles('admin', 'ops')],
+      preHandler: [requireAuth, requireRoles('admin', 'ops', 'product_manager')],
       schema: {
         summary: 'Редагувати тур',
         description: 'Не можна редагувати тур зі статусом completed або cancelled.',
@@ -170,7 +171,7 @@ export async function tourRoutes(app: FastifyInstance) {
   app.patch<{ Params: { id: string }; Body: ChangeStatusDto }>(
     '/:id/status',
     {
-      preHandler: [requireAuth, requireRoles('admin', 'ops', 'director')],
+      preHandler: [requireAuth, requireRoles('admin', 'ops', 'director', 'product_manager')],
       schema: {
         summary: 'Змінити статус туру',
         description: `Дозволені переходи:
@@ -214,7 +215,7 @@ export async function tourRoutes(app: FastifyInstance) {
   app.delete<{ Params: { id: string } }>(
     '/:id/archive',
     {
-      preHandler: [requireAuth, requireRoles('admin')],
+      preHandler: [requireAuth, requireRoles('admin', 'product_manager')],
       schema: {
         summary: 'Архівувати тур (soft delete)',
         tags: ['Tours'],

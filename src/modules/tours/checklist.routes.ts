@@ -23,7 +23,7 @@ export async function checklistRoutes(app: FastifyInstance) {
   app.get<{ Params: { id: string } }>(
     '/:id/checklist',
     {
-      preHandler: [requireAuth, requireRoles('ops', 'manager', 'admin', 'director')],
+      preHandler: [requireAuth, requireRoles('ops', 'manager', 'admin', 'director', 'product_manager')],
       schema: {
         summary: 'Операційний чекліст готовності виїзду (OPS-18)',
         tags: ['Checklist'],

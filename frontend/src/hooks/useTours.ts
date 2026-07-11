@@ -58,6 +58,21 @@ export function useTourList(filters?: TourListQueryDto) {
   })
 }
 
+// PUT /tours/:id — редагувати тур [admin, ops, product_manager]
+export function useUpdateTour(tourId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: Record<string, unknown>) => {
+      const res = await api.put<{ data: Tour }>(`/tours/${tourId}`, payload)
+      return res.data.data
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(tourKeys.detail(tourId), data)
+      queryClient.invalidateQueries({ queryKey: tourKeys.lists() })
+    },
+  })
+}
+
 // PATCH /tours/:id/status — зміна статусу туру [admin, ops, director]
 export function useChangeTourStatus(tourId: string) {
   const queryClient = useQueryClient()
