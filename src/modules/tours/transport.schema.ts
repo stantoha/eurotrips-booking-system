@@ -27,6 +27,10 @@ export const PatchTransportSchema = z.object({
   connectionType: z.string().max(50).optional(),
   carrierName: z.string().max(255).optional(),
   busBrand: z.string().max(100).optional(),
+  /// Опційний FK на структурованого перевізника (carrierName лишається як override)
+  carrierId: z.string().uuid().optional(),
+  /// Опційний FK на структурований автобус (busBrand лишається як override)
+  busId: z.string().uuid().optional(),
   departureDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   returnDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   kmGoogle: z.number().nonnegative().optional(),

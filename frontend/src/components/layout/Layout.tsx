@@ -8,7 +8,7 @@ import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, MapPinned, ClipboardList, Users2,
-  Wallet, Wrench, UserCircle2, Ticket, UserCog
+  Wallet, Wrench, UserCircle2, Ticket, UserCog, Bus
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { Topbar } from './Topbar';
@@ -30,14 +30,14 @@ const SECTION_ORDER: NavSection[] = ['Головне', 'Продажі', 'Упр
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const {
     isAdmin, isDirector, isManager, isOpsManager, isAccountant, isAgent, isTourist,
-    isProductManager,
+    isProductManager, isLogist,
     signOut,
   } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const isInternal = isAdmin || isDirector || isManager || isOpsManager || isAccountant;
-  // Тури/Операції — + product_manager (CRUD турів, персонал, ДОПи), без /dashboard і /finance
-  const seesToursAndOps = isInternal || isProductManager;
+  // Тури/Операції — + product_manager (CRUD турів, персонал, ДОПи), + logist (готелі/румінг/транспорт), без /dashboard і /finance
+  const seesToursAndOps = isInternal || isProductManager || isLogist;
 
   const allNavItems: NavItem[] = [
     { to: '/dashboard',  label: 'Дашборд',         icon: LayoutDashboard, show: isInternal,                          section: 'Головне' },
@@ -47,6 +47,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     { to: '/leads',      label: 'CRM · Ліди',      icon: Users2,          show: isAdmin || isDirector || isManager,  section: 'Продажі' },
     { to: '/operations', label: 'Операційний блок',icon: Wrench,          show: seesToursAndOps,                     section: 'Управління' },
     { to: '/staff',      label: 'Персонал',        icon: UserCog,         show: isAdmin || isProductManager,         section: 'Управління' },
+    { to: '/carriers',   label: 'Перевізники',     icon: Bus,             show: isAdmin || isLogist,                 section: 'Управління' },
     { to: '/finance',    label: 'Фінанси',         icon: Wallet,          show: isAdmin || isDirector,               section: 'Управління' },
     { to: '/agent',      label: 'Кабінет агента',  icon: UserCircle2,     show: isAgent,                             section: 'Управління' },
   ];

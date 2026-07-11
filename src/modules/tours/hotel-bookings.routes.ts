@@ -1,16 +1,16 @@
 // =============================================================================
 // EUROTRIPS — Hotel Bookings Routes
-// GET   /tours/:id/hotels                  [ops, manager, admin, director]
-// POST  /tours/:id/hotels                  [ops, admin]     — OPS-04
-// PATCH /tours/:id/hotels/:hotelBookingId  [ops, admin]     — OPS-05/OPS-06
+// GET   /tours/:id/hotels                  [ops, manager, admin, director, logist]
+// POST  /tours/:id/hotels                  [ops, admin, logist]     — OPS-04
+// PATCH /tours/:id/hotels/:hotelBookingId  [ops, admin, logist]     — OPS-05/OPS-06
 // =============================================================================
 
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { HotelBookingsService } from './hotel-bookings.service';
 import {
-  CreateHotelBookingSchema, PatchHotelBookingSchema,
-  HOTEL_CONFIRMATION_STATUSES, HOTEL_DEPOSIT_STATUSES,
-  type CreateHotelBookingDto, type PatchHotelBookingDto,
+  CreateHotelBookingSchema, PatchHotelBookingSchema, CreateHotelCommunicationSchema,
+  HOTEL_CONFIRMATION_STATUSES, HOTEL_DEPOSIT_STATUSES, COMMUNICATION_DIRECTIONS,
+  type CreateHotelBookingDto, type PatchHotelBookingDto, type CreateHotelCommunicationDto,
 } from './hotel-bookings.schema';
 import { requireAuth, getCurrentUser } from '../../shared/guards/jwt.guard';
 import { requireRoles } from '../../shared/guards/rbac.guard';
@@ -37,7 +37,7 @@ export async function hotelBookingsRoutes(app: FastifyInstance) {
   app.get<{ Params: { id: string } }>(
     '/:id/hotels',
     {
-      preHandler: [requireAuth, requireRoles('ops', 'manager', 'admin', 'director')],
+      preHandler: [requireAuth, requireRoles('ops', 'manager', 'admin', 'director', 'logist')],
       schema: {
         summary: 'Готелі по маршруту туру (OPS-04..06)',
         tags: ['Hotels'],
@@ -55,7 +55,7 @@ export async function hotelBookingsRoutes(app: FastifyInstance) {
   app.post<{ Params: { id: string }; Body: CreateHotelBookingDto }>(
     '/:id/hotels',
     {
-      preHandler: [requireAuth, requireRoles('ops', 'admin')],
+      preHandler: [requireAuth, requireRoles('ops', 'admin', 'logist')],
       schema: {
         summary: 'Додати готель до маршруту виїзду (OPS-04)',
         description: 'hotelId з бази АБО hotelName вручну, якщо готелю немає в базі.',
@@ -95,7 +95,7 @@ export async function hotelBookingsRoutes(app: FastifyInstance) {
   app.patch<{ Params: { id: string; hotelBookingId: string }; Body: PatchHotelBookingDto }>(
     '/:id/hotels/:hotelBookingId',
     {
-      preHandler: [requireAuth, requireRoles('ops', 'admin')],
+      preHandler: [requireAuth, requireRoles('ops', 'admin', 'logist')],
       schema: {
         summary: 'Оновити дедлайн опції / статус / депозит / фінал (OPS-05/06)',
         tags: ['Hotels'],
@@ -123,6 +123,54 @@ export async function hotelBookingsRoutes(app: FastifyInstance) {
       const user = getCurrentUser(req);
       const data = await service.patchHotelBooking(req.params.id, req.params.hotelBookingId, dto, user.sub);
       return reply.code(200).send({ data });
+    }
+  );
+
+  // ── GET /tours/:id/hotels/:hotelBookingId/communications ─────────────────────
+  app.get<{ Params: { id: string; hotelBookingId: string } }>(
+    '/:id/hotels/:hotelBookingId/communications',
+    {
+      preHandler: [requireAuth, requireRoles('admin', 'logist')],
+      schema: {
+        summary: 'Лог листування з готелем (ручний, не реальний SMTP)',
+        tags: ['Hotels'],
+        security: [{ bearerAuth: [] }],
+        params: HOTEL_ID_PARAMS,
+      },
+    },
+    async (req: FastifyRequest<{ Params: { id: string; hotelBookingId: string } }>, reply: FastifyReply) => {
+      const data = await service.listCommunications(req.params.id, req.params.hotelBookingId);
+      return reply.code(200).send({ data });
+    }
+  );
+
+  // ── POST /tours/:id/hotels/:hotelBookingId/communications ────────────────────
+  app.post<{ Params: { id: string; hotelBookingId: string }; Body: CreateHotelCommunicationDto }>(
+    '/:id/hotels/:hotelBookingId/communications',
+    {
+      preHandler: [requireAuth, requireRoles('admin', 'logist')],
+      schema: {
+        summary: 'Додати запис листування з готелем',
+        tags: ['Hotels'],
+        security: [{ bearerAuth: [] }],
+        params: HOTEL_ID_PARAMS,
+        body: {
+          type: 'object',
+          properties: {
+            direction: { type: 'string', enum: [...COMMUNICATION_DIRECTIONS] },
+            subject: { type: 'string' },
+            body: { type: 'string' },
+          },
+        },
+      },
+    },
+    async (
+      req: FastifyRequest<{ Params: { id: string; hotelBookingId: string }; Body: CreateHotelCommunicationDto }>,
+      reply: FastifyReply
+    ) => {
+      const dto = CreateHotelCommunicationSchema.parse(req.body);
+      const data = await service.createCommunication(req.params.id, req.params.hotelBookingId, dto);
+      return reply.code(201).send({ data });
     }
   );
 }

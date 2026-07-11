@@ -11,7 +11,7 @@
 
 import prisma from '../../shared/database/prisma';
 import { Errors } from '../../shared/utils/errors';
-import type { CreateHotelBookingDto, PatchHotelBookingDto } from './hotel-bookings.schema';
+import type { CreateHotelBookingDto, PatchHotelBookingDto, CreateHotelCommunicationDto } from './hotel-bookings.schema';
 
 export type HotelUiStatus = 'searching' | 'option' | 'confirmed' | 'deposit_paid' | 'final_paid';
 
@@ -110,6 +110,34 @@ export class HotelBookingsService {
     await this.audit(userId, 'UPDATE', hotelBookingId, existing, dto);
 
     return { ...updated, uiStatus: computeUiStatus(updated) };
+  }
+
+  // ── Листування логіста з готелем (ручний лог) ────────────────────────────────
+  async listCommunications(tourId: string, hotelBookingId: string) {
+    const hb = await prisma.hotelBooking.findFirst({ where: { id: hotelBookingId, tourId } });
+    if (!hb) throw Errors.notFound('Готельне бронювання', hotelBookingId);
+
+    return prisma.communication.findMany({
+      where: { hotelBookingId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async createCommunication(tourId: string, hotelBookingId: string, dto: CreateHotelCommunicationDto) {
+    const hb = await prisma.hotelBooking.findFirst({ where: { id: hotelBookingId, tourId } });
+    if (!hb) throw Errors.notFound('Готельне бронювання', hotelBookingId);
+
+    return prisma.communication.create({
+      data: {
+        hotelBookingId,
+        channel: 'email',
+        direction: dto.direction,
+        subject: dto.subject,
+        body: dto.body,
+        status: 'sent',
+        sentAt: new Date(),
+      },
+    });
   }
 
   private async audit(userId: string, action: string, recordId: string, oldData: unknown, newData: unknown) {

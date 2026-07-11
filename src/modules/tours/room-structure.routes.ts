@@ -1,9 +1,9 @@
 // =============================================================================
 // EUROTRIPS — Room Structure Routes
-// GET    /tours/:id/room-structure          [ops, manager, admin]
-// PUT    /tours/:id/room-structure          [ops, admin]
+// GET    /tours/:id/room-structure          [ops, manager, admin, logist]
+// PUT    /tours/:id/room-structure          [ops, admin, logist]
 // PATCH  /tours/:id/room-structure/approve  [admin, director]
-// PATCH  /tours/:id/room-structure/finalize [ops, admin]
+// PATCH  /tours/:id/room-structure/finalize [ops, admin, logist]
 // =============================================================================
 
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
@@ -38,7 +38,7 @@ export async function roomStructureRoutes(app: FastifyInstance) {
   app.get<{ Params: { id: string } }>(
     '/:id/room-structure',
     {
-      preHandler: [requireAuth, requireRoles('ops', 'manager', 'admin', 'director')],
+      preHandler: [requireAuth, requireRoles('ops', 'manager', 'admin', 'director', 'logist')],
       schema: {
         summary: 'Структура номерів по готелях туру (OPS-01)',
         tags: ['Rooming'],
@@ -56,7 +56,7 @@ export async function roomStructureRoutes(app: FastifyInstance) {
   app.put<{ Params: { id: string }; Body: SetRoomStructureDto }>(
     '/:id/room-structure',
     {
-      preHandler: [requireAuth, requireRoles('ops', 'admin')],
+      preHandler: [requireAuth, requireRoles('ops', 'admin', 'logist')],
       schema: {
         summary: 'Внести/оновити структуру номерів (OPS-01, BR-10)',
         description: 'Заблоковано після structureStatus=approved — окрім admin.',
@@ -109,7 +109,7 @@ export async function roomStructureRoutes(app: FastifyInstance) {
   app.patch<{ Params: { id: string }; Body: FinalizeRoomStructureDto }>(
     '/:id/room-structure/finalize',
     {
-      preHandler: [requireAuth, requireRoles('ops', 'admin')],
+      preHandler: [requireAuth, requireRoles('ops', 'admin', 'logist')],
       schema: {
         summary: 'Фіналізувати структуру номерів: approved → final',
         tags: ['Rooming'],

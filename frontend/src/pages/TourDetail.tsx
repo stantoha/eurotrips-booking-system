@@ -7,7 +7,7 @@
 
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, MapPin, Calendar, Users, Tag, Plus, Lock, CheckCircle2, Search } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, Users, Tag, Plus, Lock, CheckCircle2, Search, MessageSquare } from 'lucide-react';
 import { useTour, useUpdateTour } from '../hooks/useTours';
 import { useStaffList, type Staff } from '../hooks/useStaff';
 import { useTourDrivers, useAssignDriver, useUnassignDriver } from '../hooks/useTourDrivers';
@@ -15,6 +15,7 @@ import {
   useTourExtras, useCreateTourExtra, usePatchTourExtra, useCancelTourExtra,
   type TourExtra,
 } from '../hooks/useTourExtras';
+import { useHotelCommunications, useCreateHotelCommunication } from '../hooks/useHotelCommunications';
 import { useAuth } from '../hooks/useAuth';
 import { TOUR_STATUS_CONFIG, STATUS_COLOR_CLASSES } from '../constants/statuses';
 import { ProgressChecklist } from '../components/ops/ProgressChecklist';
@@ -571,8 +572,67 @@ const RoomingTab: React.FC<{ tourId: string; canEdit: boolean }> = ({ tourId, ca
 
 // ─── TAB: ГОТЕЛІ (OPS-04/05/06) ──────────────────────────────────
 
+// ── Листування логіста з готелем (ручний лог, не реальний SMTP) ──────────────
+const HotelCorrespondence: React.FC<{ tourId: string; hotelBookingId: string }> = ({ tourId, hotelBookingId }) => {
+  const { data: messages, isLoading } = useHotelCommunications(tourId, hotelBookingId);
+  const createMessage = useCreateHotelCommunication(tourId, hotelBookingId);
+  const [subject, setSubject] = useState('');
+  const [body, setBody] = useState('');
+
+  const handleSend = async () => {
+    if (!subject && !body) return;
+    await createMessage.mutateAsync({ direction: 'outbound', subject: subject || undefined, body: body || undefined });
+    setSubject('');
+    setBody('');
+  };
+
+  return (
+    <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
+      {isLoading && <p className="text-xs text-slate-400">Завантаження…</p>}
+      {(messages ?? []).map((m) => (
+        <div key={m.id} className="text-xs bg-slate-50 dark:bg-slate-800/50 rounded-lg px-2.5 py-1.5">
+          <div className="flex items-center justify-between mb-0.5">
+            <span className="font-medium text-slate-700 dark:text-slate-300">
+              {m.direction === 'outbound' ? 'Ми → готель' : 'Готель → ми'}
+            </span>
+            <span className="text-slate-400">{new Date(m.created_at).toLocaleString('uk-UA')}</span>
+          </div>
+          {m.subject && <p className="text-slate-600 dark:text-slate-400">{m.subject}</p>}
+          {m.body && <p className="text-slate-500 dark:text-slate-500">{m.body}</p>}
+        </div>
+      ))}
+      {(messages?.length ?? 0) === 0 && !isLoading && (
+        <p className="text-xs text-slate-400">Листування ще немає.</p>
+      )}
+      <div className="flex flex-wrap items-end gap-2">
+        <input
+          value={subject}
+          onChange={(e) => setSubject(e.target.value)}
+          placeholder="Тема"
+          className="text-sm border border-slate-200 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900 flex-1 min-w-[120px]"
+        />
+        <input
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          placeholder="Текст"
+          className="text-sm border border-slate-200 dark:border-slate-700 rounded px-2 py-1 bg-white dark:bg-slate-900 flex-1 min-w-[160px]"
+        />
+        <button
+          onClick={handleSend}
+          disabled={createMessage.isPending || (!subject && !body)}
+          className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-cyan text-white hover:bg-brand-cyan-dark disabled:opacity-40"
+        >
+          Додати запис
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const HotelRow: React.FC<{ tourId: string; hb: TourHotelBooking; canEdit: boolean }> = ({ tourId, hb, canEdit }) => {
   const patchHotel = usePatchHotel(tourId);
+  const { isLogist, isAdmin } = useAuth();
+  const [showCorrespondence, setShowCorrespondence] = useState(false);
 
   return (
     <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 space-y-2">
@@ -648,6 +708,18 @@ const HotelRow: React.FC<{ tourId: string; hb: TourHotelBooking; canEdit: boolea
       )}
       {patchHotel.isError && (
         <p className="text-xs text-brand-red">{apiErrorMessage(patchHotel.error, 'Не вдалося оновити готель.')}</p>
+      )}
+
+      {(isLogist || isAdmin) && (
+        <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+          <button
+            onClick={() => setShowCorrespondence((v) => !v)}
+            className="flex items-center gap-1.5 text-xs text-brand-cyan-dark dark:text-brand-cyan hover:underline"
+          >
+            <MessageSquare size={12} /> Листування
+          </button>
+          {showCorrespondence && <HotelCorrespondence tourId={tourId} hotelBookingId={hb.id} />}
+        </div>
       )}
     </div>
   );
@@ -1319,15 +1391,17 @@ const StaffAssignmentTab: React.FC<{ tourId: string; guideId?: string; guideName
 const TourDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { canSeeMargin, isOpsManager, isAdmin, isDirector, isManager, isAccountant, isProductManager } = useAuth();
+  const { canSeeMargin, isOpsManager, isAdmin, isDirector, isManager, isAccountant, isProductManager, isLogist } = useAuth();
   const { data: tour, isLoading, isError } = useTour(id ?? '');
   const [tab, setTab] = useState<'info' | 'checklist' | 'rooming' | 'roomAssignment' | 'activities' | 'seating' | 'transport' | 'hotels' | 'documents' | 'tourists' | 'staff'>('info');
 
   const isInternal = isOpsManager || isAdmin || isDirector || isManager || isAccountant;
-  const canEditStructure = isOpsManager || isAdmin;
+  const canEditStructure = isOpsManager || isAdmin || isLogist;
   const canApproveStructure = isAdmin || isDirector;
   const canChangeStatus = isOpsManager || isAdmin || isDirector;
   const canSeeStaffTab = isAdmin || isProductManager;
+  // Готелі/румінг/транспорт — RBAC на бекенді розширено на logist (Фаза B)
+  const seesLogistTabs = isInternal || isLogist;
 
   if (isLoading) {
     return (
@@ -1383,19 +1457,19 @@ const TourDetailPage: React.FC = () => {
           </p>
         </div>
 
-        {(isInternal || isProductManager) && (
+        {(isInternal || isProductManager || isLogist) && (
           <div className="flex border-b border-slate-100 dark:border-slate-700 px-6">
             {([
               { key: 'info' as const, label: 'Інфо', show: true },
-              { key: 'checklist' as const, label: 'Чекліст', show: true },
+              { key: 'checklist' as const, label: 'Чекліст', show: isInternal || isProductManager },
               { key: 'staff' as const, label: 'Персонал', show: canSeeStaffTab },
               { key: 'tourists' as const, label: 'Туристи', show: isInternal },
-              { key: 'rooming' as const, label: 'Структура номерів', show: isInternal },
-              { key: 'roomAssignment' as const, label: 'Розселення', show: isInternal },
+              { key: 'rooming' as const, label: 'Структура номерів', show: seesLogistTabs },
+              { key: 'roomAssignment' as const, label: 'Розселення', show: seesLogistTabs },
               { key: 'activities' as const, label: 'Програма', show: isInternal },
               { key: 'seating' as const, label: 'Розсадка', show: isInternal },
-              { key: 'transport' as const, label: 'Транспорт', show: isInternal },
-              { key: 'hotels' as const, label: 'Готелі', show: isInternal },
+              { key: 'transport' as const, label: 'Транспорт', show: seesLogistTabs },
+              { key: 'hotels' as const, label: 'Готелі', show: seesLogistTabs },
               { key: 'documents' as const, label: 'Документи', show: isInternal },
             ]).filter((t) => t.show).map((t) => (
               <button

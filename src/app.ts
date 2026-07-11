@@ -44,6 +44,7 @@ import { analyticsRoutes }    from './modules/analytics/analytics.routes';
 import { staffRoutes }        from './modules/staff/staff.routes';
 import { tourDriversRoutes }  from './modules/tours/tour-drivers.routes';
 import { tourExtrasRoutes }   from './modules/tours/tour-extras.routes';
+import { carriersRoutes, busesRoutes } from './modules/carriers/carriers.routes';
 // import { zohoWebhookRoutes }  from './modules/integrations/zoho/zoho.webhook';
 import { liqPayRoutes }       from './modules/payments/liqpay.routes';
 
@@ -247,6 +248,9 @@ export async function buildApp(app: FastifyInstance) {
       await api.register(tourDriversRoutes, { prefix: '/tours' });
       // ДОПи туру (той самий /tours префікс)
       await api.register(tourExtrasRoutes, { prefix: '/tours' });
+      // Перевізники + автобуси (logist)
+      await api.register(carriersRoutes, { prefix: '/carriers' });
+      await api.register(busesRoutes, { prefix: '/buses' });
     },
     { prefix: '/api/v1' }
   );

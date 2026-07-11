@@ -45,3 +45,14 @@ export const PatchHotelBookingSchema = z.object({
 
 export type CreateHotelBookingDto = z.infer<typeof CreateHotelBookingSchema>;
 export type PatchHotelBookingDto = z.infer<typeof PatchHotelBookingSchema>;
+
+// ── Листування логіста з готелем (ручний лог, не реальний SMTP) ──────────────
+export const COMMUNICATION_DIRECTIONS = ['outbound', 'inbound'] as const;
+
+export const CreateHotelCommunicationSchema = z.object({
+  direction: z.enum(COMMUNICATION_DIRECTIONS).default('outbound'),
+  subject: z.string().max(255).optional(),
+  body: z.string().max(5000).optional(),
+});
+
+export type CreateHotelCommunicationDto = z.infer<typeof CreateHotelCommunicationSchema>;

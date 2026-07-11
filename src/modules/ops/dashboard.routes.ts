@@ -1,6 +1,6 @@
 // =============================================================================
 // EUROTRIPS — OPS Dashboard Routes
-// GET /ops/dashboard   [ops, manager, admin, director]
+// GET /ops/dashboard   [ops, manager, admin, director, logist]
 // =============================================================================
 
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
@@ -14,7 +14,7 @@ export async function opsDashboardRoutes(app: FastifyInstance) {
   app.get(
     '/dashboard',
     {
-      preHandler: [requireAuth, requireRoles('ops', 'manager', 'admin', 'director')],
+      preHandler: [requireAuth, requireRoles('ops', 'manager', 'admin', 'director', 'logist')],
       schema: {
         summary: 'Дашборд операційного менеджера (/ops)',
         description: 'Дедлайни готелів, виїзди наступних 7 днів, прогрес чеклістів, нові підтверджені туристи.',

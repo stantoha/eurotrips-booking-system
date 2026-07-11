@@ -1,7 +1,7 @@
 // =============================================================================
 // EUROTRIPS — Hotels Routes
-// GET /hotels       [admin, ops, manager]  ?country=&city=&stars=&search=&page=&limit=
-// GET /hotels/:id   [admin, ops, manager]
+// GET /hotels       [admin, ops, manager, logist]  ?country=&city=&stars=&search=&page=&limit=
+// GET /hotels/:id   [admin, ops, manager, logist]
 // =============================================================================
 
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
@@ -21,7 +21,7 @@ export async function hotelRoutes(app: FastifyInstance) {
 
   // ── GET /hotels ────────────────────────────────────────────────────────────
   app.get('/', {
-    preHandler: [requireAuth, requireRoles('admin', 'ops', 'manager')],
+    preHandler: [requireAuth, requireRoles('admin', 'ops', 'manager', 'logist')],
     schema: {
       summary: 'Каталог готелів',
       tags: ['Hotels'], security: [{ bearerAuth: [] }],
@@ -46,7 +46,7 @@ export async function hotelRoutes(app: FastifyInstance) {
 
   // ── GET /hotels/:id ──────────────────────────────────────────────────────
   app.get<{ Params: { id: string } }>('/:id', {
-    preHandler: [requireAuth, requireRoles('admin', 'ops', 'manager')],
+    preHandler: [requireAuth, requireRoles('admin', 'ops', 'manager', 'logist')],
     schema: {
       summary: 'Готель за ID',
       tags: ['Hotels'], security: [{ bearerAuth: [] }],

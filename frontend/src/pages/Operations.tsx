@@ -13,9 +13,10 @@
 
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, AlertTriangle, List, CalendarDays, LayoutDashboard, Users2, AlertOctagon } from 'lucide-react';
+import { Search, AlertTriangle, List, CalendarDays, LayoutDashboard, Users2, AlertOctagon, Truck } from 'lucide-react';
 
 import { useTours } from '../hooks/useTours';
+import { useAuth } from '../hooks/useAuth';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { OccupancyBar, occupancyPct, occupancyColor } from '../components/ui/OccupancyBar';
 import { DeadlineIndicator } from '../components/ui/DeadlineIndicator';
@@ -23,6 +24,80 @@ import { CalendarGrid, type CalendarEvent } from '../components/ops/CalendarGrid
 import { useOpsDashboard } from '../hooks/useOpsDashboard';
 import { ScreenStateBanner } from '../components/ops/ScreenStateBanner';
 import type { Tour, TourStatus } from '../types';
+
+// ─── ЛОГІСТИКА (logist) ─────────────────────────────────────────
+// Дедлайни готелів (той самий джерело даних, що й дашборд ops) —
+// без нового бекенд-агрегатора, /ops/dashboard вже доступний logist.
+
+const LogisticsView: React.FC<{ onOpenTour: (id: string) => void }> = ({ onOpenTour }) => {
+  const navigate = useNavigate();
+  const { data, isLoading, isError } = useOpsDashboard();
+
+  if (isLoading) return <p className="text-sm text-slate-400 py-6">Завантаження…</p>;
+  if (isError || !data) return <p className="text-sm text-brand-red py-6">Не вдалося завантажити дедлайни готелів.</p>;
+
+  return (
+    <div className="space-y-6">
+      <section>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="flex items-center gap-1.5 text-sm font-semibold text-slate-800 dark:text-slate-200">
+            <AlertOctagon size={15} className="text-brand-red" /> Дедлайни готелів (&lt;3 дні)
+          </h2>
+          <button
+            onClick={() => navigate('/carriers')}
+            className="flex items-center gap-1.5 text-xs text-brand-cyan-dark dark:text-brand-cyan hover:underline"
+          >
+            <Truck size={13} /> Перевізники та автобуси
+          </button>
+        </div>
+        {data.hotel_deadlines.length === 0 ? (
+          <p className="text-xs text-slate-400">Немає готелів із дедлайном опції найближчим часом.</p>
+        ) : (
+          <div className="space-y-1.5">
+            {data.hotel_deadlines.map((hd) => (
+              <div
+                key={hd.hotel_booking_id}
+                onClick={() => onOpenTour(hd.tour_id)}
+                className="flex items-center justify-between gap-3 bg-brand-red/5 border border-brand-red/20 rounded-lg px-3 py-2 cursor-pointer hover:bg-brand-red/10 transition-colors"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm text-slate-800 dark:text-slate-200 truncate">
+                    <span className="font-mono text-xs text-slate-400">{hd.tour_code}</span> · {hd.hotel_name} ({hd.city})
+                  </p>
+                </div>
+                <DeadlineIndicator date={hd.option_deadline} />
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section>
+        <h2 className="flex items-center gap-1.5 text-sm font-semibold text-slate-800 dark:text-slate-200 mb-2">
+          📅 Виїзди наступних 7 днів
+        </h2>
+        {data.upcoming_tours.length === 0 ? (
+          <p className="text-xs text-slate-400">Немає виїздів у найближчі 7 днів.</p>
+        ) : (
+          <div className="space-y-2">
+            {data.upcoming_tours.map((t) => (
+              <div
+                key={t.tour_id}
+                onClick={() => onOpenTour(t.tour_id)}
+                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-3 cursor-pointer hover:border-brand-cyan transition-colors flex items-center justify-between gap-2"
+              >
+                <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">
+                  <span className="font-mono text-xs text-slate-400 mr-1">{t.code}</span>{t.name}
+                </p>
+                <span className="text-xs text-slate-400 shrink-0">{new Date(t.departure_date).toLocaleDateString('uk-UA')}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
+  );
+};
 
 // ─── DASHBOARD (/ops) ───────────────────────────────────────────
 
@@ -206,7 +281,13 @@ const OpsTourCard: React.FC<{ tour: Tour; onOpen: (id: string) => void }> = ({ t
 
 const Operations: React.FC = () => {
   const navigate = useNavigate();
-  const [mainView, setMainView] = useState<'dashboard' | 'registry'>('dashboard');
+  const { isOpsManager, isManager, isAdmin, isDirector, isLogist } = useAuth();
+  // /ops/dashboard RBAC: ops, manager, admin, director, logist (НЕ product_manager —
+  // інакше дефолтний таб 'dashboard' тихо впав би в 403 для product_manager)
+  const canSeeOpsDashboard = isOpsManager || isManager || isAdmin || isDirector || isLogist;
+  const [mainView, setMainView] = useState<'dashboard' | 'registry' | 'logistics'>(
+    isLogist ? 'logistics' : canSeeOpsDashboard ? 'dashboard' : 'registry'
+  );
   const [statusF, setStatusF] = useState<TourStatus | 'all'>('all');
   const [search, setSearch] = useState('');
   const [view, setView] = useState<'list' | 'calendar'>('list');
@@ -217,7 +298,7 @@ const Operations: React.FC = () => {
     search: search || undefined,
     limit: 50,
   });
-  const { data: dashboard } = useOpsDashboard();
+  const { data: dashboard } = useOpsDashboard(canSeeOpsDashboard);
 
   const tours = useMemo(() => data?.data ?? [], [data]);
   const hasActiveFilter = statusF !== 'all' || search !== '';
@@ -294,16 +375,18 @@ const Operations: React.FC = () => {
         Бізнес-правила: BR-09 (структура румінгів), BR-10 (валідація), BR-11 (BullMQ), BR-12 (самосервіс туристів), OPS-18 (чекліст готовності).
       </p>
 
-      {/* Main view toggle: Дашборд / Реєстр виїздів */}
+      {/* Main view toggle: Дашборд / Реєстр виїздів / Логістика */}
       <div className="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5 gap-0.5 mb-5 w-fit">
-        <button
-          onClick={() => setMainView('dashboard')}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-            mainView === 'dashboard' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm' : 'text-slate-500'
-          }`}
-        >
-          <LayoutDashboard size={13} /> Дашборд
-        </button>
+        {canSeeOpsDashboard && (
+          <button
+            onClick={() => setMainView('dashboard')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+              mainView === 'dashboard' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm' : 'text-slate-500'
+            }`}
+          >
+            <LayoutDashboard size={13} /> Дашборд
+          </button>
+        )}
         <button
           onClick={() => setMainView('registry')}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
@@ -312,9 +395,21 @@ const Operations: React.FC = () => {
         >
           <List size={13} /> Реєстр виїздів
         </button>
+        {(isLogist || isAdmin) && (
+          <button
+            onClick={() => setMainView('logistics')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+              mainView === 'logistics' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm' : 'text-slate-500'
+            }`}
+          >
+            <Truck size={13} /> Логістика
+          </button>
+        )}
       </div>
 
-      {mainView === 'dashboard' && <OpsDashboardView onOpenTour={(id) => navigate(`/tours/${id}`)} />}
+      {mainView === 'dashboard' && canSeeOpsDashboard && <OpsDashboardView onOpenTour={(id) => navigate(`/tours/${id}`)} />}
+
+      {mainView === 'logistics' && <LogisticsView onOpenTour={(id) => navigate(`/tours/${id}`)} />}
 
       {mainView === 'registry' && (
       <>

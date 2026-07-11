@@ -54,13 +54,14 @@ export interface OpsDashboard {
   new_tourists: OpsNewTourist[];
 }
 
-export function useOpsDashboard() {
+export function useOpsDashboard(enabled = true) {
   return useQuery({
     queryKey: ['ops', 'dashboard'],
     queryFn: async () => {
       const res = await api.get<{ data: OpsDashboard }>('/ops/dashboard');
       return res.data.data;
     },
+    enabled,
     staleTime: 60_000,
     refetchInterval: 60_000,
   });

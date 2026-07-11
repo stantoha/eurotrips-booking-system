@@ -100,13 +100,30 @@ export class TransportService {
     const nextKmGoogle = dto.kmGoogle ?? Number(existing.kmGoogle ?? 0);
     const nextKmExtras = dto.kmExtras ?? Number(existing.kmExtras ?? 0);
 
+    // Опційний FK на структурованого перевізника/автобус — автозаповнення
+    // вільнотекстових carrierName/busBrand, якщо не передано явний override
+    let carrierNameFromFk: string | undefined;
+    if (dto.carrierId !== undefined) {
+      const carrier = await prisma.carrier.findUnique({ where: { id: dto.carrierId } });
+      if (!carrier) throw Errors.notFound('Перевізник', dto.carrierId);
+      carrierNameFromFk = carrier.name;
+    }
+    let busBrandFromFk: string | undefined;
+    if (dto.busId !== undefined) {
+      const bus = await prisma.bus.findUnique({ where: { id: dto.busId } });
+      if (!bus) throw Errors.notFound('Автобус', dto.busId);
+      busBrandFromFk = `${bus.brand} (${bus.plateNumber})`;
+    }
+
     const updated = await prisma.transportBooking.update({
       where: { id: transportId },
       data: {
         ...(dto.transportType !== undefined && { transportType: dto.transportType }),
         ...(dto.connectionType !== undefined && { connectionType: dto.connectionType }),
-        ...(dto.carrierName !== undefined && { carrierName: dto.carrierName }),
-        ...(dto.busBrand !== undefined && { busBrand: dto.busBrand }),
+        ...(dto.carrierId !== undefined && { carrierId: dto.carrierId }),
+        ...(dto.busId !== undefined && { busId: dto.busId }),
+        ...(dto.carrierName !== undefined ? { carrierName: dto.carrierName } : carrierNameFromFk !== undefined && { carrierName: carrierNameFromFk }),
+        ...(dto.busBrand !== undefined ? { busBrand: dto.busBrand } : busBrandFromFk !== undefined && { busBrand: busBrandFromFk }),
         ...(dto.departureDate !== undefined && { departureDate: new Date(dto.departureDate) }),
         ...(dto.returnDate !== undefined && { returnDate: new Date(dto.returnDate) }),
         ...(dto.kmGoogle !== undefined && { kmGoogle: dto.kmGoogle }),

@@ -28,6 +28,7 @@ const MyPreferences   = React.lazy(() => import('./pages/my/MyPreferences'));
 const FinancePage     = React.lazy(() => import('./pages/Finance'));
 const OperationsPage  = React.lazy(() => import('./pages/Operations'));
 const StaffPage       = React.lazy(() => import('./pages/Staff'));
+const CarriersPage    = React.lazy(() => import('./pages/Carriers'));
 const NotFoundPage    = React.lazy(() => import('./pages/errors/NotFound'));
 
 // Wrapper — дістає :id з URL та передає пропсами в BookingDetail
@@ -50,6 +51,7 @@ const roleHome = (role?: UserRole): string => {
   if (role === 'agent') return '/agent';
   if (role === 'tourist') return '/my/booking';
   if (role === 'product_manager') return '/tours';
+  if (role === 'logist') return '/operations';
   return '/dashboard';
 };
 
@@ -127,8 +129,8 @@ export const App: React.FC = () => (
             <Route path="/bookings"      element={<BookingsPage />} />
           </Route>
 
-          {/* ── Тури / Операції — + product_manager (CRUD турів, персонал, ДОПи) ── */}
-          <Route element={<ProtectedRoute allowedRoles={['admin', 'director', 'manager', 'ops', 'accountant', 'product_manager']} />}>
+          {/* ── Тури / Операції — + product_manager (CRUD турів, персонал, ДОПи), + logist (готелі/румінг/транспорт) ── */}
+          <Route element={<ProtectedRoute allowedRoles={['admin', 'director', 'manager', 'ops', 'accountant', 'product_manager', 'logist']} />}>
             <Route path="/tours"         element={<ToursPage />} />
             <Route path="/tours/:id"     element={<TourDetail />} />
             <Route path="/operations"    element={<OperationsPage />} />
@@ -137,6 +139,11 @@ export const App: React.FC = () => (
           {/* ── Персонал (турлідери/гіди/водії/координатори) — product_manager ── */}
           <Route element={<ProtectedRoute allowedRoles={['admin', 'product_manager']} />}>
             <Route path="/staff" element={<StaffPage />} />
+          </Route>
+
+          {/* ── Перевізники/автобуси — logist ────────────────── */}
+          <Route element={<ProtectedRoute allowedRoles={['admin', 'logist']} />}>
+            <Route path="/carriers" element={<CarriersPage />} />
           </Route>
 
           {/* ── CRM / Leads — admin, director, manager ─────── */}

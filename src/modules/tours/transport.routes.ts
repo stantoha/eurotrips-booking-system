@@ -1,8 +1,8 @@
 // =============================================================================
 // EUROTRIPS — Transport Booking Routes
-// GET   /tours/:id/transport                [ops, manager, admin, director]
-// POST  /tours/:id/transport                [ops, admin]     — OPS-08
-// PATCH /tours/:id/transport/:transportId   [ops, admin]     — OPS-09/OPS-10
+// GET   /tours/:id/transport                [ops, manager, admin, director, logist]
+// POST  /tours/:id/transport                [ops, admin, logist]     — OPS-08
+// PATCH /tours/:id/transport/:transportId   [ops, admin, logist]     — OPS-09/OPS-10
 // =============================================================================
 
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
@@ -36,7 +36,7 @@ export async function transportRoutes(app: FastifyInstance) {
   app.get<{ Params: { id: string } }>(
     '/:id/transport',
     {
-      preHandler: [requireAuth, requireRoles('ops', 'manager', 'admin', 'director')],
+      preHandler: [requireAuth, requireRoles('ops', 'manager', 'admin', 'director', 'logist')],
       schema: {
         summary: 'Транспортні бронювання туру з авторозрахунком вартості (OPS-09)',
         tags: ['Transport'],
@@ -54,7 +54,7 @@ export async function transportRoutes(app: FastifyInstance) {
   app.post<{ Params: { id: string }; Body: CreateTransportDto }>(
     '/:id/transport',
     {
-      preHandler: [requireAuth, requireRoles('ops', 'admin')],
+      preHandler: [requireAuth, requireRoles('ops', 'admin', 'logist')],
       schema: {
         summary: 'Зареєструвати перевізника і маршрут (OPS-08)',
         tags: ['Transport'],
@@ -92,7 +92,7 @@ export async function transportRoutes(app: FastifyInstance) {
   app.patch<{ Params: { id: string; transportId: string }; Body: PatchTransportDto }>(
     '/:id/transport/:transportId',
     {
-      preHandler: [requireAuth, requireRoles('ops', 'admin')],
+      preHandler: [requireAuth, requireRoles('ops', 'admin', 'logist')],
       schema: {
         summary: 'Оновити транспорт: км/тариф/пальне, підтвердження, аванс (OPS-09/10)',
         tags: ['Transport'],
@@ -105,6 +105,8 @@ export async function transportRoutes(app: FastifyInstance) {
             connectionType: { type: 'string' },
             carrierName: { type: 'string' },
             busBrand: { type: 'string' },
+            carrierId: { type: 'string', format: 'uuid' },
+            busId: { type: 'string', format: 'uuid' },
             departureDate: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
             returnDate: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
             kmGoogle: { type: 'number', minimum: 0 },

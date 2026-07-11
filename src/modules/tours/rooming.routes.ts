@@ -17,7 +17,7 @@ export async function roomingRoutes(app: FastifyInstance) {
   app.patch<{ Params: { id: string; touristId: string }; Body: AssignRoomDto }>(
     '/:id/tourist/:touristId/room',
     {
-      preHandler: [requireAuth, requireRoles('ops', 'admin')],
+      preHandler: [requireAuth, requireRoles('ops', 'admin', 'logist')],
       schema: {
         summary: 'Призначити кімнату та харчування туристу (OPS-14/15)',
         tags: ['Rooming'],
@@ -57,7 +57,7 @@ export async function roomingRoutes(app: FastifyInstance) {
   app.patch<{ Params: { id: string; hotelBookingId: string } }>(
     '/:id/hotels/:hotelBookingId/finalize-rooming',
     {
-      preHandler: [requireAuth, requireRoles('ops', 'admin')],
+      preHandler: [requireAuth, requireRoles('ops', 'admin', 'logist')],
       schema: {
         summary: 'Фіналізувати румінг для готелю (OPS-16, блокує self-service BR-12)',
         tags: ['Rooming'],
