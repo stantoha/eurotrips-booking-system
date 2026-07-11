@@ -807,12 +807,81 @@ async function main() {
     });
   }
 
+  // ── 12. ПЕРЕВІЗНИКИ ТА АВТОБУСИ (для роботи логіста) ────────────────────────
+  const carriersSpec = [
+    {
+      id: '00000000-0000-0000-0004-000000000001',
+      name: 'ТОВ "Карпати-Тур"',
+      contactName: 'Роман Гринюк',
+      phone: '+380671001001',
+      email: 'dispatch@karpaty-tour.ua',
+      buses: [
+        { id: '00000000-0000-0000-0005-000000000001', brand: 'Setra S515HD', plateNumber: 'АА1234ВК', seatsCount: 52 },
+        { id: '00000000-0000-0000-0005-000000000002', brand: 'Neoplan Tourliner', plateNumber: 'АА5678ВК', seatsCount: 49 },
+      ],
+    },
+    {
+      id: '00000000-0000-0000-0004-000000000002',
+      name: 'ПП "Буковина-Експрес"',
+      contactName: 'Марія Ковальчук',
+      phone: '+380671002002',
+      email: 'info@bukovyna-express.ua',
+      buses: [
+        { id: '00000000-0000-0000-0005-000000000003', brand: 'Mercedes-Benz Travego', plateNumber: 'ВО2233АЕ', seatsCount: 50 },
+        { id: '00000000-0000-0000-0005-000000000004', brand: 'Setra S416GT-HD', plateNumber: 'ВО4455АЕ', seatsCount: 55 },
+      ],
+    },
+    {
+      id: '00000000-0000-0000-0004-000000000003',
+      name: 'ТОВ "Галичина Тревел"',
+      contactName: 'Andriy Petrenko',
+      phone: '+380671003003',
+      email: 'ops@halychyna-travel.ua',
+      buses: [
+        { id: '00000000-0000-0000-0005-000000000005', brand: 'Scania Touring', plateNumber: 'ВС7788НМ', seatsCount: 48 },
+        { id: '00000000-0000-0000-0005-000000000006', brand: 'Setra S511HD', plateNumber: 'ВС9900НМ', seatsCount: 45 },
+      ],
+    },
+  ];
+
+  for (const spec of carriersSpec) {
+    const carrier = await prisma.carrier.upsert({
+      where: { id: spec.id },
+      update: {},
+      create: {
+        id: spec.id,
+        name: spec.name,
+        contactName: spec.contactName,
+        phone: spec.phone,
+        email: spec.email,
+      },
+    });
+
+    for (const bus of spec.buses) {
+      await prisma.bus.upsert({
+        where: { id: bus.id },
+        update: {},
+        create: {
+          id: bus.id,
+          carrierId: carrier.id,
+          brand: bus.brand,
+          plateNumber: bus.plateNumber,
+          seatsCount: bus.seatsCount,
+        },
+      });
+    }
+  }
+
   console.log('✅ Seed завершено успішно!');
   console.log('');
-  console.log('👤 Тестові акаунти:');
-  console.log('   Admin:   admin@eurotrips.ua / admin123!');
-  console.log('   Manager: a.sych@eurotrips.ua / manager123!');
-  console.log('   Agent:   i.koval@ta-mriia.ua / agent123!');
+  console.log('👤 Тестові акаунти (пароль test1234, якщо не вказано інше):');
+  console.log('   Admin:           admin@eurotrips.ua / admin123!');
+  console.log('   Manager:         a.sych@eurotrips.ua / manager123!');
+  console.log('   Agent:           i.koval@ta-mriia.ua / agent123!');
+  console.log('   Product manager: product_manager@eurotrips.ua');
+  console.log('   Logist:          logist@eurotrips.ua');
+  console.log('');
+  console.log('🚌 Перевізники: 3 (Карпати-Тур, Буковина-Експрес, Галичина Тревел) × 2 автобуси');
   console.log('');
   console.log('🗺️  Тури (5 реальних турів з CSV):');
   console.log('   VD26070301 — Адріатика + Доломіти (active, 03.07.2026)  ← МАЙБУТНІЙ');
