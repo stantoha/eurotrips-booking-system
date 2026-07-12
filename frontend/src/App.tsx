@@ -29,6 +29,7 @@ const FinancePage     = React.lazy(() => import('./pages/Finance'));
 const OperationsPage  = React.lazy(() => import('./pages/Operations'));
 const StaffPage       = React.lazy(() => import('./pages/Staff'));
 const CarriersPage    = React.lazy(() => import('./pages/Carriers'));
+const AnalyticsPage   = React.lazy(() => import('./pages/Analytics'));
 const NotFoundPage    = React.lazy(() => import('./pages/errors/NotFound'));
 
 // Wrapper — дістає :id з URL та передає пропсами в BookingDetail
@@ -149,6 +150,7 @@ export const App: React.FC = () => (
           {/* ── CRM / Leads — admin, director, manager ─────── */}
           <Route element={<ProtectedRoute allowedRoles={['admin', 'director', 'manager']} />}>
             <Route path="/leads" element={<LeadsList />} />
+            <Route path="/analytics" element={<AnalyticsPage />} />
           </Route>
 
           {/* ── Нове бронювання — той самий доступ, що й POST /bookings ── */}

@@ -37,6 +37,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useAuth }     from '../hooks/useAuth';
+import { useTours }    from '../hooks/useTours';
 import { api }         from '../services/api';
 import { LEAD_STATUS_CONFIG, STATUS_COLOR_CLASSES } from '../constants/statuses';
 import type { Lead, LeadStatus, LeadSource } from '../types';
@@ -121,6 +122,27 @@ function useUpdateLeadStatus() {
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['leads'] }),
     onError: (err) => console.error('[useUpdateLeadStatus] failed:', err),
+  });
+}
+
+/** useCreateLead — POST /leads (тіло camelCase, Zod-схема бекенду) */
+interface CreateLeadPayload {
+  source: LeadSource;
+  tourId?: string;
+  tourist: { firstName: string; lastName: string; email?: string; phone?: string };
+  interestNote?: string;
+  budget?: number;
+  personsCount?: number;
+}
+
+function useCreateLead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: CreateLeadPayload) => {
+      const { data } = await api.post<{ data: Lead }>('/leads', payload);
+      return data.data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['leads'] }),
   });
 }
 
@@ -239,6 +261,114 @@ const LeadColumn: React.FC<{
   );
 };
 
+// ─── NEW LEAD MODAL ───────────────────────────────────────────
+
+const NewLeadModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+  const createLead = useCreateLead();
+  const { data: toursData } = useTours({ limit: 50 });
+  const tours = toursData?.data ?? [];
+
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [source, setSource] = useState<LeadSource>('phone');
+  const [tourId, setTourId] = useState('');
+  const [personsCount, setPersonsCount] = useState('2');
+  const [budget, setBudget] = useState('');
+  const [interestNote, setInterestNote] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  const inputClass = 'w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-cyan';
+
+  const handleSave = async () => {
+    setError(null);
+    try {
+      await createLead.mutateAsync({
+        source,
+        tourId: tourId || undefined,
+        tourist: {
+          firstName,
+          lastName,
+          email: email || undefined,
+          phone: phone || undefined,
+        },
+        personsCount: personsCount ? Number(personsCount) : undefined,
+        budget: budget ? Number(budget) : undefined,
+        interestNote: interestNote || undefined,
+      });
+      onClose();
+    } catch {
+      setError('Не вдалося створити лід. Перевірте дані (ім\'я та прізвище обов\'язкові).');
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 px-4">
+      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-5 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-base font-medium text-slate-900 dark:text-slate-100">Новий лід</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Закрити">
+            <X size={16} />
+          </button>
+        </div>
+
+        {error && <p className="text-xs text-red-500 mb-3">{error}</p>}
+
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-2">
+            <input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Ім'я *" className={inputClass} />
+            <input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Прізвище *" className={inputClass} />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+380XXXXXXXXX" className={inputClass} />
+            <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@example.com" className={inputClass} />
+          </div>
+
+          <select value={source} onChange={(e) => setSource(e.target.value as LeadSource)} className={inputClass}>
+            {Object.entries(SOURCE_CONFIG).map(([v, c]) => (
+              <option key={v} value={v}>{c.label}</option>
+            ))}
+          </select>
+
+          <select value={tourId} onChange={(e) => setTourId(e.target.value)} className={inputClass}>
+            <option value="">— тур не обрано —</option>
+            {tours.map((t) => (
+              <option key={t.id} value={t.id}>{t.code} · {t.name}</option>
+            ))}
+          </select>
+
+          <div className="grid grid-cols-2 gap-2">
+            <input type="number" min="1" value={personsCount} onChange={(e) => setPersonsCount(e.target.value)} placeholder="Осіб" className={inputClass} />
+            <input type="number" min="0" value={budget} onChange={(e) => setBudget(e.target.value)} placeholder="Бюджет, EUR" className={inputClass} />
+          </div>
+
+          <textarea
+            value={interestNote}
+            onChange={(e) => setInterestNote(e.target.value)}
+            placeholder="Що цікавить клієнта…"
+            rows={2}
+            className={inputClass}
+          />
+        </div>
+
+        <div className="flex justify-end gap-2 mt-5">
+          <button onClick={onClose} className="px-4 py-2 text-sm rounded-full border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">
+            Скасувати
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={createLead.isPending || !firstName || !lastName}
+            className="px-4 py-2 text-sm rounded-full font-medium bg-brand-cyan text-brand-dark hover:bg-brand-cyan-dark disabled:opacity-50 transition-colors"
+          >
+            {createLead.isPending ? 'Створення…' : 'Створити лід'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ─── MAIN PAGE ────────────────────────────────────────────────
 
 interface LeadsListProps {
@@ -283,6 +413,7 @@ const LeadsList: React.FC<LeadsListProps> = ({ onNewLead }) => {
   const convertLead = useConvertLead();
   const updateStatus = useUpdateLeadStatus();
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [showNewLead, setShowNewLead] = useState(false);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
@@ -320,7 +451,7 @@ const LeadsList: React.FC<LeadsListProps> = ({ onNewLead }) => {
           </p>
         </div>
         <button
-          onClick={onNewLead}
+          onClick={() => (onNewLead ? onNewLead() : setShowNewLead(true))}
           className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium bg-brand-cyan text-brand-dark hover:bg-brand-cyan-dark transition-colors"
         >
           <Plus size={14} /> Новий лід
@@ -415,6 +546,8 @@ const LeadsList: React.FC<LeadsListProps> = ({ onNewLead }) => {
           </DragOverlay>
         </DndContext>
       )}
+
+      {showNewLead && <NewLeadModal onClose={() => setShowNewLead(false)} />}
     </div>
   );
 };

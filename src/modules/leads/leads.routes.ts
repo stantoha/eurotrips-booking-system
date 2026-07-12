@@ -56,7 +56,8 @@ export async function leadRoutes(app: FastifyInstance) {
 
   // ── POST /leads ────────────────────────────────────────────────────────────
   app.post<{ Body: CreateLeadDto }>('/', {
-    preHandler: [requireAuth, requireRoles('admin', 'manager', 'agent')],
+    // director має доступ до сторінки /leads — без нього кнопка «Новий лід» падала б у 403
+    preHandler: [requireAuth, requireRoles('admin', 'manager', 'agent', 'director')],
     schema: {
       summary: 'Створити лід',
       description: 'Приймає touristId або об\'єкт tourist для авто-створення. Автоматично присвоює менеджера.',

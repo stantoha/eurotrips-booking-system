@@ -90,9 +90,10 @@ const TourStatusBadge: React.FC<{ status: TourStatus }> = ({ status }) => {
 const TourListRow: React.FC<{
   tour: Tour;
   showCost: boolean;
+  showBook: boolean;
   onBook: (id: string) => void;
   onView: (id: string) => void;
-}> = ({ tour, showCost, onBook, onView }) => {
+}> = ({ tour, showCost, showBook, onBook, onView }) => {
   const occ = occupancy(tour);
   return (
     <div
@@ -144,13 +145,15 @@ const TourListRow: React.FC<{
         )}
       </div>
 
-      <button
-        onClick={(e) => { e.stopPropagation(); onBook(tour.id); }}
-        disabled={tour.available_seats === 0}
-        className="flex-shrink-0 px-3 py-1.5 rounded-pill text-xs font-semibold bg-brand-red text-white hover:bg-brand-red-dark disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-      >
-        {tour.available_seats === 0 ? 'Заповнений' : 'Бронювати'}
-      </button>
+      {showBook && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onBook(tour.id); }}
+          disabled={tour.available_seats === 0}
+          className="flex-shrink-0 px-3 py-1.5 rounded-pill text-xs font-semibold bg-brand-red text-white hover:bg-brand-red-dark disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        >
+          {tour.available_seats === 0 ? 'Заповнений' : 'Бронювати'}
+        </button>
+      )}
     </div>
   );
 };
@@ -159,8 +162,10 @@ const TourListRow: React.FC<{
 
 const ToursPage: React.FC = () => {
   const navigate = useNavigate();
-  const { isAdmin, isDirector, isManager, isAccountant, canSeeMargin } = useAuth();
-  const canCreate = isAdmin || isManager;
+  const { isAdmin, isDirector, isManager, isAccountant, canSeeMargin, isOpsManager, isLogist, isProductManager } = useAuth();
+  const canCreate = isAdmin || isManager || isProductManager;
+  // Операційні ролі (ops/logist/product_manager) не продають — кнопку «Бронювати» ховаємо
+  const canBook = !(isOpsManager || isLogist || isProductManager);
 
   // ── Filter state ───────────────────────────────────────────
   const [view,     setView]    = useState<'grid' | 'list'>('grid');
@@ -327,6 +332,7 @@ const ToursPage: React.FC = () => {
                 tour={tour}
                 userRole={canSeeMargin ? 'manager' : 'agent'}
                 variant="grid"
+                showBookButton={canBook}
                 onBook={handleBook}
                 onView={handleView}
               />
@@ -339,6 +345,7 @@ const ToursPage: React.FC = () => {
                 key={tour.id}
                 tour={tour}
                 showCost={canSeeMargin}
+                showBook={canBook}
                 onBook={handleBook}
                 onView={handleView}
               />

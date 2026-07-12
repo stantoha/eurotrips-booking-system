@@ -25,6 +25,7 @@ import { StatusDot } from '../components/ui/StatusBadge';
 import { DeadlineIndicator } from '../components/ui/DeadlineIndicator';
 import { occupancyColor } from '../components/ui/OccupancyBar';
 import { LEAD_STATUS_CONFIG } from '../constants/statuses';
+import DirectorDashboard from './DirectorDashboard';
 import type { LeadStatus } from '../types';
 
 // ─── KPI CARD ─────────────────────────────────────────────────
@@ -52,9 +53,19 @@ const SectionHeading: React.FC<{ children: React.ReactNode; to?: string }> = ({ 
 // ─── MAIN PAGE ────────────────────────────────────────────────
 
 const Dashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isDirector } = useAuth();
   const navigate = useNavigate();
 
+  // Директор має власний стратегічний дашборд (фінанси/маржа/воронка/агенти)
+  if (isDirector) return <DirectorDashboard />;
+
+  return <OperationalDashboard user={user} navigate={navigate} />;
+};
+
+const OperationalDashboard: React.FC<{
+  user: ReturnType<typeof useAuth>['user'];
+  navigate: ReturnType<typeof useNavigate>;
+}> = ({ user, navigate }) => {
   const { data: summary, isLoading: summaryLoading } = useFinanceSummary();
   const { data: ops, isLoading: opsLoading, isError: opsError } = useOpsDashboard();
   const { data: leadsByStatus, isLoading: leadsLoading } = useLeadsByStatus();

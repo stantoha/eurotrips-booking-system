@@ -1623,16 +1623,19 @@ const TourDetailPage: React.FC = () => {
         </div>
         )}
 
-        <div className="p-6 border-t border-slate-100 dark:border-slate-700">
-          <button
-            onClick={() => navigate(`/bookings/new?tour=${tour.id}`)}
-            disabled={tour.available_seats === 0}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-pill text-sm font-semibold bg-brand-red text-white hover:bg-brand-red-dark disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          >
-            <Plus size={15} aria-hidden="true" />
-            {tour.available_seats === 0 ? 'Місць немає' : 'Забронювати'}
-          </button>
-        </div>
+        {/* Операційні ролі (ops/logist/product_manager) не продають — без кнопки бронювання */}
+        {!(isOpsManager || isLogist || isProductManager) && (
+          <div className="p-6 border-t border-slate-100 dark:border-slate-700">
+            <button
+              onClick={() => navigate(`/bookings/new?tour=${tour.id}`)}
+              disabled={tour.available_seats === 0}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-pill text-sm font-semibold bg-brand-red text-white hover:bg-brand-red-dark disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              <Plus size={15} aria-hidden="true" />
+              {tour.available_seats === 0 ? 'Місць немає' : 'Забронювати'}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

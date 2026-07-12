@@ -8,7 +8,7 @@ import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, MapPinned, ClipboardList, Users2,
-  Wallet, Wrench, UserCircle2, Ticket, UserCog, Bus
+  Wallet, Wrench, UserCircle2, Ticket, UserCog, Bus, BarChart3
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { Topbar } from './Topbar';
@@ -48,6 +48,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     { to: '/operations', label: 'Операційний блок',icon: Wrench,          show: seesToursAndOps,                     section: 'Управління' },
     { to: '/staff',      label: 'Персонал',        icon: UserCog,         show: isAdmin || isProductManager,         section: 'Управління' },
     { to: '/carriers',   label: 'Перевізники',     icon: Bus,             show: isAdmin || isLogist,                 section: 'Управління' },
+    { to: '/analytics',  label: 'Аналітика',       icon: BarChart3,       show: isAdmin || isDirector || isManager,  section: 'Управління' },
     { to: '/finance',    label: 'Фінанси',         icon: Wallet,          show: isAdmin || isDirector,               section: 'Управління' },
     { to: '/agent',      label: 'Кабінет агента',  icon: UserCircle2,     show: isAgent,                             section: 'Управління' },
   ];

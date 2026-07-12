@@ -15,7 +15,7 @@ const ROOM_TYPE_LABELS: Record<string, string> = {
   twin: 'TWIN', double: 'DOUBLE', triple: 'TRIPLE', single: 'SINGLE', no_preference: '',
 };
 
-function baseStyles(): string {
+export function baseStyles(): string {
   return `
     body { font-family: 'Arial', sans-serif; font-size: 11px; color: #1a1a2e; margin: 24px; }
     h1 { font-size: 16px; margin-bottom: 4px; }
@@ -28,7 +28,7 @@ function baseStyles(): string {
   `;
 }
 
-function escapeHtml(value: string | null | undefined): string {
+export function escapeHtml(value: string | null | undefined): string {
   if (value == null) return '';
   return String(value).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 }

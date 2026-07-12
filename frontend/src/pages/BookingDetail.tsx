@@ -28,6 +28,13 @@ import { useAuth }               from '../hooks/useAuth';
 import { useBooking, useUpdateBookingStatus } from '../hooks/useBookings';
 import { useTourAvailability }   from '../hooks/useTourAvailability';
 import {
+  useBookingDocuments, useGenerateBookingDocument, openBookingDocument,
+} from '../hooks/useBookingDocuments';
+import {
+  useBookingCommunications, useCreateBookingCommunication,
+  type CommunicationChannel,
+} from '../hooks/useBookingCommunications';
+import {
   getAllowedTransitions,
   isTerminalStatus,
 } from '../constants/bookingTransitions';
@@ -235,6 +242,156 @@ const CommentsBlock: React.FC<{ bookingId: string; author: string }> = ({ bookin
 
 // ─── SKELETON ─────────────────────────────────────────────────
 
+// ─── ДОКУМЕНТИ БРОНЮВАННЯ (Реліз 1) ───────────────────────────
+
+const DocumentsBlock: React.FC<{ bookingId: string; canGenerate: boolean }> = ({ bookingId, canGenerate }) => {
+  const { data: docs, isLoading } = useBookingDocuments(bookingId);
+  const generateDoc = useGenerateBookingDocument(bookingId);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleGenerate = async (docType: 'voucher' | 'contract') => {
+    setError(null);
+    try {
+      const doc = await generateDoc.mutateAsync(docType);
+      await openBookingDocument(bookingId, doc.id);
+    } catch {
+      setError('Не вдалося згенерувати документ.');
+    }
+  };
+
+  return (
+    <div className="border border-slate-200 dark:border-slate-700 rounded-xl p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <Download size={13} className="text-slate-400" />
+        <h3 className="text-sm font-medium text-slate-900 dark:text-slate-100">Документи</h3>
+      </div>
+
+      {error && <p className="text-xs text-red-500 mb-2">{error}</p>}
+
+      {canGenerate && (
+        <div className="flex flex-wrap gap-2 mb-3">
+          <button
+            onClick={() => handleGenerate('voucher')}
+            disabled={generateDoc.isPending}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors disabled:opacity-50"
+          >
+            <FileCheck size={13} /> Згенерувати ваучер (PDF)
+          </button>
+          <button
+            onClick={() => handleGenerate('contract')}
+            disabled={generateDoc.isPending}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors disabled:opacity-50"
+          >
+            <FileText size={13} /> Згенерувати договір (PDF)
+          </button>
+          {generateDoc.isPending && <Loader2 size={14} className="animate-spin text-slate-400 self-center" />}
+        </div>
+      )}
+
+      {isLoading ? (
+        <p className="text-xs text-slate-400">Завантаження…</p>
+      ) : (docs?.length ?? 0) === 0 ? (
+        <p className="text-xs text-slate-400">Документів ще не згенеровано.</p>
+      ) : (
+        <div className="divide-y divide-slate-100 dark:divide-slate-800">
+          {docs!.map((d) => (
+            <button
+              key={d.id}
+              onClick={() => openBookingDocument(bookingId, d.id)}
+              className="w-full flex items-center justify-between gap-3 py-2 text-left text-sm hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+            >
+              <span className="flex items-center gap-2 text-slate-700 dark:text-slate-300 truncate">
+                <FileText size={13} className="text-slate-400 shrink-0" /> {d.title}
+              </span>
+              <span className="text-xs text-slate-400 font-mono shrink-0">
+                {new Date(d.generated_at).toLocaleDateString('uk-UA')}{d.file_size_kb ? ` · ${d.file_size_kb} КБ` : ''}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── ПОВІДОМЛЕННЯ (Реліз 1: базові повідомлення) ──────────────
+
+const CHANNEL_LABELS: Record<CommunicationChannel, string> = {
+  email: 'Email', sms: 'SMS', telegram: 'Telegram', viber: 'Viber', internal: 'Внутрішнє',
+};
+
+const CommunicationsBlock: React.FC<{ bookingId: string; canWrite: boolean }> = ({ bookingId, canWrite }) => {
+  const { data: messages, isLoading } = useBookingCommunications(bookingId);
+  const createMessage = useCreateBookingCommunication(bookingId);
+  const [channel, setChannel] = useState<CommunicationChannel>('viber');
+  const [body, setBody] = useState('');
+
+  const handleSend = async () => {
+    if (!body.trim()) return;
+    await createMessage.mutateAsync({ channel, direction: 'outbound', body: body.trim() });
+    setBody('');
+  };
+
+  return (
+    <div className="border border-slate-200 dark:border-slate-700 rounded-xl p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <MessageSquare size={13} className="text-slate-400" />
+        <h3 className="text-sm font-medium text-slate-900 dark:text-slate-100">Повідомлення клієнту</h3>
+      </div>
+
+      {isLoading ? (
+        <p className="text-xs text-slate-400">Завантаження…</p>
+      ) : (messages?.length ?? 0) === 0 ? (
+        <p className="text-xs text-slate-400 mb-3">Повідомлень ще немає. Автоматичні Telegram-нотифікації з'являться тут після підтвердження броні.</p>
+      ) : (
+        <div className="space-y-2 mb-3 max-h-64 overflow-y-auto">
+          {messages!.map((m) => (
+            <div key={m.id} className="text-xs bg-slate-50 dark:bg-slate-800/50 rounded-lg px-2.5 py-1.5">
+              <div className="flex items-center justify-between mb-0.5">
+                <span className="font-medium text-slate-700 dark:text-slate-300">
+                  {CHANNEL_LABELS[m.channel] ?? m.channel} · {m.direction === 'outbound' ? 'вихідне' : 'вхідне'}
+                </span>
+                <span className="text-slate-400">{new Date(m.created_at).toLocaleString('uk-UA')}</span>
+              </div>
+              {m.subject && <p className="text-slate-600 dark:text-slate-400 font-medium">{m.subject}</p>}
+              {m.body && <p className="text-slate-500">{m.body}</p>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {canWrite && (
+        <div className="flex items-end gap-2">
+          <select
+            value={channel}
+            onChange={(e) => setChannel(e.target.value as CommunicationChannel)}
+            className="px-2 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300"
+          >
+            {(Object.keys(CHANNEL_LABELS) as CommunicationChannel[]).map((c) => (
+              <option key={c} value={c}>{CHANNEL_LABELS[c]}</option>
+            ))}
+          </select>
+          <input
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+            placeholder="Зафіксувати повідомлення/контакт…"
+            className="flex-1 px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
+          />
+          <button
+            onClick={handleSend}
+            disabled={createMessage.isPending || !body.trim()}
+            aria-label="Надіслати"
+            className="p-2 rounded-lg bg-brand-cyan text-white hover:bg-brand-cyan-dark disabled:opacity-40 transition-colors"
+          >
+            <Send size={13} />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const Skeleton: React.FC = () => (
   <div className="p-6 max-w-screen-xl mx-auto animate-pulse space-y-4">
     <div className="h-7 bg-slate-200 dark:bg-slate-700 rounded-lg w-72" />
@@ -278,12 +435,6 @@ const BookingDetail: React.FC<BookingDetailProps> = ({ bookingId, onBack }) => {
   const canChangeStatus = isAdmin || isManager || isOpsManager;
   const showCommission  = !!booking?.agent_id && (isAdmin || isManager || isAgent);
   const isTourAvia      = false; // TODO: join tour.tour_type from booking response
-
-  // ── Handlers ──────────────────────────────────────────────
-  const download = useCallback((doc: string) => {
-    console.log('[BookingDetail] download:', doc, bookingId);
-    // TODO: GET /bookings/:id/documents/:doc → Blob download
-  }, [bookingId]);
 
   // ── Loading / Error ────────────────────────────────────────
   if (isLoading) return <Skeleton />;
@@ -448,33 +599,11 @@ const BookingDetail: React.FC<BookingDetailProps> = ({ bookingId, onBack }) => {
             )}
           </div>
 
-          {/* ── ДОКУМЕНТИ ── */}
-          <div className="border border-slate-200 dark:border-slate-700 rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <Download size={13} className="text-slate-400" />
-              <h3 className="text-sm font-medium text-slate-900 dark:text-slate-100">Документи</h3>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {/* Стандартні */}
-              {[
-                { icon: <FileText  size={13} />, label: 'Завантажити договір',       key: 'contract'     },
-                { icon: <FileCheck size={13} />, label: 'Завантажити підтвердження', key: 'confirmation' },
-              ].map(d => (
-                <button key={d.key} onClick={() => download(d.key)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors">
-                  {d.icon}{d.label}
-                </button>
-              ))}
-              {/* Страховки — по одній на туриста (INS-03) */}
-              {tourists.filter(t => t.insurance).map((t, i) => (
-                <button key={t.id} onClick={() => download(`insurance_${t.id}`)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs border border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 transition-colors">
-                  <Shield size={13} />
-                  Завантажити страховку ч.{i + 1}
-                </button>
-              ))}
-            </div>
-          </div>
+          {/* ── ДОКУМЕНТИ (Реліз 1: PDF ваучер/договір) ── */}
+          <DocumentsBlock bookingId={bookingId} canGenerate={isAdmin || isManager || isAgent} />
+
+          {/* ── ПОВІДОМЛЕННЯ (Реліз 1: базові повідомлення) ── */}
+          <CommunicationsBlock bookingId={bookingId} canWrite={isAdmin || isManager || isAgent} />
 
           {/* ── КОМЕНТАРІ ── */}
           <CommentsBlock bookingId={bookingId} author={user?.full_name ?? 'Менеджер'} />

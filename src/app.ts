@@ -35,6 +35,8 @@ import { documentsRoutes }     from './modules/tours/documents.routes';
 import { opsDashboardRoutes }  from './modules/ops/dashboard.routes';
 import { bookingRoutes }      from './modules/bookings/bookings.routes';
 import { seatMapRoutes }      from './modules/bookings/seat-map.routes';
+import { bookingDocumentsRoutes }      from './modules/bookings/booking-documents.routes';
+import { bookingCommunicationsRoutes } from './modules/bookings/booking-communications.routes';
 import { financeRoutes }      from './modules/finance/finance.routes';
 import { leadRoutes }         from './modules/leads/leads.routes';
 import { agentRoutes }        from './modules/agents/agents.routes';
@@ -230,6 +232,10 @@ export async function buildApp(app: FastifyInstance) {
       await api.register(bookingRoutes, { prefix: '/bookings' });
       // Seat map + preferences — OPS-03/BR-12
       await api.register(seatMapRoutes, { prefix: '/bookings' });
+      // Документи бронювання: PDF ваучер/договір (Реліз 1)
+      await api.register(bookingDocumentsRoutes, { prefix: '/bookings' });
+      // Лог повідомлень по бронюванню (Реліз 1)
+      await api.register(bookingCommunicationsRoutes, { prefix: '/bookings' });
       // Finance — RBAC (403 для агентів)
       await api.register(financeRoutes, { prefix: '/finance' });
       // Leads / CRM — включно з /convert
