@@ -9,6 +9,7 @@ import { Sun, Moon, Bell, LogOut, Menu, X } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../hooks/useTheme';
 import { ROLE_LABELS } from '../../constants/roles';
+import logoBlack from '../../icons/ET_logo_black.png';
 
 export interface TopbarProps {
   mobileOpen: boolean;
@@ -37,7 +38,7 @@ export const Topbar: React.FC<TopbarProps> = ({ mobileOpen, onToggleMobile, onSi
 
         <div className="flex items-center gap-2 flex-shrink-0">
           <div className="w-7 h-7 bg-brand-cyan rounded-md flex items-center justify-center flex-shrink-0">
-            <img src="/ET_logo_black.svg" alt="Eurotrips" className="w-5 h-5 object-contain" />
+            <img src={logoBlack} alt="Eurotrips" className="w-5 h-5 object-contain" />
           </div>
           <span className="font-mono font-bold text-sm tracking-wider text-brand-cyan">EUROTRIPS</span>
         </div>

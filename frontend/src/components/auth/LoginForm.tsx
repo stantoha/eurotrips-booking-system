@@ -12,6 +12,7 @@ import {
   Mail, Lock, Eye, EyeOff, AlertCircle, Loader2,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import logoWhite from '../../icons/ET_logo_white.png';
 
 // ─── SCHEMA ───────────────────────────────────────────────────
 
@@ -71,7 +72,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
       <div className="flex items-center gap-2 justify-center mb-8">
         <div className="w-8 h-8 bg-brand-cyan rounded-lg flex items-center justify-center">
           <img
-            src="/ET_logo_white.svg"
+            src={logoWhite}
             alt="Eurotrips"
             className="w-8 h-8 object-contain"
           />
