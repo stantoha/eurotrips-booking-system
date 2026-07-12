@@ -163,7 +163,8 @@ const TourListRow: React.FC<{
 const ToursPage: React.FC = () => {
   const navigate = useNavigate();
   const { isAdmin, isDirector, isManager, isAccountant, canSeeMargin, isOpsManager, isLogist, isProductManager } = useAuth();
-  const canCreate = isAdmin || isManager || isProductManager;
+  // «Новий тур» — тільки операційний менеджер та продакт-менеджер (запит користувача)
+  const canCreate = isOpsManager || isProductManager;
   // Операційні ролі (ops/logist/product_manager) не продають — кнопку «Бронювати» ховаємо
   const canBook = !(isOpsManager || isLogist || isProductManager);
 
@@ -236,7 +237,10 @@ const ToursPage: React.FC = () => {
           </p>
         </div>
         {canCreate && (
-          <button className="flex items-center gap-2 px-4 py-2 rounded-pill text-sm font-semibold bg-brand-red text-white hover:bg-brand-red-dark transition-colors">
+          <button
+            onClick={() => navigate('/tours/new')}
+            className="flex items-center gap-2 px-4 py-2 rounded-pill text-sm font-semibold bg-brand-red text-white hover:bg-brand-red-dark transition-colors"
+          >
             <Plus size={14} aria-hidden="true" /> Новий тур
           </button>
         )}

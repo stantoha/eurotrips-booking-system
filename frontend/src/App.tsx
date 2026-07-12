@@ -30,6 +30,7 @@ const OperationsPage  = React.lazy(() => import('./pages/Operations'));
 const StaffPage       = React.lazy(() => import('./pages/Staff'));
 const CarriersPage    = React.lazy(() => import('./pages/Carriers'));
 const AnalyticsPage   = React.lazy(() => import('./pages/Analytics'));
+const TourNewPage     = React.lazy(() => import('./pages/TourNew'));
 const NotFoundPage    = React.lazy(() => import('./pages/errors/NotFound'));
 
 // Wrapper — дістає :id з URL та передає пропсами в BookingDetail
@@ -135,6 +136,11 @@ export const App: React.FC = () => (
             <Route path="/tours"         element={<ToursPage />} />
             <Route path="/tours/:id"     element={<TourDetail />} />
             <Route path="/operations"    element={<OperationsPage />} />
+          </Route>
+
+          {/* ── Створення туру — ті ж ролі, що POST /tours на бекенді ── */}
+          <Route element={<ProtectedRoute allowedRoles={['admin', 'ops', 'product_manager']} />}>
+            <Route path="/tours/new" element={<TourNewPage />} />
           </Route>
 
           {/* ── Персонал (турлідери/гіди/водії/координатори) — product_manager ── */}

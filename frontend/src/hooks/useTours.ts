@@ -58,6 +58,40 @@ export function useTourList(filters?: TourListQueryDto) {
   })
 }
 
+// POST /tours — створити тур [admin, ops, product_manager]
+// Тіло — camelCase (Zod-схема бекенду). Відповідь може містити meta.warnings (маржинальний ризик).
+export function useCreateTour() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: Record<string, unknown>) => {
+      const res = await api.post<{ data: Tour; meta?: { warnings: string[] } }>('/tours', payload)
+      return res.data
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: tourKeys.lists() }),
+  })
+}
+
+// POST /tours/:id/departures — новий виїзд на базі туру [admin, ops, product_manager]
+export interface CreateDeparturePayload {
+  departureDate: string
+  totalSeats?: number
+  basePrice?: number
+  costPrice?: number
+  agentCommissionPct?: number
+  guideId?: string
+}
+
+export function useCreateDeparture() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ tourId, payload }: { tourId: string; payload: CreateDeparturePayload }) => {
+      const res = await api.post<{ data: Tour; meta?: { warnings: string[] } }>(`/tours/${tourId}/departures`, payload)
+      return res.data
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: tourKeys.lists() }),
+  })
+}
+
 // PUT /tours/:id — редагувати тур [admin, ops, product_manager]
 export function useUpdateTour(tourId: string) {
   const queryClient = useQueryClient()

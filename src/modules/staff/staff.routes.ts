@@ -1,10 +1,11 @@
 // =============================================================================
 // EUROTRIPS — Staff Routes
-// GET    /staff       [admin, product_manager]  ?role=&status=&search=&page=&limit=
-// GET    /staff/:id   [admin, product_manager]
+// GET    /staff       [admin, product_manager, ops]  ?role=&status=&search=&page=&limit=
+// GET    /staff/:id   [admin, product_manager, ops]
 // POST   /staff       [admin, product_manager]
 // PATCH  /staff/:id   [admin, product_manager]
 // DELETE /staff/:id   [admin, product_manager]  — soft delete (status='inactive')
+// (read відкрито ops — вибір турлідера у формі створення туру)
 // =============================================================================
 
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
@@ -17,6 +18,7 @@ import { requireAuth } from '../../shared/guards/jwt.guard';
 import { requireRoles } from '../../shared/guards/rbac.guard';
 
 const STAFF_ROLES_ACCESS = ['admin', 'product_manager'] as const;
+const STAFF_READ_ACCESS = ['admin', 'product_manager', 'ops'] as const;
 
 const ID_PARAM = {
   type: 'object',
@@ -31,7 +33,7 @@ export async function staffRoutes(app: FastifyInstance) {
   app.get<{ Querystring: StaffListQueryDto }>(
     '/',
     {
-      preHandler: [requireAuth, requireRoles(...STAFF_ROLES_ACCESS)],
+      preHandler: [requireAuth, requireRoles(...STAFF_READ_ACCESS)],
       schema: {
         summary: 'Список персоналу (турлідери/гіди/водії/координатори)',
         tags: ['Staff'],
@@ -59,7 +61,7 @@ export async function staffRoutes(app: FastifyInstance) {
   app.get<{ Params: { id: string } }>(
     '/:id',
     {
-      preHandler: [requireAuth, requireRoles(...STAFF_ROLES_ACCESS)],
+      preHandler: [requireAuth, requireRoles(...STAFF_READ_ACCESS)],
       schema: {
         summary: 'Персонал за ID',
         tags: ['Staff'],

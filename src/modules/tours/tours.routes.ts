@@ -14,10 +14,12 @@ import { ToursService } from './tours.service';
 import {
   TourListQuerySchema,
   CreateTourSchema,
+  CreateDepartureSchema,
   UpdateTourSchema,
   ChangeStatusSchema,
   type TourListQueryDto,
   type CreateTourDto,
+  type CreateDepartureDto,
   type UpdateTourDto,
   type ChangeStatusDto,
 } from './tours.schema';
@@ -129,6 +131,46 @@ export async function tourRoutes(app: FastifyInstance) {
       const dto = CreateTourSchema.parse(req.body);
       const user = getCurrentUser(req);
       const { tour, warnings } = await service.createTour(dto, user.sub);
+      return reply.code(201).send({
+        data: tour,
+        ...(warnings.length > 0 && { meta: { warnings } }),
+      });
+    }
+  );
+
+  // ── POST /tours/:id/departures ─────────────────────────────────────────
+  app.post<{ Params: { id: string }; Body: CreateDepartureDto }>(
+    '/:id/departures',
+    {
+      preHandler: [requireAuth, requireRoles('admin', 'ops', 'product_manager')],
+      schema: {
+        summary: 'Створити новий виїзд на базі туру (ADR-003: Tour = Departure)',
+        description: 'Копіює тур-шаблон з новою датою виїзду. Код генерується автоматично за §8 ([PREFIX][YYMMDD][SEQ]), returnDate = departureDate + durationDays - 1, статус draft, всі місця вільні.',
+        tags: ['Tours'],
+        security: [{ bearerAuth: [] }],
+        params: {
+          type: 'object',
+          properties: { id: { type: 'string', format: 'uuid' } },
+          required: ['id'],
+        },
+        body: {
+          type: 'object',
+          required: ['departureDate'],
+          properties: {
+            departureDate: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
+            totalSeats: { type: 'number', minimum: 1, maximum: 500 },
+            basePrice: { type: 'number', exclusiveMinimum: 0 },
+            costPrice: { type: 'number', exclusiveMinimum: 0 },
+            agentCommissionPct: { type: 'number', minimum: 0, maximum: 1 },
+            guideId: { type: 'string', format: 'uuid' },
+          },
+        },
+      },
+    },
+    async (req: FastifyRequest<{ Params: { id: string }; Body: CreateDepartureDto }>, reply: FastifyReply) => {
+      const dto = CreateDepartureSchema.parse(req.body);
+      const user = getCurrentUser(req);
+      const { tour, warnings } = await service.createDeparture(req.params.id, dto, user.sub);
       return reply.code(201).send({
         data: tour,
         ...(warnings.length > 0 && { meta: { warnings } }),

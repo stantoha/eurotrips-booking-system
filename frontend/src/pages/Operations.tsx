@@ -13,9 +13,9 @@
 
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, AlertTriangle, List, CalendarDays, LayoutDashboard, Users2, AlertOctagon, Truck } from 'lucide-react';
+import { Search, AlertTriangle, List, CalendarDays, LayoutDashboard, Users2, AlertOctagon, Truck, Plus, X } from 'lucide-react';
 
-import { useTours } from '../hooks/useTours';
+import { useTours, useCreateDeparture } from '../hooks/useTours';
 import { useAuth } from '../hooks/useAuth';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { OccupancyBar, occupancyPct, occupancyColor } from '../components/ui/OccupancyBar';
@@ -223,6 +223,114 @@ const OpsDashboardView: React.FC<{ onOpenTour: (id: string) => void }> = ({ onOp
   );
 };
 
+// ─── НОВИЙ ВИЇЗД (ADR-003: Tour = Departure) ─────────────────────
+// Копія туру-шаблону з новою датою: код §8 і returnDate генерує бекенд
+// (POST /tours/:id/departures), статус draft, всі місця вільні.
+
+const NewDepartureModal: React.FC<{ tours: Tour[]; onClose: () => void; onCreated: (id: string) => void }> = ({
+  tours, onClose, onCreated,
+}) => {
+  const createDeparture = useCreateDeparture();
+  const [tourId, setTourId] = useState('');
+  const [departureDate, setDepartureDate] = useState('');
+  const [totalSeats, setTotalSeats] = useState('');
+  const [basePrice, setBasePrice] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [warnings, setWarnings] = useState<string[]>([]);
+
+  const source = tours.find((t) => t.id === tourId);
+
+  const handleCreate = async () => {
+    if (!tourId || !departureDate) return;
+    setError(null);
+    setWarnings([]);
+    try {
+      const res = await createDeparture.mutateAsync({
+        tourId,
+        payload: {
+          departureDate,
+          totalSeats: totalSeats ? Number(totalSeats) : undefined,
+          basePrice: basePrice ? Number(basePrice) : undefined,
+        },
+      });
+      if (res.meta?.warnings?.length) {
+        setWarnings(res.meta.warnings);
+        setTimeout(() => onCreated(res.data.id), 2500);
+      } else {
+        onCreated(res.data.id);
+      }
+    } catch (err) {
+      const anyErr = err as { response?: { data?: { error?: { message?: string } } } };
+      setError(anyErr?.response?.data?.error?.message ?? 'Не вдалося створити виїзд.');
+    }
+  };
+
+  const inp = 'w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100';
+
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 px-4">
+      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
+        <div className="flex items-center justify-between mb-1">
+          <h2 className="text-base font-medium text-slate-900 dark:text-slate-100">Новий виїзд</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Закрити"><X size={16} /></button>
+        </div>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+          Тур-шаблон + дата виїзду. Код рейсу, дата повернення і решта полів згенеруються автоматично; виїзд створюється як чернетка.
+        </p>
+
+        {error && <p className="text-xs text-red-500 mb-3">{error}</p>}
+        {warnings.map((w) => (
+          <p key={w} className="text-xs text-amber-600 dark:text-amber-400 mb-3">Виїзд створено, але: {w}</p>
+        ))}
+
+        <div className="space-y-3">
+          <div>
+            <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Тур-шаблон *</label>
+            <select value={tourId} onChange={(e) => setTourId(e.target.value)} className={inp}>
+              <option value="">— оберіть тур —</option>
+              {tours.map((t) => (
+                <option key={t.id} value={t.id}>{t.code} · {t.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Дата виїзду *</label>
+            <input type="date" value={departureDate} onChange={(e) => setDepartureDate(e.target.value)} className={inp} />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Місць (опційно)</label>
+              <input type="number" min="1" value={totalSeats} onChange={(e) => setTotalSeats(e.target.value)} placeholder={source ? String(source.total_seats) : '—'} className={inp} />
+            </div>
+            <div>
+              <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Ціна (опційно)</label>
+              <input type="number" min="1" value={basePrice} onChange={(e) => setBasePrice(e.target.value)} placeholder={source ? String(source.base_price) : '—'} className={inp} />
+            </div>
+          </div>
+          {source && (
+            <p className="text-xs text-slate-400">
+              Тривалість {source.duration_days} дн. · {source.direction ?? '—'} · повернення розрахує бекенд
+            </p>
+          )}
+        </div>
+
+        <div className="flex justify-end gap-2 mt-5">
+          <button onClick={onClose} className="px-4 py-2 text-sm rounded-pill border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">
+            Скасувати
+          </button>
+          <button
+            onClick={handleCreate}
+            disabled={!tourId || !departureDate || createDeparture.isPending}
+            className="px-4 py-2 text-sm rounded-pill font-semibold bg-brand-red text-white hover:bg-brand-red-dark disabled:opacity-40 transition-colors"
+          >
+            {createDeparture.isPending ? 'Створення…' : 'Створити виїзд'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ─── CONSTANTS ────────────────────────────────────────────────
 
 const STATUS_FILTERS: { value: TourStatus | 'all'; label: string }[] = [
@@ -281,13 +389,16 @@ const OpsTourCard: React.FC<{ tour: Tour; onOpen: (id: string) => void }> = ({ t
 
 const Operations: React.FC = () => {
   const navigate = useNavigate();
-  const { isOpsManager, isManager, isAdmin, isDirector, isLogist } = useAuth();
+  const { isOpsManager, isManager, isAdmin, isDirector, isLogist, isProductManager } = useAuth();
   // /ops/dashboard RBAC: ops, manager, admin, director, logist (НЕ product_manager —
   // інакше дефолтний таб 'dashboard' тихо впав би в 403 для product_manager)
   const canSeeOpsDashboard = isOpsManager || isManager || isAdmin || isDirector || isLogist;
+  // «Новий виїзд» — ті ж ролі, що POST /tours/:id/departures на бекенді
+  const canCreateDeparture = isAdmin || isOpsManager || isProductManager;
   const [mainView, setMainView] = useState<'dashboard' | 'registry' | 'logistics'>(
     isLogist ? 'logistics' : canSeeOpsDashboard ? 'dashboard' : 'registry'
   );
+  const [showNewDeparture, setShowNewDeparture] = useState(false);
   const [statusF, setStatusF] = useState<TourStatus | 'all'>('all');
   const [search, setSearch] = useState('');
   const [view, setView] = useState<'list' | 'calendar'>('list');
@@ -415,6 +526,14 @@ const Operations: React.FC = () => {
       <>
       {/* Filter bar */}
       <div className="flex flex-wrap items-center gap-2 mb-5">
+        {canCreateDeparture && (
+          <button
+            onClick={() => setShowNewDeparture(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-pill text-xs font-semibold bg-brand-red text-white hover:bg-brand-red-dark transition-colors"
+          >
+            <Plus size={13} /> Новий виїзд
+          </button>
+        )}
         <div className="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5 gap-0.5">
           <button
             onClick={() => setView('list')}
@@ -487,6 +606,14 @@ const Operations: React.FC = () => {
         />
       )}
       </>
+      )}
+
+      {showNewDeparture && (
+        <NewDepartureModal
+          tours={tours}
+          onClose={() => setShowNewDeparture(false)}
+          onCreated={(id) => { setShowNewDeparture(false); navigate(`/tours/${id}`); }}
+        />
       )}
     </div>
   );

@@ -104,6 +104,20 @@ export const CreateTourSchema = CreateTourSchemaBase.refine(
   { message: 'Дата повернення має бути не раніше дати виїзду', path: ['returnDate'] }
 );
 
+// ── Create departure (новий виїзд на базі існуючого туру, ADR-003 Tour=Departure) ──
+
+export const CreateDepartureSchema = z.object({
+  departureDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Формат: YYYY-MM-DD'),
+  /// Опційні overrides — все інше копіюється з туру-шаблону
+  totalSeats: z.number().int().min(1).max(500).optional(),
+  basePrice: z.number().positive().optional(),
+  costPrice: z.number().positive().optional(),
+  agentCommissionPct: z.number().min(0).max(1).optional(),
+  guideId: z.string().uuid().optional(),
+});
+
 // ── Update ────────────────────────────────────────────────────────────────────
 
 export const UpdateTourSchema = CreateTourSchemaBase.partial().omit({ code: true });
@@ -130,5 +144,6 @@ export { ALLOWED_STATUS_TRANSITIONS };
 
 export type TourListQueryDto  = z.infer<typeof TourListQuerySchema>;
 export type CreateTourDto     = z.infer<typeof CreateTourSchema>;
+export type CreateDepartureDto = z.infer<typeof CreateDepartureSchema>;
 export type UpdateTourDto     = z.infer<typeof UpdateTourSchema>;
 export type ChangeStatusDto   = z.infer<typeof ChangeStatusSchema>;

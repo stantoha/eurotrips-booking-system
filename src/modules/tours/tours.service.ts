@@ -11,6 +11,7 @@ import { Errors, AppError } from '../../shared/utils/errors';
 import {
   ALLOWED_STATUS_TRANSITIONS,
   type CreateTourDto,
+  type CreateDepartureDto,
   type UpdateTourDto,
   type ChangeStatusDto,
   type TourListQueryDto,
@@ -216,6 +217,72 @@ export class ToursService {
 
     // Логуємо в audit
     await this.audit(createdById, 'CREATE', tour.id, null, { code: tour.code, name: tour.name });
+
+    return { tour, warnings: this.evaluateMarginRisk(tour) };
+  }
+
+  // ── CREATE DEPARTURE ──────────────────────────────────────────────────────
+  // Новий виїзд = копія туру-шаблону з новою датою (ADR-003 Variant A:
+  // Tour = Departure). Код генерується за §8: [PREFIX][YYMMDD][SEQ],
+  // returnDate = departureDate + (durationDays - 1), статус draft.
+  async createDeparture(sourceTourId: string, dto: CreateDepartureDto, createdById: string) {
+    const source = await prisma.tour.findFirst({ where: { id: sourceTourId, isArchived: false } });
+    if (!source) throw Errors.notFound('Тур', sourceTourId);
+
+    const departureDate = new Date(dto.departureDate);
+    const returnDate = new Date(departureDate);
+    returnDate.setDate(returnDate.getDate() + source.durationDays - 1);
+
+    // §8: LP26010301 = префікс продукту + YYMMDD + порядковий номер рейсу
+    const prefix = source.code.replace(/\d+$/, '');
+    const yymmdd = dto.departureDate.slice(2).replace(/-/g, '');
+    const sameDay = await prisma.tour.count({ where: { code: { startsWith: `${prefix}${yymmdd}` } } });
+    const code = `${prefix}${yymmdd}${String(sameDay + 1).padStart(2, '0')}`;
+
+    const existing = await prisma.tour.findUnique({ where: { code } });
+    if (existing) {
+      throw new AppError('TOUR_CODE_EXISTS', `Виїзд з кодом "${code}" вже існує`, 409);
+    }
+
+    const totalSeats = dto.totalSeats ?? source.totalSeats;
+
+    const tour = await prisma.tour.create({
+      data: {
+        code,
+        name: source.name,
+        product: source.product,
+        direction: source.direction,
+        countries: source.countries,
+        tourType: source.tourType,
+        format: source.format,
+        departureDate,
+        returnDate,
+        durationDays: source.durationDays,
+        departureCity: source.departureCity,
+        arrivalCity: source.arrivalCity,
+        basePrice: dto.basePrice ?? source.basePrice,
+        currency: source.currency,
+        depositAmount: source.depositAmount,
+        cancelPolicyId: source.cancelPolicyId,
+        agentCommissionPct: dto.agentCommissionPct ?? source.agentCommissionPct,
+        totalSeats,
+        availableSeats: totalSeats, // новий виїзд — всі місця вільні
+        guideId: dto.guideId ?? source.guideId,
+        costPrice: dto.costPrice ?? source.costPrice,
+        included: source.included,
+        notIncluded: source.notIncluded,
+        tags: source.tags,
+        audience: source.audience,
+        difficulty: source.difficulty,
+        isFamily: source.isFamily,
+        isPremium: source.isPremium,
+        isCorporate: source.isCorporate,
+        isFirstExperience: source.isFirstExperience,
+        status: TourStatus.draft,
+      },
+    });
+
+    await this.audit(createdById, 'CREATE_DEPARTURE', tour.id, { sourceTourId, sourceCode: source.code }, { code: tour.code });
 
     return { tour, warnings: this.evaluateMarginRisk(tour) };
   }
