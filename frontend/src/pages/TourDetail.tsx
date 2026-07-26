@@ -26,7 +26,9 @@ import {
 } from '../hooks/useRoomStructure';
 import { TimelineView } from '../components/ops/TimelineView';
 import { useTourActivities, useCreateActivity, usePatchActivity } from '../hooks/useTourActivities';
-import { BusSeatMap } from '../components/ops/BusSeatMap';
+import { BusLayoutMap } from '../components/ops/BusLayoutMap';
+import { BusLayoutPicker } from '../components/ops/BusLayoutPicker';
+import { suggestBusLayoutFamily, type BusLayoutFamilyKey } from '../data/busLayoutTemplates';
 import { useTourSeatMap, useAssignSeat } from '../hooks/useTourSeatMap';
 import { useTourTourists } from '../hooks/useTourTourists';
 import { useTourTransport, useCreateTransport, usePatchTransport, type TourTransport } from '../hooks/useTourTransport';
@@ -42,6 +44,8 @@ import {
   useTourDocuments, useGenerateRoomingPdf, useGeneratePassengerList, openTourDocument,
   type TourDocument,
 } from '../hooks/useTourDocuments';
+import { TourRouteMap } from '../components/tours/TourRouteMap';
+import { findRouteForTour } from '../data/tourRoutes';
 
 const TOUR_TYPE_LABELS: Record<string, string> = {
   bus: 'Автобусний', avia: 'Авіатур', combined: 'Комбінований',
@@ -990,11 +994,28 @@ const TransportTab: React.FC<{ tourId: string; canEdit: boolean }> = ({ tourId, 
 
 // ─── TAB: РОЗСАДКА (OPS-17) ─────────────────────────────────────
 
+/** Схема розсадки — поки немає окремого поля в моделі Bus, тому вибір
+ *  сімейства зберігається локально на пристрій ops-менеджера (per tour).
+ *  TODO(backend): перенести в Bus.layoutFamily, коли з'явиться поле. */
+function useBusLayoutFamilyPreference(tourId: string, totalSeats: number) {
+  const storageKey = `bus-layout-family:${tourId}`;
+  const [family, setFamily] = useState<BusLayoutFamilyKey>(() => {
+    const saved = typeof window !== 'undefined' ? window.localStorage.getItem(storageKey) as BusLayoutFamilyKey | null : null;
+    return saved ?? suggestBusLayoutFamily(totalSeats);
+  });
+  const update = (next: BusLayoutFamilyKey) => {
+    setFamily(next);
+    window.localStorage.setItem(storageKey, next);
+  };
+  return [family, update] as const;
+}
+
 const SeatingTab: React.FC<{ tourId: string; canEdit: boolean }> = ({ tourId, canEdit }) => {
   const { data: seatMap, isLoading, isError } = useTourSeatMap(tourId);
   const { data: touristsData } = useTourTourists(tourId);
   const assignSeat = useAssignSeat(tourId);
   const [selectedTouristId, setSelectedTouristId] = useState<string>('');
+  const [layoutFamily, setLayoutFamily] = useBusLayoutFamilyPreference(tourId, seatMap?.seats.length ?? 50);
 
   if (isLoading) return <p className="text-sm text-slate-400 py-6">Завантаження розсадки…</p>;
   if (isError || !seatMap) return <p className="text-sm text-brand-red py-6">Не вдалося завантажити розсадку.</p>;
@@ -1003,6 +1024,13 @@ const SeatingTab: React.FC<{ tourId: string; canEdit: boolean }> = ({ tourId, ca
 
   return (
     <div>
+      {canEdit && (
+        <div className="mb-5">
+          <p className="text-xs text-slate-400 mb-1.5">Схема салону (за фактичною моделлю автобуса)</p>
+          <BusLayoutPicker totalSeats={seatMap.seats.length} value={layoutFamily} onChange={setLayoutFamily} />
+        </div>
+      )}
+
       {canEdit && (
         <div className="flex items-center gap-2 mb-4">
           <select
@@ -1019,7 +1047,9 @@ const SeatingTab: React.FC<{ tourId: string; canEdit: boolean }> = ({ tourId, ca
         </div>
       )}
 
-      <BusSeatMap
+      <BusLayoutMap
+        totalSeats={seatMap.seats.length}
+        family={layoutFamily}
         seats={seatMap.seats.map((s) => ({
           seatNumber: s.seat_number,
           isOccupied: s.is_occupied,
@@ -1430,6 +1460,7 @@ const TourDetailPage: React.FC = () => {
   const cc  = cfg ? STATUS_COLOR_CLASSES[cfg.colorVariant] : undefined;
   const occupied = tour.total_seats - tour.available_seats;
   const occPct   = tour.total_seats > 0 ? Math.round((occupied / tour.total_seats) * 100) : 0;
+  const tourRoute = findRouteForTour(tour.name);
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
@@ -1595,6 +1626,15 @@ const TourDetailPage: React.FC = () => {
               </p>
             )}
           </div>
+
+          {tourRoute && (
+            <div className="sm:col-span-2">
+              <p className="text-xs text-slate-400 mb-1.5 flex items-center gap-1">
+                <MapPin size={12} aria-hidden="true" /> Маршрут туру
+              </p>
+              <TourRouteMap waypoints={tourRoute.waypoints} />
+            </div>
+          )}
 
           {tour.included && (
             <div className="sm:col-span-2">
