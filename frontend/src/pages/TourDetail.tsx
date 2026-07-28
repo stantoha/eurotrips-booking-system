@@ -1632,7 +1632,7 @@ const TourDetailPage: React.FC = () => {
               <p className="text-xs text-slate-400 mb-1.5 flex items-center gap-1">
                 <MapPin size={12} aria-hidden="true" /> Маршрут туру
               </p>
-              <TourRouteMap waypoints={tourRoute.waypoints} />
+              <TourRouteMap route={tourRoute} />
             </div>
           )}
 

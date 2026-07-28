@@ -2,15 +2,36 @@
 // EUROTRIPS — tourRoutes.ts
 // Довідник маршрутів турів (назва туру → впорядкований список
 // пунктів). Джерело: "Аналітика_Eurotrips" (~38 турів-шаблонів).
-// "/" у маршруті — прикордонний перехід / транзитна точка без
-// власних координат (не показуємо на карті, лише в текстовому
-// переліку зупинок).
+//
+// "/" у waypoints — прикордонний перехід / транзитна точка (або
+// альтернативна точка виїзду, напр. "Львів / Київ"): не має власних
+// координат і не показується як зупинка. У 14 з 15 турів "/" означає
+// саме транзит; єдиний виняток — одноденні екскурсії Південної Італії,
+// які винесено в ЯВНЕ поле `excursions` (див. нижче), а не виводяться
+// зі слешу — інакше решта турів відображалися б хибно.
+//
+// `excursions` — ДОП (додаткові платні екскурсії, CLAUDE.md §15):
+// одноденні виїзди від опорної зупинки-хабу, малюються на карті
+// золотим пунктиром-відростком. `nightsByStop` — к-сть ночівель на
+// зупинці (🌙 badge); поки джерела per-stop даних немає — лишаємо
+// порожнім (компонент готовий показати, щойно з'явиться реальне поле).
 // ============================================================
+
+export interface RouteExcursion {
+  /** Місто/об'єкт ДОП-екскурсії */
+  name: string;
+  /** Назва опорної зупинки основного маршруту, від якої йде виїзд */
+  hub: string;
+}
 
 export interface TourRoute {
   /** Назва туру як в аналітиці — використовується для зіставлення з tour.name */
   name: string;
   waypoints: string[];
+  /** Одноденні ДОП-екскурсії (золотий пунктир від хабу). За замовч. немає. */
+  excursions?: RouteExcursion[];
+  /** Ночівлі по зупинках (🌙). За замовч. немає — badge не рендериться. */
+  nightsByStop?: Record<string, number>;
 }
 
 export const TOUR_ROUTES: TourRoute[] = [
@@ -39,7 +60,16 @@ export const TOUR_ROUTES: TourRoute[] = [
   { name: 'Новий рік у Римі', waypoints: ['Львів', 'Верона', 'Рим', 'Венеція', 'Львів'] },
   { name: 'Париж + Нормандія', waypoints: ['Львів', 'Прага', 'Париж', 'Нормандія', 'Відень', 'Польща', '/', 'Львів'] },
   { name: 'Мон-Сен-Мішель – Париж – Брюссель', waypoints: ['Львів', 'Краків', 'Дрезден', 'Брюссель', 'Брюгге', 'Антверпен', 'Амстердам', 'Сен-Мало', 'Мон-Сен-Мішель', 'Руан', 'Нормандія', 'Париж', 'Вроцлав', 'Львів'] },
-  { name: 'Південна Італія', waypoints: ['Львів', 'Будапешт', 'Рим', 'Неаполь', '/', 'Помпеї', 'Неаполь', '/', 'Амальфі', 'Неаполь', '/', 'острів Капрі', 'Венеція', '/', 'Бурано', 'Львів'] },
+  {
+    name: 'Південна Італія',
+    waypoints: ['Львів', 'Будапешт', 'Рим', 'Неаполь', 'Венеція', 'Львів'],
+    excursions: [
+      { name: 'Помпеї', hub: 'Неаполь' },
+      { name: 'Амальфі', hub: 'Неаполь' },
+      { name: 'острів Капрі', hub: 'Неаполь' },
+      { name: 'Бурано', hub: 'Венеція' },
+    ],
+  },
   { name: 'Пікнік в Альпах + Гальштат', waypoints: ['Зальцбург', 'Гальштат', 'Будапешт', '/', 'Львів'] },
   { name: 'Прага-Відень-Будапешт', waypoints: ['Львів', 'Краків', 'Прага', 'Братислава', 'Будапешт', 'Сентендре', 'Львів'] },
   { name: 'Римські канікули', waypoints: ['Львів', '/', 'Будапешт', 'Верона', 'Рим', 'Венеція', 'Будапешт', '/', 'Львів'] },
@@ -80,4 +110,71 @@ export function findRouteForTour(tourName: string): TourRoute | undefined {
     const n = normalizeName(route.name);
     return normalized.includes(n) || n.includes(normalized);
   });
+}
+
+// ─── PARSING ДЛЯ КАРТИ ───────────────────────────────────────
+
+import { getCoordinates, type LatLng } from './geoCoordinates';
+
+export interface RouteStop {
+  order: number;
+  name: string;
+  coords: LatLng | undefined;
+  nights: number;
+  isEndpoint: boolean;
+}
+
+export interface ResolvedExcursion {
+  name: string;
+  hub: string;
+  coords: LatLng | undefined;
+  hubCoords: LatLng | undefined;
+}
+
+export interface ParsedRoute {
+  main: RouteStop[];
+  excursions: ResolvedExcursion[];
+  /** К-сть пунктів (основних + ДОП), для яких не знайдено координат */
+  unresolvedCount: number;
+}
+
+/**
+ * Перетворює TourRoute на структуру для карти:
+ *  - "/" відкидається (транзит/кордон, не зупинка);
+ *  - послідовні дублі тієї самої зупинки згортаються (хаб між ДОП-виїздами);
+ *  - координати резолвляться зі словника geoCoordinates.
+ */
+export function parseRoute(route: TourRoute): ParsedRoute {
+  const nights = route.nightsByStop ?? {};
+  const stops: RouteStop[] = [];
+
+  route.waypoints.forEach((name) => {
+    if (name === '/') return;
+    const prev = stops[stops.length - 1];
+    if (prev && prev.name === name) return; // згортаємо повтор хабу
+    stops.push({
+      order: stops.length + 1,
+      name,
+      coords: getCoordinates(name),
+      nights: nights[name] ?? 0,
+      isEndpoint: false,
+    });
+  });
+
+  stops.forEach((s, i) => {
+    s.order = i + 1;
+    s.isEndpoint = i === 0 || i === stops.length - 1;
+  });
+
+  const excursions: ResolvedExcursion[] = (route.excursions ?? []).map((ex) => ({
+    name: ex.name,
+    hub: ex.hub,
+    coords: getCoordinates(ex.name),
+    hubCoords: getCoordinates(ex.hub),
+  }));
+
+  const unresolvedCount =
+    stops.filter((s) => !s.coords).length + excursions.filter((e) => !e.coords).length;
+
+  return { main: stops, excursions, unresolvedCount };
 }
