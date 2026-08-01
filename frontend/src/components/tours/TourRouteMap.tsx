@@ -16,13 +16,14 @@
 // зіставляється зі статичним довідником за назвою).
 // ============================================================
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Polyline, Tooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { MapPin } from 'lucide-react';
 import { parseRoute, type TourRoute, type RouteStop, type ResolvedExcursion } from '../../data/tourRoutes';
 import type { LatLng } from '../../data/geoCoordinates';
+import { fetchRoadRoute, formatKm, formatDuration, type RoadRoute } from '../../data/osrmRouting';
 
 export interface TourRouteMapProps {
   route: TourRoute;
@@ -76,14 +77,22 @@ const StopRow: React.FC<{
   stop: RouteStop;
   excursions: ResolvedExcursion[];
   selected: SelectedKey;
+  /** Відстань дорогами від попередньої зупинки, метри (якщо відома) */
+  distanceFromPrev?: number;
   onSelectMain: (name: string) => void;
   onSelectOpt: (name: string) => void;
-}> = ({ stop, excursions, selected, onSelectMain, onSelectOpt }) => {
+}> = ({ stop, excursions, selected, distanceFromPrev, onSelectMain, onSelectOpt }) => {
   const isSelected = selected?.kind === 'main' && selected.name === stop.name;
   const hubExcursions = excursions.filter((e) => e.hub === stop.name);
 
   return (
     <div className="mb-0.5">
+      {distanceFromPrev != null && distanceFromPrev > 0 && (
+        <div className="flex items-center gap-1 pl-[11px] text-[10px] text-slate-400 leading-none py-0.5">
+          <span className="w-px h-3 bg-slate-200 dark:bg-slate-700" />
+          {formatKm(distanceFromPrev)}
+        </div>
+      )}
       <button
         type="button"
         onClick={() => onSelectMain(stop.name)}
@@ -138,14 +147,48 @@ export const TourRouteMap: React.FC<TourRouteMapProps> = ({ route, className = '
   const parsed = useMemo(() => parseRoute(route), [route]);
   const [selected, setSelected] = useState<SelectedKey>(null);
 
-  const mainWithCoords = parsed.main.filter((s) => s.coords) as (RouteStop & { coords: LatLng })[];
+  const mainWithCoords = useMemo(
+    () => parsed.main.filter((s) => s.coords) as (RouteStop & { coords: LatLng })[],
+    [parsed],
+  );
   const allPositions = useMemo<LatLng[]>(
     () => [
       ...mainWithCoords.map((s) => s.coords),
       ...parsed.excursions.filter((e) => e.coords).map((e) => e.coords as LatLng),
     ],
-    [parsed],
+    [mainWithCoords, parsed],
   );
+
+  // ── Маршрут по дорогах (OSRM) з fallback на пряму лінію ──
+  const coordKey = useMemo(() => mainWithCoords.map((s) => s.coords.join(',')).join(';'), [mainWithCoords]);
+  const [roadRoute, setRoadRoute] = useState<RoadRoute | null>(null);
+  const [routingState, setRoutingState] = useState<'idle' | 'loading' | 'ok' | 'failed'>('idle');
+
+  useEffect(() => {
+    if (mainWithCoords.length < 2) { setRoadRoute(null); setRoutingState('idle'); return; }
+    const ctrl = new AbortController();
+    setRoutingState('loading');
+    setRoadRoute(null);
+    fetchRoadRoute(mainWithCoords.map((s) => s.coords), ctrl.signal).then((r) => {
+      if (ctrl.signal.aborted) return;
+      setRoadRoute(r);
+      setRoutingState(r ? 'ok' : 'failed');
+    });
+    return () => ctrl.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [coordKey]);
+
+  // Відстань дорогами від попередньої зупинки: legDistances[i] = між i та i+1
+  const distanceByOrder = useMemo(() => {
+    const m = new Map<number, number>();
+    if (roadRoute && roadRoute.legDistances.length === mainWithCoords.length - 1) {
+      mainWithCoords.forEach((s, i) => { if (i > 0) m.set(s.order, roadRoute.legDistances[i - 1]); });
+    }
+    return m;
+  }, [roadRoute, mainWithCoords]);
+
+  // Полілінія основного маршруту: геометрія доріг або пряма (fallback)
+  const mainLinePositions = roadRoute?.geometry.length ? roadRoute.geometry : mainWithCoords.map((s) => s.coords);
 
   const selectedInfo = useMemo(() => {
     if (!selected) return null;
@@ -182,8 +225,17 @@ export const TourRouteMap: React.FC<TourRouteMapProps> = ({ route, className = '
     <div className={`grid grid-cols-1 md:grid-cols-[280px_1fr] gap-4 items-start ${className}`}>
       {/* Легенда — нумерований перелік зупинок */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3.5">
-        <p className="text-[11px] uppercase tracking-wide text-slate-400 font-semibold mb-2.5">
+        <p className="text-[11px] uppercase tracking-wide text-slate-400 font-semibold mb-0.5">
           Маршрут · {parsed.main.length} зупинок
+        </p>
+        <p className="text-[11px] text-slate-400 mb-2.5">
+          {routingState === 'ok' && roadRoute
+            ? <>Дорогами{roadRoute.complete ? '' : ' (частково)'}: <span className="text-slate-600 dark:text-slate-300 font-medium">{roadRoute.complete ? '' : '≈'}{formatKm(roadRoute.totalDistance)}</span> · {formatDuration(roadRoute.totalDuration)} у дорозі</>
+            : routingState === 'loading'
+            ? 'Будуємо маршрут дорогами…'
+            : routingState === 'failed'
+            ? 'Маршрут показано приблизно (прямі лінії)'
+            : ''}
         </p>
         {parsed.main.map((stop) => (
           <StopRow
@@ -191,6 +243,7 @@ export const TourRouteMap: React.FC<TourRouteMapProps> = ({ route, className = '
             stop={stop}
             excursions={parsed.excursions}
             selected={selected}
+            distanceFromPrev={distanceByOrder.get(stop.order)}
             onSelectMain={(name) => setSelected({ kind: 'main', name })}
             onSelectOpt={(name) => setSelected({ kind: 'opt', name })}
           />
@@ -213,9 +266,12 @@ export const TourRouteMap: React.FC<TourRouteMapProps> = ({ route, className = '
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            {/* Основний маршрут — суцільна cyan-лінія */}
+            {/* Основний маршрут — по дорогах (OSRM) або пряма cyan-лінія (fallback) */}
             {mainWithCoords.length > 1 && (
-              <Polyline positions={mainWithCoords.map((s) => s.coords)} pathOptions={{ color: '#53c7d6', weight: 4, opacity: 0.9 }} />
+              <Polyline
+                positions={mainLinePositions}
+                pathOptions={{ color: '#53c7d6', weight: 4, opacity: 0.9, ...(roadRoute ? {} : { dashArray: '1 6' }) }}
+              />
             )}
             {/* ДОП-екскурсії — золотий пунктир від хабу */}
             {parsed.excursions.map((ex) =>

@@ -28,7 +28,7 @@ import { TimelineView } from '../components/ops/TimelineView';
 import { useTourActivities, useCreateActivity, usePatchActivity } from '../hooks/useTourActivities';
 import { BusLayoutMap } from '../components/ops/BusLayoutMap';
 import { BusLayoutPicker } from '../components/ops/BusLayoutPicker';
-import { suggestBusLayoutFamily, type BusLayoutFamilyKey } from '../data/busLayoutTemplates';
+import { suggestBusLayoutFamily, isBusLayoutFamily, type BusLayoutFamilyKey } from '../data/busLayoutTemplates';
 import { useTourSeatMap, useAssignSeat } from '../hooks/useTourSeatMap';
 import { useTourTourists } from '../hooks/useTourTourists';
 import { useTourTransport, useCreateTransport, usePatchTransport, type TourTransport } from '../hooks/useTourTransport';
@@ -1000,8 +1000,8 @@ const TransportTab: React.FC<{ tourId: string; canEdit: boolean }> = ({ tourId, 
 function useBusLayoutFamilyPreference(tourId: string, totalSeats: number) {
   const storageKey = `bus-layout-family:${tourId}`;
   const [family, setFamily] = useState<BusLayoutFamilyKey>(() => {
-    const saved = typeof window !== 'undefined' ? window.localStorage.getItem(storageKey) as BusLayoutFamilyKey | null : null;
-    return saved ?? suggestBusLayoutFamily(totalSeats);
+    const saved = typeof window !== 'undefined' ? window.localStorage.getItem(storageKey) : null;
+    return saved && isBusLayoutFamily(saved) ? saved : suggestBusLayoutFamily(totalSeats);
   });
   const update = (next: BusLayoutFamilyKey) => {
     setFamily(next);
