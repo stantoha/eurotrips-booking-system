@@ -138,6 +138,8 @@ const ALLOWED_STATUS_TRANSITIONS: Record<TourStatus, TourStatus[]> = {
 export const ChangeStatusSchema = z.object({
   status: z.nativeEnum(TourStatus),
   reason: z.string().max(500).optional(),
+  // BE-02: обґрунтування обходу блокування негативної маржі (тільки роль director)
+  overrideReason: z.string().max(500).optional(),
 });
 
 export { ALLOWED_STATUS_TRANSITIONS };

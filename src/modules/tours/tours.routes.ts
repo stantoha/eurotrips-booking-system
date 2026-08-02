@@ -238,6 +238,7 @@ export async function tourRoutes(app: FastifyInstance) {
               enum: ['draft','open','active','almost_full','closed','on_tour','completed','cancelled'],
             },
             reason: { type: 'string', maxLength: 500 },
+            overrideReason: { type: 'string', maxLength: 500 },
           },
         },
       },
@@ -248,7 +249,7 @@ export async function tourRoutes(app: FastifyInstance) {
     ) => {
       const dto = ChangeStatusSchema.parse(req.body);
       const user = getCurrentUser(req);
-      const tour = await service.changeTourStatus(req.params.id, dto, user.sub);
+      const tour = await service.changeTourStatus(req.params.id, dto, user.sub, user.role);
       return reply.code(200).send({ data: tour });
     }
   );

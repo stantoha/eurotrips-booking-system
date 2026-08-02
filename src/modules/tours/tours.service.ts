@@ -382,13 +382,52 @@ export class ToursService {
   }
 
   // ── CHANGE STATUS ─────────────────────────────────────────────────────────
-  async changeTourStatus(id: string, dto: ChangeStatusDto, changedById: string) {
+  async changeTourStatus(id: string, dto: ChangeStatusDto, changedById: string, changedByRole: string) {
     const tour = await prisma.tour.findFirst({ where: { id, isArchived: false } });
     if (!tour) throw Errors.notFound('Тур', id);
 
     const allowed = ALLOWED_STATUS_TRANSITIONS[tour.status];
     if (!allowed.includes(dto.status)) {
       throw Errors.invalidStatusTransition(tour.status, dto.status);
+    }
+
+    // BE-02: блокування публікації туру з негативною маржею оператора.
+    // Спрацьовує при переході в 'open' або 'active' (публікація/активація).
+    // Маржа = basePrice − costPrice − basePrice × agentCommissionPct (BR-02:
+    // комісія рахується від базової ціни). Обхід — тільки роль director з
+    // overrideReason; факт обходу пишеться в audit_log для фінансистів.
+    let marginOverride: { margin: number; overrideReason: string } | null = null;
+    if (
+      (dto.status === TourStatus.open || dto.status === TourStatus.active) &&
+      tour.costPrice != null // без собівартості маржу порахувати неможливо — пропускаємо
+    ) {
+      const base = tour.basePrice.toNumber();
+      const cost = tour.costPrice.toNumber();
+      const pct = tour.agentCommissionPct.toNumber();
+      const commission = base * pct;
+      const margin = Math.round((base - cost - commission) * 100) / 100;
+
+      if (margin <= 0) {
+        const calc = `${base} − ${cost} − ${base}×${pct} = ${margin} ${tour.currency}`;
+        if (changedByRole !== 'director') {
+          throw new AppError(
+            'NEGATIVE_MARGIN',
+            `Публікацію заблоковано: негативна маржа оператора (${calc}). ` +
+            `Обхід можливий лише директором із зазначенням причини (overrideReason).`,
+            422
+          );
+        }
+        // director може обійти — але лише з обґрунтуванням
+        if (!dto.overrideReason || dto.overrideReason.trim().length === 0) {
+          throw new AppError(
+            'NEGATIVE_MARGIN_OVERRIDE_REASON_REQUIRED',
+            `Директор може опублікувати тур із негативною маржею (${calc}), ` +
+            `але лише вказавши overrideReason.`,
+            422
+          );
+        }
+        marginOverride = { margin, overrideReason: dto.overrideReason.trim() };
+      }
     }
 
     // OPS-01: тур не може перейти в 'open' без затвердженої структури
@@ -434,6 +473,20 @@ export class ToursService {
       { status: tour.status },
       { status: dto.status, reason: dto.reason }
     );
+
+    // BE-02: окремий запис в audit_log про обхід негативної маржі директором
+    if (marginOverride) {
+      await this.audit(changedById, 'NEGATIVE_MARGIN_OVERRIDE', id,
+        { status: tour.status },
+        {
+          status: dto.status,
+          margin: marginOverride.margin,
+          currency: tour.currency,
+          overrideReason: marginOverride.overrideReason,
+          overriddenByRole: changedByRole,
+        }
+      );
+    }
 
     return updated;
   }
