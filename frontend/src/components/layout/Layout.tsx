@@ -59,11 +59,12 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     window.location.replace('/login');
   };
 
+  // DS: активний пункт — cyan-текст на cyan 12% tint; неактивний на hover → rgba(255,255,255,.05)
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+    `flex items-center gap-3 px-3 py-2 rounded-tile text-sm font-medium transition-colors duration-fast ${
       isActive
-        ? 'bg-brand-cyan/10 text-brand-cyan'
-        : 'text-slate-300 hover:bg-white/5 hover:text-white'
+        ? 'bg-brand-cyan/[.12] text-chrome-accent'
+        : 'text-chrome-muted hover:bg-white/5 hover:text-white'
     }`;
 
   const SidebarContent = (
@@ -73,7 +74,8 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         if (items.length === 0) return null;
         return (
           <div key={section} className="mb-1">
-            <div className="text-[10px] font-bold uppercase tracking-wide text-slate-500 px-3 pt-3 pb-1.5">
+            {/* DS: eyebrow — 10px uppercase, tracking .07em */}
+            <div className="text-micro font-bold uppercase tracking-eyebrow text-chrome-muted/70 px-3 pt-3 pb-1.5">
               {section}
             </div>
             <div className="space-y-1">
@@ -91,7 +93,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   );
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950">
+    <div className="min-h-screen flex flex-col bg-page">
       <Topbar
         mobileOpen={mobileOpen}
         onToggleMobile={() => setMobileOpen((v) => !v)}
@@ -99,15 +101,15 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       />
 
       <div className="flex flex-1 min-h-0">
-        {/* Desktop sidebar — постійно темний, незалежно від світлої/темної теми */}
-        <aside className="hidden md:flex md:flex-col w-[212px] bg-brand-dark flex-shrink-0">
+        {/* DS: sidebar — chrome, темний в ОБОХ темах (фіксований бренд-елемент). Ширина 212px з токена */}
+        <aside className="hidden md:flex md:flex-col w-sidebar bg-chrome flex-shrink-0">
           {SidebarContent}
         </aside>
 
         {/* Mobile drawer */}
         {mobileOpen && (
           <div className="md:hidden fixed inset-0 z-30 flex">
-            <div className="w-[212px] bg-brand-dark flex flex-col pt-[52px]">{SidebarContent}</div>
+            <div className="w-sidebar bg-chrome flex flex-col pt-topbar">{SidebarContent}</div>
             <div className="flex-1 bg-black/30" onClick={() => setMobileOpen(false)} />
           </div>
         )}

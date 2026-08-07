@@ -1,31 +1,312 @@
-﻿/* ── Eurotrips Brand ── */
+/* ============================================================
+   EUROTRIPS — globals.css
+   Джерело правди для дизайн-токенів. Синхронізовано з
+   «Eurotrips Design System» (tokens/*.css), яку згенеровано з цього
+   ж репо + брендбуку Eurotrips.
+
+   Шари:
+   1) Токени (кольори світла/темна, статуси, chrome, типографіка,
+      відступи, радіуси, тіні, motion)
+   2) @tailwind base/components/utilities
+   3) Компонентні класи DS (.et-*) — примітиви, яких у Tailwind немає
+
+   Tailwind-утиліти читають ці токени через tailwind.config.ts
+   (bg-surface-1, text-secondary, border-base, shadow-md тощо), тож
+   значення міняються ЛИШЕ тут.
+   ============================================================ */
+
 :root {
+  /* ── Бренд-палітра (звірено: eurotrips.ua + брендбук PDF) ── */
   --et-cyan:       #53c7d6;
+  --et-cyan-light: #7dd9e5;
   --et-cyan-dark:  #3fb4c3;
+  --et-cyan-tint:  rgba(83, 199, 214, .12);
   --et-red:        #f0366d;
   --et-red-dark:   #d42b5f;
+  --et-red-tint:   rgba(240, 54, 109, .10);
   --et-gold:       #f9c01d;
   --et-gold-dark:  #e0aa10;
+  --et-gold-tint:  rgba(249, 192, 29, .12);
   --et-blue:       #2d70b9;
+  --et-blue-light: #3d80c9;
   --et-blue-dark:  #245d9c;
+  --et-blue-tint:  rgba(45, 112, 185, .12);
   --et-dark:       #1a1a2e;
   --et-white:      #ffffff;
   --et-pink:       #f7c5d0;
 
-  --font-heading: 'Montserrat', Impact, sans-serif;
-  --font-body:    'IBM Plex Sans', Inter, sans-serif;
-  --font-mono:    'IBM Plex Mono', monospace;
+  /* ── Семантичні статуси (окремий ramp, щоб warning не конкурував з brand gold) ── */
+  --status-info:#3b82f6;    --status-info-fg:#1d4ed8;    --status-info-bg:#eff6ff;    --status-info-border:#bfdbfe;
+  --status-warning:#f59e0b; --status-warning-fg:#b45309; --status-warning-bg:#fffbeb; --status-warning-border:#fde68a;
+  --status-success:#10b981; --status-success-fg:#047857; --status-success-bg:#ecfdf5; --status-success-border:#a7f3d0;
+  --status-danger:#ef4444;  --status-danger-fg:#b91c1c;  --status-danger-bg:#fef2f2;  --status-danger-border:#fecaca;
+  --status-neutral:#64748b; --status-neutral-fg:#475569; --status-neutral-bg:#f1f5f9; --status-neutral-border:#e2e8f0;
 
-  --radius-pill: 9999px;
-  --radius-card: 10px;
-  --radius-tile: 8px;
+  /* ── Поверхні: світла тема (робочий режим за замовчуванням) ── */
+  --bg-page:       #f5f7fb;
+  --surface-1:     #ffffff;
+  --surface-2:     #eef1f7;
+  --surface-hover: rgba(83, 199, 214, .08);
+  --border-1:      #dde3ef;
+  --border-2:      #c9d2e3;
+  --text-primary:   #1a1a2e;
+  --text-secondary: #4a5578;
+  --text-tertiary:  #8b98b5;
+  --text-inverse:   #ffffff;
+
+  /* ── Chrome: ТЕМНИЙ в ОБОХ темах (фіксований бренд-елемент, не реакція теми) ── */
+  --chrome-bg:        #1a1a2e;
+  --chrome-fg:        #e2e8f0;
+  --chrome-fg-muted:  #94a3b8;
+  --chrome-divider:   #334155;
+  --chrome-accent:    #53c7d6;
+
+  /* ── Аліаси ── */
+  --accent:        var(--et-cyan);
+  --accent-hover:  var(--et-cyan-dark);
+  --accent-tint:   var(--et-cyan-tint);
+  --cta:           var(--et-red);
+  --cta-hover:     var(--et-red-dark);
+  --focus-ring:    rgba(83, 199, 214, .45);
+  --occupancy-ok:   var(--et-cyan);
+  --occupancy-warn: var(--et-gold);
+  --occupancy-err:  var(--et-red);
+
+  /* ── Типографіка. Щільна B2B-шкала: body 13px, НЕ 16px ── */
+  --font-heading: 'Montserrat', Impact, sans-serif;
+  --font-body:    'IBM Plex Sans', Inter, system-ui, sans-serif;
+  --font-mono:    'IBM Plex Mono', 'SFMono-Regular', monospace;
+
+  --text-display:52px; --lh-display:1.02;
+  --text-h1:32px;      --lh-h1:1.15;
+  --text-h2:24px;      --lh-h2:1.2;
+  --text-h3:18px;      --lh-h3:1.3;
+  --text-h4:15px;      --lh-h4:1.35;
+  --text-lg:14px;      --lh-lg:1.5;
+  --text-body:13px;    --lh-body:1.5;
+  --text-sm:12px;      --lh-sm:1.45;
+  --text-caption:11px; --lh-caption:1.4;
+  --text-micro:10px;   --lh-micro:1.3;
+
+  --weight-light:300; --weight-regular:400; --weight-medium:500;
+  --weight-semibold:600; --weight-bold:700; --weight-black:900;
+
+  --tracking-display:.02em; --tracking-logo:.12em;
+  --tracking-eyebrow:.07em; --tracking-normal:0;
+
+  /* ── Відступи + константи шелу ── */
+  --space-0:0;   --space-1:2px;  --space-2:4px;  --space-3:6px;
+  --space-4:8px; --space-5:10px; --space-6:12px; --space-7:16px;
+  --space-8:20px;--space-9:24px; --space-10:32px;--space-11:40px;--space-12:48px;
+
+  --topbar-h:52px;
+  --sidebar-w:212px;
+  --page-pad:24px;
+  --content-max:1400px;
+  --row-pad-y:9px; --row-pad-x:12px;
+
+  /* ── Радіуси. Кнопки — ЗАВЖДИ pill (найсильніше правило бренду) ── */
+  --radius-sm:6px;
+  --radius-tile:8px;    /* chips, tags, inputs */
+  --radius-card:10px;   /* картки */
+  --radius-lg:12px;     /* панелі, модалки */
+  --radius-pill:9999px; /* кожна кнопка Eurotrips */
+
+  /* ── Тіні. Картки БЕЗ тіні в спокої — лише на hover / плаваючих шарах ── */
+  --shadow-xs:0 1px 2px rgba(26,26,46,.05);
+  --shadow-sm:0 1px 3px rgba(26,26,46,.08), 0 1px 2px rgba(26,26,46,.04);
+  --shadow-md:0 4px 12px rgba(26,26,46,.10);
+  --shadow-lg:0 12px 32px rgba(26,26,46,.16);
+  --shadow-focus:0 0 0 3px var(--focus-ring);
+
+  /* ── Motion ── */
+  --dur-fast:150ms;   /* hover, колір */
+  --dur-base:200ms;   /* expand/collapse */
+  --dur-slow:300ms;   /* заливка прогрес-барів */
+  --ease-standard:ease;
+  --ease-expand:ease-in-out;
+  --lift-hover:translateY(-1px);
+  --scale-hover:scale(1.01);
 }
+
+.dark {
+  /* Темна тема — «вечірній режим» */
+  --bg-page:       #0d0f14;
+  --surface-1:     #141720;
+  --surface-2:     #1c2030;
+  --surface-hover: rgba(83, 199, 214, .10);
+  --border-1:      #252a3a;
+  --border-2:      #2f3650;
+  --text-primary:   #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-tertiary:  #64748b;
+
+  --status-info-fg:#93c5fd;    --status-info-bg:rgba(59,130,246,.16);   --status-info-border:rgba(59,130,246,.35);
+  --status-warning-fg:#fcd34d; --status-warning-bg:rgba(245,158,11,.16);--status-warning-border:rgba(245,158,11,.35);
+  --status-success-fg:#6ee7b7; --status-success-bg:rgba(16,185,129,.16);--status-success-border:rgba(16,185,129,.35);
+  --status-danger-fg:#fca5a5;  --status-danger-bg:rgba(239,68,68,.16);  --status-danger-border:rgba(239,68,68,.35);
+  --status-neutral-fg:#cbd5e1; --status-neutral-bg:rgba(100,116,139,.18);--status-neutral-border:rgba(100,116,139,.35);
+
+  --shadow-xs:0 1px 2px rgba(0,0,0,.4);
+  --shadow-sm:0 1px 3px rgba(0,0,0,.5);
+  --shadow-md:0 4px 12px rgba(0,0,0,.55);
+  --shadow-lg:0 12px 32px rgba(0,0,0,.6);
+}
+
+@keyframes et-pulse   { 0%,100%{opacity:1} 50%{opacity:.55} }
+@keyframes et-ping    { 75%,100%{transform:scale(2);opacity:0} }
+@keyframes et-shimmer { 0%{background-position:-320px 0} 100%{background-position:320px 0} }
+@keyframes et-spin    { to{transform:rotate(360deg)} }
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ── Tour Card overlay pattern (з брендбуку Eurotrips) ── */
+@layer base {
+  body {
+    background: var(--bg-page);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-size: var(--text-body);
+    line-height: var(--lh-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, h4 { font-family: var(--font-heading); }
+  code, kbd, samp { font-family: var(--font-mono); }
+  ::selection { background: var(--et-cyan-tint); }
+}
+
+/* ============================================================
+   Компонентні класи DS (.et-*)
+   Примітиви, які застосунок раніше стилізував інлайн на кожній
+   сторінці. Джерело: components/core/core.css дизайн-системи.
+   ============================================================ */
+@layer components {
+  /* ── Button ── */
+  .et-btn {
+    display:inline-flex; align-items:center; justify-content:center; gap:6px;
+    font-family:var(--font-body); font-weight:var(--weight-semibold);
+    border-radius:var(--radius-pill); border:1px solid transparent;
+    cursor:pointer; white-space:nowrap; text-decoration:none;
+    transition:background var(--dur-fast) var(--ease-standard),
+               border-color var(--dur-fast) var(--ease-standard),
+               color var(--dur-fast) var(--ease-standard),
+               box-shadow var(--dur-fast) var(--ease-standard),
+               transform var(--dur-fast) var(--ease-standard);
+  }
+  .et-btn:focus-visible { outline:none; box-shadow:var(--shadow-focus); }
+  .et-btn[disabled], .et-btn[aria-disabled="true"] { opacity:.5; cursor:not-allowed; pointer-events:none; }
+  .et-btn--xs { padding:3px 8px;  font-size:var(--text-caption); }
+  .et-btn--sm { padding:5px 10px; font-size:var(--text-sm); }
+  .et-btn--md { padding:7px 14px; font-size:var(--text-body); }
+  .et-btn--lg { padding:10px 20px;font-size:var(--text-lg); }
+  .et-btn--block { width:100%; }
+  .et-btn--primary { background:var(--et-cyan); color:#fff; }
+  .et-btn--primary:hover { background:var(--et-cyan-dark); }
+  .et-btn--primary:active { transform:translateY(1px); }
+  .et-btn--cta { background:var(--et-red); color:#fff; text-transform:uppercase; letter-spacing:var(--tracking-eyebrow); }
+  .et-btn--cta:hover { background:var(--et-red-dark); }
+  .et-btn--cta:active { transform:translateY(1px); }
+  .et-btn--danger { background:var(--et-red); color:#fff; }
+  .et-btn--danger:hover { background:var(--et-red-dark); }
+  .et-btn--secondary { background:var(--surface-1); border-color:var(--border-1); color:var(--text-primary); }
+  .et-btn--secondary:hover { border-color:var(--et-cyan); color:var(--et-cyan-dark); }
+  .et-btn--ghost { background:transparent; color:var(--text-secondary); }
+  .et-btn--ghost:hover { background:var(--surface-2); color:var(--text-primary); }
+  .et-btn__spin { width:1em; height:1em; border:2px solid currentColor; border-right-color:transparent; border-radius:50%; animation:et-spin .7s linear infinite; }
+
+  /* ── IconButton ── */
+  .et-iconbtn {
+    display:inline-flex; align-items:center; justify-content:center;
+    border-radius:var(--radius-tile); border:1px solid transparent;
+    background:transparent; color:var(--text-secondary); cursor:pointer;
+    transition:background var(--dur-fast) var(--ease-standard),
+               color var(--dur-fast) var(--ease-standard),
+               border-color var(--dur-fast) var(--ease-standard);
+  }
+  .et-iconbtn:hover { background:var(--surface-2); color:var(--text-primary); }
+  .et-iconbtn:focus-visible { outline:none; box-shadow:var(--shadow-focus); }
+  .et-iconbtn[disabled] { opacity:.45; cursor:not-allowed; }
+  .et-iconbtn--sm { width:26px; height:26px; }
+  .et-iconbtn--md { width:32px; height:32px; }
+  .et-iconbtn--lg { width:38px; height:38px; }
+  .et-iconbtn--outline { border-color:var(--border-1); background:var(--surface-1); }
+  .et-iconbtn--onDark { color:var(--chrome-fg-muted); border-color:var(--chrome-divider); }
+  .et-iconbtn--onDark:hover { background:rgba(255,255,255,.06); color:#fff; }
+
+  /* ── Field shell ── */
+  .et-field { display:flex; flex-direction:column; gap:6px; }
+  .et-field__label { font-size:var(--text-sm); font-weight:var(--weight-medium); color:var(--text-secondary); }
+  .et-field__req { color:var(--et-red); margin-left:2px; }
+  .et-field__hint { font-size:var(--text-caption); color:var(--text-tertiary); }
+  .et-field__error { font-size:var(--text-caption); color:var(--status-danger); display:flex; align-items:center; gap:4px; }
+
+  /* ── Input / Textarea / Select ── */
+  .et-input, .et-textarea, .et-select {
+    width:100%; font-family:var(--font-body); font-size:var(--text-body);
+    color:var(--text-primary); background:var(--surface-1);
+    border:1px solid var(--border-1); border-radius:var(--radius-tile);
+    padding:7px 10px;
+    transition:border-color var(--dur-fast) var(--ease-standard),
+               box-shadow var(--dur-fast) var(--ease-standard);
+  }
+  .et-input::placeholder, .et-textarea::placeholder { color:var(--text-tertiary); }
+  .et-input:hover, .et-textarea:hover, .et-select:hover { border-color:var(--border-2); }
+  .et-input:focus, .et-textarea:focus, .et-select:focus { outline:none; border-color:var(--et-cyan); box-shadow:var(--shadow-focus); }
+  .et-input[disabled], .et-textarea[disabled], .et-select[disabled] { background:var(--surface-2); color:var(--text-tertiary); cursor:not-allowed; }
+  .et-input--mono { font-family:var(--font-mono); }
+  .et-input--invalid, .et-textarea--invalid, .et-select--invalid { border-color:var(--status-danger); background:var(--status-danger-bg); }
+  .et-textarea { min-height:80px; resize:vertical; }
+  .et-input-wrap { position:relative; display:block; }
+  .et-input-wrap__icon { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--text-tertiary); display:flex; pointer-events:none; }
+  .et-input-wrap__affix { position:absolute; right:8px; top:50%; transform:translateY(-50%); display:flex; color:var(--text-tertiary); }
+  .et-input--hasIcon { padding-left:32px; }
+  .et-input--hasAffix { padding-right:32px; }
+  .et-select-wrap { position:relative; display:block; }
+  .et-select { appearance:none; padding-right:28px; cursor:pointer; }
+  .et-select-wrap__arrow { position:absolute; right:10px; top:50%; transform:translateY(-50%); pointer-events:none; color:var(--text-tertiary); font-size:10px; }
+
+  /* ── Checkbox / Radio ── */
+  .et-check { display:inline-flex; align-items:flex-start; gap:8px; cursor:pointer; font-size:var(--text-body); color:var(--text-primary); }
+  .et-check input {
+    appearance:none; margin:0; width:16px; height:16px; flex:0 0 16px;
+    border:1px solid var(--border-2); background:var(--surface-1);
+    position:relative; cursor:pointer;
+    transition:background var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard);
+  }
+  .et-check--box input { border-radius:4px; }
+  .et-check--radio input { border-radius:50%; }
+  .et-check input:hover { border-color:var(--et-cyan); }
+  .et-check input:focus-visible { outline:none; box-shadow:var(--shadow-focus); }
+  .et-check--box input:checked { background:var(--et-cyan); border-color:var(--et-cyan); }
+  .et-check--box input:checked::after { content:""; position:absolute; left:4.5px; top:1.5px; width:4px; height:8px; border:solid #fff; border-width:0 2px 2px 0; transform:rotate(45deg); }
+  .et-check--radio input:checked { border-color:var(--et-cyan); border-width:5px; }
+  .et-check input:disabled { background:var(--surface-2); border-color:var(--border-1); cursor:not-allowed; }
+  .et-check__body { display:flex; flex-direction:column; gap:2px; line-height:16px; }
+  .et-check__desc { font-size:var(--text-caption); color:var(--text-tertiary); line-height:1.4; }
+
+  /* ── Card. Без тіні в спокої; тінь лише на hover для клікабельних ── */
+  .et-card {
+    background:var(--surface-1); border:1px solid var(--border-1); border-radius:var(--radius-lg);
+    transition:border-color var(--dur-base) var(--ease-standard),
+               box-shadow var(--dur-base) var(--ease-standard),
+               transform var(--dur-base) var(--ease-standard);
+  }
+  .et-card--pad { padding:16px; }
+  .et-card--hover:hover { border-color:var(--border-2); box-shadow:var(--shadow-sm); transform:var(--lift-hover); }
+  .et-card__header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
+  .et-card__title { font-family:var(--font-heading); font-size:var(--text-h4); font-weight:var(--weight-semibold); color:var(--text-primary); }
+
+  /* ── Skeleton (завантаження — завжди скелетони, ніяких спінерів на весь екран) ── */
+  .et-skeleton {
+    background:linear-gradient(90deg, var(--surface-2) 25%, var(--border-1) 50%, var(--surface-2) 75%);
+    background-size:640px 100%;
+    animation:et-shimmer 1.4s linear infinite;
+    border-radius:var(--radius-tile);
+  }
+}
+
+/* ── Tour Card overlay (сигнатурний патерн eurotrips.ua: 55% блок знизу-зліва) ── */
 .tour-overlay {
   position: absolute;
   bottom: 0; left: 0;

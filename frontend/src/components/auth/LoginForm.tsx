@@ -9,9 +9,11 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  Mail, Lock, Eye, EyeOff, AlertCircle, Loader2,
+  Mail, Lock, Eye, EyeOff, AlertCircle,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import { Button } from '../ui/Button';
+import { Field, Input } from '../ui/Input';
 import logoWhite from '../../icons/ET_logo_white.png';
 
 // ─── SCHEMA ───────────────────────────────────────────────────
@@ -68,172 +70,111 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
     // НЕ використовуємо <form> — тільки <div> + onSubmit через button
     // (відповідно до інструкцій: no <form> tags in React artifacts)
     <div className="w-full max-w-sm mx-auto">
-      {/* Logo */}
+      {/* Аппмарк — лого в cyan-плитці (DS: brand-appmark) */}
       <div className="flex items-center gap-2 justify-center mb-8">
-        <div className="w-8 h-8 bg-brand-cyan rounded-lg flex items-center justify-center">
+        <div className="w-8 h-8 bg-brand-cyan rounded-tile flex items-center justify-center">
           <img
             src={logoWhite}
             alt="Eurotrips"
             className="w-8 h-8 object-contain"
           />
         </div>
-        <span className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-          Eurotrips
+        <span className="font-mono font-bold text-lg tracking-logo text-content-primary">
+          EUROTRIPS
         </span>
       </div>
 
-      <h1 className="text-xl font-semibold text-center text-slate-900 dark:text-slate-100 mb-1">
+      <h1 className="font-heading text-h3 font-bold text-center text-content-primary mb-1">
         Вхід у систему
       </h1>
-      <p className="text-sm text-center text-slate-500 dark:text-slate-400 mb-8">
+      <p className="text-sm text-center text-content-tertiary mb-8">
         Система бронювання та управління турами
       </p>
 
-      {/* Server error */}
+      {/* Server error — статусний ramp DS, не бренд-червоний */}
       {serverError && (
-        <div className="flex items-start gap-2.5 p-3 mb-5 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg">
-          <AlertCircle size={15} className="text-red-500 shrink-0 mt-0.5" />
-          <p className="text-sm text-red-600 dark:text-red-400">{serverError}</p>
+        <div className="flex items-start gap-2.5 p-3 mb-5 rounded-tile bg-status-danger-bg border border-status-danger-border">
+          <AlertCircle size={15} className="text-status-danger shrink-0 mt-0.5" aria-hidden="true" />
+          <p className="text-sm text-status-danger-fg">{serverError}</p>
         </div>
       )}
 
       <div className="space-y-4">
         {/* ── EMAIL ── */}
-        <div>
-          <label
-            htmlFor="login-email"
-            className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5"
-          >
-            Email
-          </label>
-          <div className="relative">
-            <Mail
-              size={15}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
-              aria-hidden="true"
-            />
-            <input
-              id="login-email"
-              {...register('email')}
-              type="email"
-              autoComplete="email"
-              autoFocus
-              placeholder="manager@eurotrips.ua"
-              disabled={disabled}
-              aria-invalid={!!errors.email}
-              aria-describedby={errors.email ? 'email-error' : undefined}
-              className={`
-                w-full pl-9 pr-4 py-2.5 rounded-lg border text-sm
-                bg-white dark:bg-slate-900
-                text-slate-900 dark:text-slate-100
-                placeholder:text-slate-400
-                focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                disabled:opacity-50 disabled:cursor-not-allowed
-                transition-colors duration-150
-                ${errors.email
-                  ? 'border-red-300 dark:border-red-700 bg-red-50/30 dark:bg-red-950/10'
-                  : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
-                }
-              `}
-            />
-          </div>
-          {errors.email && (
-            <p id="email-error" role="alert" className="mt-1 text-xs text-red-500 flex items-center gap-1">
-              <AlertCircle size={10} aria-hidden="true" />
-              {errors.email.message}
-            </p>
+        <Field
+          label="Email"
+          htmlFor="login-email"
+          error={errors.email && (
+            <><AlertCircle size={10} aria-hidden="true" />{errors.email.message}</>
           )}
-        </div>
+        >
+          <Input
+            id="login-email"
+            {...register('email')}
+            type="email"
+            autoComplete="email"
+            autoFocus
+            placeholder="manager@eurotrips.ua"
+            disabled={disabled}
+            invalid={!!errors.email}
+            aria-describedby={errors.email ? 'login-email-error' : undefined}
+            icon={<Mail size={15} aria-hidden="true" />}
+          />
+        </Field>
 
         {/* ── PASSWORD ── */}
-        <div>
-          <label
-            htmlFor="login-password"
-            className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5"
-          >
-            Пароль
-          </label>
-          <div className="relative">
-            <Lock
-              size={15}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
-              aria-hidden="true"
-            />
-            <input
-              id="login-password"
-              {...register('password')}
-              type={showPassword ? 'text' : 'password'}
-              autoComplete="current-password"
-              placeholder="••••••••"
-              disabled={disabled}
-              aria-invalid={!!errors.password}
-              aria-describedby={errors.password ? 'password-error' : undefined}
-              className={`
-                w-full pl-9 pr-10 py-2.5 rounded-lg border text-sm
-                bg-white dark:bg-slate-900
-                text-slate-900 dark:text-slate-100
-                placeholder:text-slate-400
-                focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                disabled:opacity-50 disabled:cursor-not-allowed
-                transition-colors duration-150
-                ${errors.password
-                  ? 'border-red-300 dark:border-red-700 bg-red-50/30 dark:bg-red-950/10'
-                  : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
-                }
-              `}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword((v) => !v)}
-              aria-label={showPassword ? 'Приховати пароль' : 'Показати пароль'}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
-              tabIndex={-1}
-            >
-              {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-            </button>
-          </div>
-          {errors.password && (
-            <p id="password-error" role="alert" className="mt-1 text-xs text-red-500 flex items-center gap-1">
-              <AlertCircle size={10} aria-hidden="true" />
-              {errors.password.message}
-            </p>
+        <Field
+          label="Пароль"
+          htmlFor="login-password"
+          error={errors.password && (
+            <><AlertCircle size={10} aria-hidden="true" />{errors.password.message}</>
           )}
-        </div>
-
-        {/* ── SUBMIT ── */}
-        <button
-          type="button"
-          onClick={handleSubmit(onSubmit)}
-          disabled={disabled}
-          aria-busy={disabled}
-          className="
-            w-full mt-2 py-2.5 px-4 rounded-pill font-semibold text-sm
-            bg-brand-red text-white
-            hover:bg-brand-red-dark
-            disabled:opacity-50 disabled:cursor-not-allowed
-            flex items-center justify-center gap-2
-            transition-colors duration-150
-            focus:outline-none focus:ring-2 focus:ring-brand-red focus:ring-offset-2
-          "
         >
-          {disabled ? (
-            <>
-              <Loader2 size={15} className="animate-spin" aria-hidden="true" />
-              Входимо...
-            </>
-          ) : (
-            'Увійти в систему'
-          )}
-        </button>
+          <Input
+            id="login-password"
+            {...register('password')}
+            type={showPassword ? 'text' : 'password'}
+            autoComplete="current-password"
+            placeholder="••••••••"
+            disabled={disabled}
+            invalid={!!errors.password}
+            aria-describedby={errors.password ? 'login-password-error' : undefined}
+            icon={<Lock size={15} aria-hidden="true" />}
+            affix={
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? 'Приховати пароль' : 'Показати пароль'}
+                className="pointer-events-auto text-content-tertiary hover:text-content-secondary transition-colors duration-fast"
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+              </button>
+            }
+          />
+        </Field>
+
+        {/* ── SUBMIT ── DS: вхід — це CTA, отже ET Red pill */}
+        <Button
+          variant="cta"
+          size="lg"
+          block
+          className="mt-2"
+          onClick={handleSubmit(onSubmit)}
+          loading={disabled}
+          aria-busy={disabled}
+        >
+          {disabled ? 'Входимо…' : 'Увійти в систему'}
+        </Button>
       </div>
 
       {/* Role hint (dev only) */}
       {import.meta.env.DEV && (
         <details className="mt-6">
-          <summary className="text-xs text-slate-400 cursor-pointer hover:text-slate-600 text-center">
+          <summary className="text-caption text-content-tertiary cursor-pointer hover:text-content-secondary text-center">
             Тестові акаунти
           </summary>
-          <div className="mt-2 space-y-1 text-xs text-slate-500 bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3">
+          <div className="mt-2 space-y-1 text-caption text-content-secondary bg-surface-2 rounded-tile p-3">
             {[
               { role: 'admin',       email: 'admin@eurotrips.ua' },
               { role: 'director',    email: 'director@eurotrips.ua' },
@@ -245,11 +186,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
               { role: 'tourist',     email: 'tourist@eurotrips.ua' },
             ].map(({ role, email }) => (
               <div key={role} className="flex justify-between font-mono">
-                <span className="text-slate-400">{role}</span>
+                <span className="text-content-tertiary">{role}</span>
                 <span>{email}</span>
               </div>
             ))}
-            <div className="text-slate-400 mt-1">Пароль: test1234</div>
+            <div className="text-content-tertiary mt-1">Пароль: test1234</div>
           </div>
         </details>
       )}
