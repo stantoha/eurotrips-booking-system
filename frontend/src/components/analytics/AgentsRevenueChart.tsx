@@ -10,7 +10,7 @@ import React from 'react';
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
 } from 'recharts';
-import { useChartColors, ChartTooltip, ChartLegend, AXIS_TICK, CAT_TICK } from './chartRuntime';
+import { useChartColors, ChartTooltip, ChartLegend, ChartEmpty, AXIS_TICK, CAT_TICK } from './chartRuntime';
 
 export interface AgentRevenueRow {
   agency_name: string | null;
@@ -34,7 +34,9 @@ export const AgentsRevenueChart: React.FC<AgentsRevenueChartProps> = ({
 }) => {
   const c = useChartColors();
 
-  if (agents.length === 0) return <p className="text-caption text-content-tertiary">{emptyLabel}</p>;
+  if (agents.length === 0) {
+    return <ChartEmpty label={emptyLabel} hint="Бронювання від агенцій за цей період відсутні." height={height} />;
+  }
 
   const data = agents.map((a) => ({
     name: a.agency_name ?? '—',

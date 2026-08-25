@@ -42,19 +42,28 @@ export interface TourCardProps {
  * Слоти-заглушки з назв зупинок маршруту: карусель працює ще до появи
  * реальних фото, і одразу несе користь — показує, що входить у виїзд.
  * Кінцеві точки (Львів/Київ) відкидаємо — це місто виїзду, не локація.
+ *
+ * Якщо маршруту немає в довіднику, беремо країни/напрямок туру: медіа-область
+ * має бути на КОЖНІЙ картці, інакше сітка каталогу виходить рваною —
+ * частина карток із фото, частина без, різної висоти.
  */
 const MAX_PHOTO_SLOTS = 6;
 
-function routePhotoSlots(tourName: string): TourPhoto[] {
-  const route = findRouteForTour(tourName);
-  if (!route) return [];
-  const stops = parseRoute(route).main;
-  if (stops.length < 3) return [];
+function routePhotoSlots(tour: Pick<Tour, 'name' | 'direction' | 'countries'>): TourPhoto[] {
+  const route = findRouteForTour(tour.name);
 
-  return stops
-    .filter((s) => !s.isEndpoint)
-    .slice(0, MAX_PHOTO_SLOTS)
-    .map((s, i) => ({ caption: s.name, day: i + 1 }));
+  if (route) {
+    const stops = parseRoute(route).main.filter((s) => !s.isEndpoint);
+    if (stops.length > 0) {
+      return stops.slice(0, MAX_PHOTO_SLOTS).map((s, i) => ({ caption: s.name, day: i + 1 }));
+    }
+  }
+
+  // Запасний варіант — країни туру, далі напрямок
+  const countries = tour.countries?.filter(Boolean) ?? [];
+  if (countries.length > 0) return countries.slice(0, MAX_PHOTO_SLOTS).map((c) => ({ caption: c }));
+  if (tour.direction) return [{ caption: tour.direction }];
+  return [{ caption: tour.name }];
 }
 
 // ─── HELPERS ─────────────────────────────────────────────────
@@ -111,8 +120,8 @@ const TourCardGrid: React.FC<TourCardProps> = ({
   const isFull = tour.available_seats === 0;
 
   const slots = React.useMemo(
-    () => (photos ?? (showPhotos ? routePhotoSlots(tour.name) : [])),
-    [photos, showPhotos, tour.name],
+    () => (photos ?? (showPhotos ? routePhotoSlots(tour) : [])),
+    [photos, showPhotos, tour],
   );
   const hasPics = slots.length > 0;
 

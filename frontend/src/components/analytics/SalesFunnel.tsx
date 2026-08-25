@@ -10,7 +10,7 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell, LabelList,
 } from 'recharts';
 import {
-  useChartColors, ChartTooltip, AXIS_TICK, CAT_TICK, formatNumber, type ChartColors,
+  useChartColors, ChartTooltip, ChartEmpty, AXIS_TICK, CAT_TICK, formatNumber, type ChartColors,
 } from './chartRuntime';
 
 export type FunnelTone = 'cyan' | 'gold' | 'emerald' | 'blue' | 'red';
@@ -50,7 +50,7 @@ export const SalesFunnel: React.FC<SalesFunnelProps> = ({
   // бари. За правилом DS показуємо порожній стан замість порожнього чарта.
   const hasData = steps.some((s) => s.value > 0);
   if (steps.length === 0 || !hasData) {
-    return <p className="text-caption text-content-tertiary">{emptyLabel}</p>;
+    return <ChartEmpty label={emptyLabel} hint="Змініть період або дочекайтесь перших лідів." height={chartHeight} />;
   }
 
   const data = steps.map((s) => ({ ...s, fill: c[TONE_KEY[s.tone ?? 'cyan']] }));

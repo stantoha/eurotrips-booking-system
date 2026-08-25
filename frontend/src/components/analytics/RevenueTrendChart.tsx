@@ -8,7 +8,7 @@ import React from 'react';
 import {
   ResponsiveContainer, ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
 } from 'recharts';
-import { useChartColors, ChartTooltip, ChartLegend, AXIS_TICK, CAT_TICK } from './chartRuntime';
+import { useChartColors, ChartTooltip, ChartLegend, ChartEmpty, AXIS_TICK, CAT_TICK } from './chartRuntime';
 
 export interface RevenuePoint {
   label: string;
@@ -34,7 +34,9 @@ export const RevenueTrendChart: React.FC<RevenueTrendChartProps> = ({
   const c = useChartColors();
 
   // Тренд з однієї точки — не тренд
-  if (points.length < 2) return <p className="text-caption text-content-tertiary">{emptyLabel}</p>;
+  if (points.length < 2) {
+    return <ChartEmpty label={emptyLabel} hint="Тренд будується щонайменше з двох місяців." height={height} />;
+  }
 
   return (
     <div className={`et-chart ${className}`.trim()}>

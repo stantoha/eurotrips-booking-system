@@ -137,3 +137,26 @@ export const ChartLoading: React.FC<{ height?: number; label?: string }> = ({
     <p className="et-chart__loadingLbl">{label}</p>
   </div>
 );
+
+// ─── ПОРОЖНІЙ СТАН ───────────────────────────────────────────
+// Порожній графік раніше був крихітним рядком у кутку великої картки.
+// DS: порожній стан — центрований блок з іконкою, який тримає ту саму
+// висоту, що й графік, щоб сітка карток не була рваною.
+
+export const ChartEmpty: React.FC<{ label: string; hint?: string; height?: number }> = ({
+  label, hint, height = 220,
+}) => (
+  <div className="flex flex-col items-center justify-center text-center gap-1.5" style={{ minHeight: height }}>
+    <div
+      className="flex items-center justify-center w-9 h-9 rounded-pill"
+      style={{ background: 'var(--surface-2)', color: 'var(--text-tertiary)' }}
+      aria-hidden="true"
+    >
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+        <path d="M3 3v18h18" /><path d="M18 9l-5 5-3-3-4 4" />
+      </svg>
+    </div>
+    <p className="text-sm text-content-secondary">{label}</p>
+    {hint && <p className="text-caption text-content-tertiary max-w-[34ch]">{hint}</p>}
+  </div>
+);

@@ -11,7 +11,7 @@ import React from 'react';
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell, ReferenceLine, LabelList,
 } from 'recharts';
-import { useChartColors, ChartTooltip, AXIS_TICK, CAT_TICK } from './chartRuntime';
+import { useChartColors, ChartTooltip, ChartEmpty, AXIS_TICK, CAT_TICK } from './chartRuntime';
 
 export interface TourLoadRow {
   id: string;
@@ -50,7 +50,9 @@ export const ToursLoadChart: React.FC<ToursLoadChartProps> = ({
   // Висота росте з кількістю рядів — інакше бари злипаються
   const chartHeight = height ?? Math.max(160, tours.length * 34 + 40);
 
-  if (tours.length === 0) return <p className="text-caption text-content-tertiary">{emptyLabel}</p>;
+  if (tours.length === 0) {
+    return <ChartEmpty label={emptyLabel} hint="Створіть виїзд або розширте період." height={chartHeight} />;
+  }
 
   const data = tours.map((t) => ({ ...t, pct: t.occupancy_pct }));
   const fillOf = (pct: number) => (pct >= fullAt ? c.red : pct >= warnAt ? c.gold : c.cyan);
