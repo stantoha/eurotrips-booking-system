@@ -12,6 +12,8 @@ import {
 } from 'lucide-react';
 import { Tour, TourType, UserRole } from '../../types';
 import { StatusBadge } from '../ui/StatusBadge';
+import { TourPhotoCarousel, type TourPhoto } from './TourPhotoCarousel';
+import { findRouteForTour, parseRoute } from '../../data/tourRoutes';
 
 // ─── TYPES ───────────────────────────────────────────────────
 
@@ -23,10 +25,36 @@ export interface TourCardProps {
   variant?: 'grid' | 'list';
   /** Показувати кнопку "Забронювати" */
   showBookButton?: boolean;
+  /** Фото локацій маршруту. Якщо не задано — виводяться з довідника
+   *  маршрутів як підписані слоти-заглушки (у Tour ще немає поля photos) */
+  photos?: TourPhoto[];
+  /** Вимкнути карусель навіть за наявності маршруту */
+  showPhotos?: boolean;
+  /** Висота каруселі, px */
+  photoHeight?: number;
   /** Callback при кліку на картку або кнопку */
   onBook?: (tourId: string) => void;
   onView?: (tourId: string) => void;
   className?: string;
+}
+
+/**
+ * Слоти-заглушки з назв зупинок маршруту: карусель працює ще до появи
+ * реальних фото, і одразу несе користь — показує, що входить у виїзд.
+ * Кінцеві точки (Львів/Київ) відкидаємо — це місто виїзду, не локація.
+ */
+const MAX_PHOTO_SLOTS = 6;
+
+function routePhotoSlots(tourName: string): TourPhoto[] {
+  const route = findRouteForTour(tourName);
+  if (!route) return [];
+  const stops = parseRoute(route).main;
+  if (stops.length < 3) return [];
+
+  return stops
+    .filter((s) => !s.isEndpoint)
+    .slice(0, MAX_PHOTO_SLOTS)
+    .map((s, i) => ({ caption: s.name, day: i + 1 }));
 }
 
 // ─── HELPERS ─────────────────────────────────────────────────
@@ -73,7 +101,7 @@ const FieldRow: React.FC<{ icon: React.ReactNode; children: React.ReactNode }> =
 // ─── GRID VARIANT ────────────────────────────────────────────
 
 const TourCardGrid: React.FC<TourCardProps> = ({
-  tour, userRole, showBookButton = true, onBook, onView,
+  tour, userRole, showBookButton = true, photos, showPhotos = true, photoHeight = 148, onBook, onView,
 }) => {
   const typeConfig = TOUR_TYPE_CONFIG[tour.tour_type];
   const occupancyPct = Math.round(
@@ -82,22 +110,46 @@ const TourCardGrid: React.FC<TourCardProps> = ({
   const isAlmostFull = tour.available_seats <= 3;
   const isFull = tour.available_seats === 0;
 
+  const slots = React.useMemo(
+    () => (photos ?? (showPhotos ? routePhotoSlots(tour.name) : [])),
+    [photos, showPhotos, tour.name],
+  );
+  const hasPics = slots.length > 0;
+
   return (
     <article
       onClick={() => onView?.(tour.id)}
-      className="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-4 hover:border-slate-300 dark:hover:border-slate-600 hover:shadow-sm transition-all duration-200 cursor-pointer flex flex-col"
+      className={`group bg-surface-1 border border-line rounded-panel overflow-hidden hover:border-line-strong hover:shadow-sm transition-all duration-base cursor-pointer flex flex-col ${hasPics ? '' : 'p-4'}`}
     >
+      {/* Карусель локацій маршруту — статус і код лягають поверх фото */}
+      {hasPics && (
+        <TourPhotoCarousel
+          photos={slots}
+          height={photoHeight}
+          rounded={false}
+          overlay={
+            <>
+              <StatusBadge status={tour.status} domain="tour" size="sm" />
+              <code className="et-carousel__codeOn">{tour.code}</code>
+            </>
+          }
+        />
+      )}
+
+      <div className={hasPics ? 'flex flex-col flex-1 px-4 pt-3.5 pb-4' : 'contents'}>
       {/* Header */}
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="flex-1 min-w-0">
-          <StatusBadge status={tour.status} domain="tour" size="sm" className="mb-2" />
-          <h3 className="font-medium text-slate-900 dark:text-slate-100 text-[15px] leading-snug truncate">
+          {!hasPics && <StatusBadge status={tour.status} domain="tour" size="sm" className="mb-2" />}
+          <h3 className="font-medium text-content-primary text-h4 leading-snug truncate">
             {tour.name}
           </h3>
         </div>
-        <code className="text-[11px] text-slate-400 dark:text-slate-500 font-mono shrink-0 mt-0.5">
-          {tour.code}
-        </code>
+        {!hasPics && (
+          <code className="text-caption text-content-tertiary font-mono shrink-0 mt-0.5">
+            {tour.code}
+          </code>
+        )}
       </div>
 
       {/* Fields grid */}
@@ -193,6 +245,7 @@ const TourCardGrid: React.FC<TourCardProps> = ({
           {!isFull && <ChevronRight size={15} />}
         </button>
       )}
+      </div>
     </article>
   );
 };

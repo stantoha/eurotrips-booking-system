@@ -306,6 +306,87 @@
   }
 }
 
+/* ============================================================
+   TourPhotoCarousel — фон-карусель локацій маршруту
+   Джерело: components/tours/tours.css дизайн-системи.
+   Поза @layer, бо класи збираються динамічно (is-on) і Tailwind
+   вирізав би їх зі своїх шарів.
+   ============================================================ */
+.et-carousel { position:relative; overflow:hidden; background:var(--surface-2); flex:none; }
+.et-carousel--rounded { border-radius:var(--radius-lg); }
+.et-carousel__img, .et-carousel__slot {
+  position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+  opacity:0; transition:opacity var(--dur-slow) var(--ease-standard);
+}
+.et-carousel__img.is-on, .et-carousel__slot.is-on { opacity:1; }
+.et-carousel__slot {
+  display:flex; align-items:center; justify-content:center; text-align:center; padding:12px;
+  font-size:var(--text-caption); color:var(--text-tertiary);
+  background:repeating-linear-gradient(135deg, var(--surface-2) 0 10px, var(--surface-1) 10px 20px);
+}
+.et-carousel__scrim {
+  position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(180deg, rgba(13,15,20,.34) 0%, rgba(13,15,20,0) 38%, rgba(13,15,20,0) 58%, rgba(13,15,20,.46) 100%);
+}
+.et-carousel--empty {
+  display:flex; align-items:center; justify-content:center;
+  border:1px dashed var(--border-2);
+  background:repeating-linear-gradient(135deg, var(--surface-2) 0 10px, var(--surface-1) 10px 20px);
+}
+.et-carousel__ph { font-size:var(--text-caption); color:var(--text-tertiary); }
+.et-carousel__overlay {
+  position:absolute; top:10px; left:10px; right:10px; z-index:2;
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+}
+.et-carousel__caption {
+  position:absolute; left:12px; bottom:10px; z-index:2;
+  display:flex; align-items:baseline; gap:8px;
+  font-size:var(--text-caption); font-weight:var(--weight-semibold);
+  color:#fff; text-shadow:0 1px 6px rgba(13,15,20,.6);
+}
+.et-carousel__caption em { font-style:normal; font-family:var(--font-mono); font-size:var(--text-micro); color:rgba(255,255,255,.72); }
+.et-carousel__dots { position:absolute; right:10px; bottom:10px; z-index:2; display:flex; gap:5px; }
+.et-carousel__dot {
+  width:6px; height:6px; padding:0; border:0; border-radius:var(--radius-pill);
+  background:rgba(255,255,255,.45); cursor:pointer;
+  transition:background var(--dur-fast) var(--ease-standard), width var(--dur-fast) var(--ease-standard);
+}
+.et-carousel__dot:hover { background:rgba(255,255,255,.8); }
+.et-carousel__dot.is-on { width:16px; background:var(--et-cyan); }
+.et-carousel__codeOn {
+  font-family:var(--font-mono); font-size:var(--text-micro); color:#fff;
+  background:rgba(13,15,20,.55); padding:2px 7px; border-radius:var(--radius-pill);
+  backdrop-filter:blur(2px);
+}
+
+/* ============================================================
+   Recharts chrome — спільне для всіх графіків аналітики.
+   Осі/тултипи/легенда стилізовані ТОКЕНАМИ, а не дефолтами Recharts.
+   ============================================================ */
+.et-chart { width:100%; }
+.et-chart .recharts-surface { overflow:visible; }
+.et-chart .recharts-cartesian-axis-line { stroke:var(--border-1); }
+.et-chart .recharts-tooltip-wrapper { outline:none; }
+.et-chart__tip {
+  background:var(--surface-1); border:1px solid var(--border-2);
+  border-radius:var(--radius-tile); box-shadow:var(--shadow-md);
+  padding:8px 10px; min-width:132px;
+}
+.et-chart__tipHead { font-size:var(--text-caption); font-weight:var(--weight-semibold); color:var(--text-primary); margin-bottom:4px; }
+.et-chart__tipRow { display:flex; align-items:center; gap:6px; font-size:var(--text-caption); }
+.et-chart__tipDot { width:8px; height:8px; border-radius:var(--radius-pill); flex:none; }
+.et-chart__tipName { color:var(--text-tertiary); flex:1; }
+.et-chart__tipVal { font-family:var(--font-mono); font-weight:var(--weight-semibold); color:var(--text-primary); }
+.et-chart__legend { display:flex; flex-wrap:wrap; gap:14px; font-size:var(--text-caption); color:var(--text-secondary); padding-left:2px; }
+.et-chart__legendItem { display:flex; align-items:center; gap:6px; }
+.et-chart__loading { display:flex; flex-direction:column; justify-content:flex-end; gap:8px; padding:12px 4px; }
+.et-chart__loadingBars { display:flex; align-items:flex-end; gap:10px; flex:1; }
+.et-chart__loadingBars span {
+  flex:1; border-radius:var(--radius-tile) var(--radius-tile) 0 0;
+  background:var(--surface-2); animation:et-pulse 1.4s var(--ease-standard) infinite;
+}
+.et-chart__loadingLbl { font-size:var(--text-caption); color:var(--text-tertiary); text-align:center; margin:0; }
+
 /* ── Tour Card overlay (сигнатурний патерн eurotrips.ua: 55% блок знизу-зліва) ── */
 .tour-overlay {
   position: absolute;

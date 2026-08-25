@@ -13,6 +13,7 @@ import type {
   AnalyticsPeriodQueryDto,
   ToursLoadQueryDto,
   AgentsTopQueryDto,
+  RevenueTrendQueryDto,
 } from './analytics.schema';
 import type { JwtPayload } from '../auth/auth.types';
 
@@ -29,6 +30,30 @@ const CONFIRMED_OR_BEYOND: BookingStatus[] = [
 const CAN_SEE_COST_ROLES: UserRole[] = [UserRole.admin, UserRole.director, UserRole.accountant];
 
 const DEFAULT_PERIOD_DAYS = 30;
+
+/** Ці статуси не дають обороту — виключаємо з тренду виручки */
+const EXCLUDED_FROM_REVENUE: BookingStatus[] = [
+  BookingStatus.cancelled_client,
+  BookingStatus.cancelled_operator,
+  BookingStatus.refund,
+  BookingStatus.no_show,
+];
+
+const MONTH_LABELS_UA = [
+  'січ', 'лют', 'бер', 'кві', 'тра', 'чер',
+  'лип', 'сер', 'вер', 'жов', 'лис', 'гру',
+];
+
+/** 'YYYY-MM' — ключ місячного бакета (UTC, щоб не з'їжджало через таймзону) */
+function monthKey(d: Date): string {
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+
+/** 'YYYY-MM' → 'лип 26' — коротка мітка осі X */
+function formatMonthLabel(key: string): string {
+  const [year, month] = key.split('-');
+  return `${MONTH_LABELS_UA[Number(month) - 1]} ${year.slice(2)}`;
+}
 
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
@@ -172,6 +197,55 @@ export class AnalyticsService {
           totalCommission: Number(g._sum.agentCommissionAmount ?? 0),
         };
       }),
+    };
+  }
+
+  // ── REVENUE TREND: оборот і к-сть бронювань по місяцях ──────────────────
+  // Живить RevenueTrendChart (area = оборот, line = к-сть бронювань).
+  // Скасовані бронювання в оборот НЕ входять — інакше тренд бреше.
+  async getRevenueTrend(query: RevenueTrendQueryDto) {
+    const to = query.dateTo ?? new Date();
+    const from = query.dateFrom
+      ?? new Date(Date.UTC(to.getUTCFullYear(), to.getUTCMonth() - (query.months - 1), 1));
+
+    const bookings = await prisma.booking.findMany({
+      where: {
+        createdAt: { gte: from, lte: to },
+        status: { notIn: EXCLUDED_FROM_REVENUE },
+      },
+      select: { createdAt: true, totalAmount: true },
+    });
+
+    // Порожні місяці мають бути в ряду, інакше лінія тренду «стрибає» через прогалини
+    const buckets = new Map<string, { revenue: number; bookings: number }>();
+    const cursor = new Date(Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), 1));
+    const last = new Date(Date.UTC(to.getUTCFullYear(), to.getUTCMonth(), 1));
+    while (cursor <= last) {
+      buckets.set(monthKey(cursor), { revenue: 0, bookings: 0 });
+      cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+    }
+
+    for (const b of bookings) {
+      const bucket = buckets.get(monthKey(b.createdAt));
+      if (!bucket) continue;
+      bucket.revenue += Number(b.totalAmount ?? 0);
+      bucket.bookings += 1;
+    }
+
+    const points = [...buckets.entries()].map(([key, v]) => ({
+      month: key,
+      label: formatMonthLabel(key),
+      revenue: round2(v.revenue),
+      bookings: v.bookings,
+    }));
+
+    return {
+      period: { dateFrom: from, dateTo: to },
+      totals: {
+        revenue: round2(points.reduce((s, p) => s + p.revenue, 0)),
+        bookings: points.reduce((s, p) => s + p.bookings, 0),
+      },
+      points,
     };
   }
 }

@@ -72,6 +72,32 @@ export function useToursLoad(period: AnalyticsPeriod = {}, enabled = true) {
   });
 }
 
+export interface RevenueTrendPoint {
+  month: string;
+  label: string;
+  revenue: number;
+  bookings: number;
+}
+
+export interface RevenueTrend {
+  period: { date_from: string | null; date_to: string | null };
+  totals: { revenue: number; bookings: number };
+  points: RevenueTrendPoint[];
+}
+
+/** GET /analytics/revenue-trend — оборот і к-сть бронювань по місяцях */
+export function useRevenueTrend(period: AnalyticsPeriod & { months?: number } = {}, enabled = true) {
+  return useQuery({
+    queryKey: ['analytics', 'revenue-trend', period],
+    queryFn: async () => {
+      const res = await api.get<{ data: RevenueTrend }>('/analytics/revenue-trend', { params: period });
+      return res.data.data;
+    },
+    enabled,
+    staleTime: 60_000,
+  });
+}
+
 export function useAgentsTop(period: AnalyticsPeriod = {}, enabled = true) {
   return useQuery({
     queryKey: ['analytics', 'agents-top', period],
