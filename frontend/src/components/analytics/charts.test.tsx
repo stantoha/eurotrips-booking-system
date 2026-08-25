@@ -44,6 +44,20 @@ describe('порожні стани', () => {
     expect(screen.getByText('Немає даних за обраний період.')).toBeInTheDocument();
   });
 
+  // Знайдено візуально: воронка з самих нулів малювала порожній графік
+  // із віссю 0–4 замість порожнього стану
+  it('SalesFunnel із самими нулями показує порожній стан, а не порожній графік', () => {
+    const { container } = render(
+      <SalesFunnel steps={[
+        { label: 'Ліди', value: 0 },
+        { label: 'Бронювання', value: 0, conversionPct: 0 },
+        { label: 'Підтверджені', value: 0, conversionPct: 0 },
+      ]} />,
+    );
+    expect(screen.getByText('Немає даних за обраний період.')).toBeInTheDocument();
+    expect(container.querySelector('.recharts-wrapper')).toBeNull();
+  });
+
   it('ToursLoadChart без турів повідомляє про це', () => {
     render(<ToursLoadChart tours={[]} />);
     expect(screen.getByText('Немає турів за обраний період.')).toBeInTheDocument();

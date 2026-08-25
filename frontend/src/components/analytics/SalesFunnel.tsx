@@ -46,7 +46,12 @@ export const SalesFunnel: React.FC<SalesFunnelProps> = ({
   const c = useChartColors();
   const chartHeight = height ?? Math.max(140, steps.length * 52 + 24);
 
-  if (steps.length === 0) return <p className="text-caption text-content-tertiary">{emptyLabel}</p>;
+  // Воронка з самих нулів — це не графік, а шум: вісь 0–4 і три невидимі
+  // бари. За правилом DS показуємо порожній стан замість порожнього чарта.
+  const hasData = steps.some((s) => s.value > 0);
+  if (steps.length === 0 || !hasData) {
+    return <p className="text-caption text-content-tertiary">{emptyLabel}</p>;
+  }
 
   const data = steps.map((s) => ({ ...s, fill: c[TONE_KEY[s.tone ?? 'cyan']] }));
   const tooltipTitle = (row: never, label?: string | number) => {
