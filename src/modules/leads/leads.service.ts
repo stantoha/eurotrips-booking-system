@@ -11,6 +11,7 @@ import prisma from '../../shared/database/prisma';
 import { Errors, AppError } from '../../shared/utils/errors';
 import { generateBookingNumber } from '../../shared/utils/booking-number';
 import { calculateCommission } from '../../shared/utils/commission';
+import { claimSeats } from '../../shared/utils/seat-claim';
 import type { JwtPayload } from '../auth/auth.types';
 import type {
   LeadListQueryDto, CreateLeadDto, UpdateLeadDto, ConvertLeadDto,
@@ -185,32 +186,20 @@ export class LeadsService {
     if (lead.convertedToBookingId)   throw new AppError('LEAD_ALREADY_CONVERTED',
       `Лід вже конвертований у бронювання ${lead.convertedToBookingId}`, 409);
 
-    // Перевіряємо тур
-    const tour = await prisma.tour.findFirst({
-      where: {
-        id: dto.tourId,
-        isArchived: false,
-        availableSeats: { gte: dto.personsCount ?? lead.personsCount ?? 1 },
-        status: { in: ['open', 'active', 'almost_full'] },
-      },
-    });
-
-    if (!tour) {
-      const exists = await prisma.tour.findUnique({ where: { id: dto.tourId } });
-      if (!exists) throw Errors.notFound('Тур', dto.tourId);
-      throw Errors.seatsUnavailable();
-    }
-
     const personsCount = dto.personsCount ?? lead.personsCount ?? 1;
     const effectiveAgentId = dto.agentId ?? lead.agentId;
     const balanceAmount    = Number(dto.totalAmount) - Number(dto.depositAmount);
 
     return await prisma.$transaction(async (tx) => {
-      // Знімаємо місця
-      await tx.tour.update({
-        where: { id: dto.tourId },
-        data:  { availableSeats: { decrement: personsCount } },
-      });
+      // BR-01: атомарний claim місць. Раніше перевірка наявності виконувалась
+      // через кореневий `prisma` ПОЗА транзакцією, а всередині був голий
+      // decrement без умови — між перевіркою і записом місця міг забрати хтось
+      // інший, і availableSeats ішов у мінус.
+      await claimSeats(tx, dto.tourId, personsCount);
+
+      // Тур потрібен далі для basePrice (розрахунок комісії)
+      const tour = await tx.tour.findFirst({ where: { id: dto.tourId } });
+      if (!tour) throw Errors.notFound('Тур', dto.tourId);
 
       const bookingNumber = await generateBookingNumber();
 
