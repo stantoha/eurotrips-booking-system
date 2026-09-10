@@ -6,6 +6,7 @@
 
 import prisma from '../../shared/database/prisma';
 import { Errors } from '../../shared/utils/errors';
+import { findExistingTourist } from '../../shared/utils/tourist-identity';
 import type { TouristListQueryDto, CreateTouristDto } from './tourists.schema';
 
 export class TouristsService {
@@ -43,18 +44,34 @@ export class TouristsService {
 
   // ── CREATE ───────────────────────────────────────────────────────────────
   async create(dto: CreateTouristDto) {
-    if (dto.email) {
-      const existing = await prisma.tourist.findUnique({ where: { email: dto.email } });
-      if (existing) throw Errors.conflict('Турист з таким email вже існує');
+    // Каскад ідентичності: паспорт+ДН → email → створити нового.
+    // Раніше перевірка була тільки по email при Tourist.email @unique —
+    // агентське бронювання на двох осіб зі спільною адресою падало з 409.
+    const existing = await findExistingTourist(prisma, {
+      passportNumber: dto.passportNumber,
+      dateOfBirth:    dto.dateOfBirth,
+      email:          dto.email,
+    });
+
+    if (existing) {
+      // Збіг за паспортом і ДН — це справді та сама людина, конфлікт.
+      // Збіг лише за email конфліктом не вважаємо: спільна адреса на
+      // родину — нормальний сценарій, повертаємо наявний профіль.
+      if (dto.passportNumber && dto.dateOfBirth) {
+        throw Errors.conflict('Турист із таким паспортом і датою народження вже існує');
+      }
+      return existing;
     }
 
     return prisma.tourist.create({
       data: {
-        firstName:   dto.firstName,
-        lastName:    dto.lastName,
-        email:       dto.email || undefined,
-        phone:       dto.phone,
-        nationality: dto.nationality,
+        firstName:      dto.firstName,
+        lastName:       dto.lastName,
+        email:          dto.email || undefined,
+        phone:          dto.phone,
+        nationality:    dto.nationality,
+        passportNumber: dto.passportNumber,
+        dateOfBirth:    dto.dateOfBirth ? new Date(dto.dateOfBirth) : undefined,
       },
     });
   }

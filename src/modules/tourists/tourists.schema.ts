@@ -16,6 +16,10 @@ export const CreateTouristSchema = z.object({
   email:       z.string().email('Некоректний email').max(255).optional().or(z.literal('')),
   phone:       z.string().max(30).optional(),
   nationality: z.string().max(100).optional(),
+  /// Ідентичність туриста. Пара паспорт+ДН заміняє email як ключ пошуку
+  /// дублів: у кабінеті агента email часто спільний на всіх учасників.
+  passportNumber: z.string().max(50).optional(),
+  dateOfBirth:    z.string().datetime().optional().or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).optional(),
 });
 
 export type TouristListQueryDto = z.infer<typeof TouristListQuerySchema>;

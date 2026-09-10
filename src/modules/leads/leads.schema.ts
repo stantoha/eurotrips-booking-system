@@ -34,6 +34,9 @@ export const CreateLeadSchema = z.object({
     lastName:   z.string().min(1).max(100),
     email:      z.string().email().optional(),
     phone:      z.string().max(30).optional(),
+    /// Ідентичність: пара паспорт+ДН має пріоритет над email при пошуку дублів
+    passportNumber: z.string().max(50).optional(),
+    dateOfBirth:    z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Формат YYYY-MM-DD').optional(),
   }).optional(),
 
   interestNote: z.string().max(2000).optional(),

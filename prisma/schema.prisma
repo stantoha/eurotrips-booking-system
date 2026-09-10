@@ -328,7 +328,10 @@ model Tourist {
   firstName      String    @map("first_name") @db.VarChar(100)
   lastName       String    @map("last_name") @db.VarChar(100)
   middleName     String?   @map("middle_name") @db.VarChar(100)
-  email          String?   @unique @db.VarChar(255)
+  /// НЕ унікальний: у кабінеті агента email туриста не гарантований — агент
+  /// часто вводить власну адресу на всіх учасників. Плюс у Zoho Contacts
+  /// email теж не unique (міграція ~91 860 записів на етапі 5).
+  email          String?   @db.VarChar(255)
   phone          String?   @db.VarChar(30)
   dateOfBirth    DateTime? @map("date_of_birth") @db.Date
   passportNumber String?   @map("passport_number") @db.VarChar(50)
@@ -360,6 +363,10 @@ model Tourist {
   /// Зворотна сторона User.touristId (self-service акаунт туриста)
   linkedUser            User?
 
+  /// Ідентичність туриста: паспорт + дата народження. Обидва поля nullable,
+  /// а NULL у PostgreSQL не конфліктує — тож туристи без паспорта (типовий
+  /// стан на момент заявки) не заважають одне одному.
+  @@unique([passportNumber, dateOfBirth])
   @@index([email])
   @@index([phone])
   @@index([lastName, firstName])

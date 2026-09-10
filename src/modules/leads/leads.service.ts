@@ -12,6 +12,7 @@ import { Errors, AppError } from '../../shared/utils/errors';
 import { generateBookingNumber } from '../../shared/utils/booking-number';
 import { calculateCommission } from '../../shared/utils/commission';
 import { claimSeats } from '../../shared/utils/seat-claim';
+import { findExistingTourist } from '../../shared/utils/tourist-identity';
 import type { JwtPayload } from '../auth/auth.types';
 import type {
   LeadListQueryDto, CreateLeadDto, UpdateLeadDto, ConvertLeadDto,
@@ -80,22 +81,27 @@ export class LeadsService {
   async createLead(dto: CreateLeadDto, user: JwtPayload) {
     let touristId = dto.touristId;
 
-    // Якщо передали нові дані туриста — створюємо або знаходимо
+    // Якщо передали нові дані туриста — створюємо або знаходимо.
+    // Каскад ідентичності: паспорт+ДН → email → створити нового.
     if (!touristId && dto.tourist) {
-      const existing = dto.tourist.email
-        ? await prisma.tourist.findUnique({ where: { email: dto.tourist.email } })
-        : null;
+      const existing = await findExistingTourist(prisma, {
+        passportNumber: dto.tourist.passportNumber,
+        dateOfBirth:    dto.tourist.dateOfBirth,
+        email:          dto.tourist.email,
+      });
 
       if (existing) {
         touristId = existing.id;
       } else {
         const created = await prisma.tourist.create({
           data: {
-            firstName:     dto.tourist.firstName,
-            lastName:      dto.tourist.lastName,
-            email:         dto.tourist.email,
-            phone:         dto.tourist.phone,
-            sourceChannel: dto.source,
+            firstName:      dto.tourist.firstName,
+            lastName:       dto.tourist.lastName,
+            email:          dto.tourist.email,
+            phone:          dto.tourist.phone,
+            passportNumber: dto.tourist.passportNumber,
+            dateOfBirth:    dto.tourist.dateOfBirth ? new Date(dto.tourist.dateOfBirth) : undefined,
+            sourceChannel:  dto.source,
           },
         });
         touristId = created.id;
