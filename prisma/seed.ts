@@ -573,6 +573,7 @@ async function main() {
     update: {},
     create: {
       bookingId: booking2.id,
+      tourId: tourAdriaticAug.id,
       touristId: touristIvan.id,
       role: 'contact',
     },
@@ -756,6 +757,7 @@ async function main() {
         update: {},
         create: {
           bookingId: booking.id,
+          tourId: tourAdriaticAug.id,
           touristId: tourist.id,
           role: tourist.id === contact.id ? 'contact' : 'participant',
           preferredRoomType: ROOM_TYPES[seq % ROOM_TYPES.length],
@@ -763,7 +765,7 @@ async function main() {
             actualRoomNumber: String(100 + Math.floor(seq / 2)),
             actualRoomType: ROOM_TYPES[seq % ROOM_TYPES.length],
           }),
-          ...(isSeated && { busSeaNumber: seatCursor++ }),
+          ...(isSeated && { busSeatNumber: seatCursor++ }),
         },
       });
     }

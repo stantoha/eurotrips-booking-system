@@ -208,10 +208,18 @@ export class BookingsService {
       });
 
       // 7. Учасники бронювання
+      // tourId денормалізований з бронювання — потрібен констрейнту
+      // @@unique([tourId, busSeatNumber]) (місце унікальне в межах виїзду).
+      // TODO(stage-2): якщо зʼявиться перенесення бронювання на інший виїзд,
+      // разом з Booking.tourId треба оновлювати tourId в УСІХ його учасників,
+      // інакше денормалізація розсинхронізується і констрейнт почне пускати
+      // дублі місць. Наразі такого функціоналу в проєкті немає — перевірено
+      // grep-ом по booking.update: tourId ніде не змінюється після створення.
       if (dto.participants?.length) {
         await tx.bookingTourist.createMany({
           data: dto.participants.map((p) => ({
             bookingId:            booking.id,
+            tourId:               dto.tourId,
             touristId:            p.touristId,
             role:                 p.role,
             roomType:             p.roomType,
@@ -228,6 +236,7 @@ export class BookingsService {
         await tx.bookingTourist.create({
           data: {
             bookingId: booking.id,
+            tourId:    dto.tourId,
             touristId: dto.contactTouristId,
             role:      'contact',
           },

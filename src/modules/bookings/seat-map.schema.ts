@@ -9,7 +9,7 @@ import { RoomType } from '@prisma/client';
 export const PatchPreferencesSchema = z.object({
   preferredRoomType: z.nativeEnum(RoomType).optional(),
   /// NULL знімає побажання по місцю
-  busSeaNumber: z.number().int().min(1).nullable().optional(),
+  busSeatNumber: z.number().int().min(1).nullable().optional(),
   roommatePreference: z.string().max(1000).optional(),
 });
 

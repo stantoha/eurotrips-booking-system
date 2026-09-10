@@ -587,6 +587,9 @@ model Tour {
   cancelPolicy      CancellationPolicy?    @relation(fields: [cancelPolicyId], references: [id])
   guide             Staff?                 @relation("TourGuide", fields: [guideId], references: [id])
   bookings          Booking[]
+  /// Зворотна сторона BookingTourist.tourId (денормалізація для констрейнту
+  /// унікальності місця в автобусі в межах виїзду)
+  seatAssignments   BookingTourist[]
   leads             Lead[]
   hotelBookings     HotelBooking[]
   transports        TransportBooking[]
@@ -747,6 +750,11 @@ model BookingTourist {
   id           String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   bookingId    String    @map("booking_id") @db.Uuid
   touristId    String    @map("tourist_id") @db.Uuid
+  /// Денормалізація Booking.tourId. Потрібна, щоб унікальність місця в
+  /// автобусі виражалась констрейнтом БД: місце унікальне в межах ВИЇЗДУ,
+  /// а не бронювання. Мусить оновлюватись разом із Booking.tourId —
+  /// див. TODO(stage-2) у bookings.service.ts.
+  tourId       String    @map("tour_id") @db.Uuid
   /// contact = контактна особа, participant = учасник
   role         String    @default("participant") @db.VarChar(20)
   /// Рядкова мітка місця (напр. "14A") — для відображення
@@ -761,8 +769,8 @@ model BookingTourist {
   /// Бажаний тип номеру (турист обирає сам). НЕ гарантія — фінальне рішення за продактом
   preferredRoomType RoomType? @map("preferred_room_type")
   /// Номер місця в автобусі (1..total_seats). NULL = немає переваги.
-  /// UNIQUE в межах бронювання — перевірка на рівні БД + SELECT FOR UPDATE у сервісі
-  busSeaNumber      Int?      @map("bus_seat_number")
+  /// UNIQUE в межах ВИЇЗДУ — див. @@unique([tourId, busSeatNumber]) нижче.
+  busSeatNumber     Int?      @map("bus_seat_number")
 
   // ── OPS-01: Фактичне розміщення після затвердження румінгу ───────────────
   /// Фактичний номер кімнати в готелі (проставляє ops після затвердження)
@@ -781,13 +789,17 @@ model BookingTourist {
   // Relations
   booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   tourist Tourist @relation(fields: [touristId], references: [id])
+  tour    Tour    @relation(fields: [tourId], references: [id])
 
   @@unique([bookingId, touristId])
-  /// OPS-03: місце в автобусі унікальне в межах бронювання.
-  /// NULL не порушує UNIQUE в PostgreSQL (кілька туристів можуть мати NULL)
-  @@unique([bookingId, busSeaNumber])
+  /// OPS-03: місце в автобусі унікальне в межах ВИЇЗДУ, не бронювання —
+  /// дві різні родини на одному турі не можуть зайняти те саме місце.
+  /// NULL не порушує UNIQUE в PostgreSQL, тож кілька учасників без
+  /// призначеного місця — норма: місце проставляється пізніше.
+  @@unique([tourId, busSeatNumber])
   @@index([bookingId])
   @@index([touristId])
+  @@index([tourId])
   @@map("booking_tourists")
 }
 

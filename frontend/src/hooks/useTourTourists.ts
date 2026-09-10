@@ -23,7 +23,7 @@ export interface TourTouristRow {
   payment_status: string;
   balance_due: number;
   seat_number: string | null;
-  bus_sea_number: number | null;
+  bus_seat_number: number | null;
   room_type: string | null;
   preferred_room_type: string | null;
   actual_room_number: string | null;

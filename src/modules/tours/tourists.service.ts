@@ -56,7 +56,7 @@ export class TouristsService {
         paymentStatus: bt.booking.paymentStatus,
         balanceDue: balanceDue > 0 ? balanceDue : 0,
         seatNumber: bt.seatNumber,
-        busSeaNumber: bt.busSeaNumber,
+        busSeatNumber: bt.busSeatNumber,
         roomType: bt.roomType,
         preferredRoomType: bt.preferredRoomType,
         actualRoomNumber: bt.actualRoomNumber,

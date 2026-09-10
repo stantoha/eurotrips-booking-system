@@ -226,10 +226,12 @@ export class LeadsService {
         },
       });
 
-      // Базовий учасник — контактний турист
+      // Базовий учасник — контактний турист.
+      // tourId денормалізований з бронювання (@@unique([tourId, busSeatNumber])).
       await tx.bookingTourist.create({
         data: {
           bookingId: booking.id,
+          tourId:    dto.tourId,
           touristId: lead.touristId!,
           role:      'contact',
         },
