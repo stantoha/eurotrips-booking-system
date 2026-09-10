@@ -4,6 +4,17 @@
 
 import { z } from 'zod';
 
+/**
+ * Булеве значення зі змінної оточення.
+ *
+ * НЕ z.coerce.boolean(): вона повертає true для будь-якого непорожнього
+ * рядка, тобто ZOHO_ENABLED=false увімкнуло б інтеграцію.
+ */
+const envBool = z
+  .enum(['true', 'false', '1', '0'])
+  .default('false')
+  .transform((v) => v === 'true' || v === '1');
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   APP_PORT: z.coerce.number().default(3000),
@@ -47,7 +58,51 @@ const envSchema = z.object({
 
   BOOKING_NUMBER_PREFIX: z.string().default('ET'),
   BOOKING_NUMBER_PAD: z.coerce.number().default(5),
-});
+
+  // ── ZOHO CRM ────────────────────────────────────────────────────────────
+  // Раніше ці змінні читались напряму через process.env повз цю схему, а в
+  // .env.example були описані лише чотири з них.
+  //
+  // ZOHO_ENABLED — головний перемикач. Поки false, решта необовʼязкова і
+  // проєкт піднімається без жодної ZOHO-змінної. Щойно true — усі критичні
+  // стають обовʼязковими, і конфіг падає на старті, а не мовчки працює
+  // напівсправно.
+  ZOHO_ENABLED: envBool,
+
+  ZOHO_CLIENT_ID: z.string().min(1).optional(),
+  ZOHO_CLIENT_SECRET: z.string().min(1).optional(),
+  ZOHO_REFRESH_TOKEN: z.string().min(1).optional(),
+  ZOHO_ORG_ID: z.string().min(1).optional(),
+
+  /// Секрет вебхука. Порожнє значення НЕ означає «пропустити перевірку» —
+  /// див. verifyWebhookToken() у shared/utils/webhook-token.ts.
+  ZOHO_WEBHOOK_TOKEN: z.string().min(16, 'Мінімум 16 символів').optional(),
+
+  ZOHO_BASE_URL: z.string().url().default('https://www.zohoapis.com/crm/v8'),
+  ZOHO_AUTH_URL: z.string().url().default('https://accounts.zoho.com'),
+  ZOHO_PAYMENT_MODULE: z.string().default('CustomModule3'),
+  ZOHO_TRAVEL_MODULE: z.string().default('Travel'),
+})
+  .superRefine((cfg, ctx) => {
+    if (!cfg.ZOHO_ENABLED) return;
+
+    const required = [
+      'ZOHO_CLIENT_ID',
+      'ZOHO_CLIENT_SECRET',
+      'ZOHO_REFRESH_TOKEN',
+      'ZOHO_WEBHOOK_TOKEN',
+    ] as const;
+
+    for (const key of required) {
+      if (!cfg[key]) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [key],
+          message: 'Обовʼязкова змінна при ZOHO_ENABLED=true',
+        });
+      }
+    }
+  });
 
 function validateConfig() {
   const result = envSchema.safeParse(process.env);
