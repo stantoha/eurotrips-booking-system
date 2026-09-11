@@ -25,6 +25,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:e2e": "playwright test --config tests/e2e/playwright.config.ts",
     "test:e2e:headed": "playwright test --config tests/e2e/playwright.config.ts --headed",
     "test:e2e:ci": "playwright test --config tests/e2e/playwright.config.ts --reporter=github",
