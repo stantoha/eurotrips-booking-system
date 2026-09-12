@@ -178,7 +178,7 @@ const MyBooking: React.FC = () => {
                             {p.role === 'contact' && <span className="ml-1.5 text-xs text-blue-500">(контакт)</span>}
                           </td>
                           <td className="px-3 py-2.5 text-center">
-                            {p.bus_sea_number ?? p.seat_number ?? <span className="text-slate-300 dark:text-slate-600">—</span>}
+                            {p.bus_seat_number ?? p.seat_number ?? <span className="text-slate-300 dark:text-slate-600">—</span>}
                           </td>
                           <td className="px-3 py-2.5 text-slate-600 dark:text-slate-400 text-xs whitespace-nowrap">
                             {(p.room_type ?? p.preferred_room_type) ?? '—'}

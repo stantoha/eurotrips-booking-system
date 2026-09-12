@@ -36,7 +36,7 @@ export interface MyBookingParticipant {
   seat_number: string | null;
   room_type: string | null;
   preferred_room_type: string | null;
-  bus_sea_number: number | null;
+  bus_seat_number: number | null;
   meal_type: string | null;
   roommate_preference: string | null;
   tourist: {
@@ -87,7 +87,7 @@ export type MyRoomType = 'twin' | 'double' | 'triple' | 'single' | 'no_preferenc
 export interface SetMyPreferencesDto {
   preferredRoomType?: MyRoomType;
   /** Бекенд-поле навмисно з друкарською помилкою (без 't') — seat-map.schema.ts */
-  busSeaNumber?: number | null;
+  busSeatNumber?: number | null;
   roommatePreference?: string;
 }
 

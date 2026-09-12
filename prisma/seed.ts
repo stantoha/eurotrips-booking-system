@@ -9,6 +9,22 @@ import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
+/**
+ * Ідемпотентне створення туриста за email.
+ *
+ * Не upsert: Tourist.email більше не @unique (ідентичність тепер —
+ * паспорт + дата народження), тому email не можна використати як
+ * where-ключ. Для сидів email лишається достатньо стабільним маркером.
+ */
+async function seedTourist(
+  email: string,
+  data: Parameters<typeof prisma.tourist.create>[0]['data'],
+) {
+  const found = await prisma.tourist.findFirst({ where: { email } });
+  if (found) return found;
+  return prisma.tourist.create({ data });
+}
+
 async function main() {
   console.log('🌱 Починаємо seed...');
 
@@ -461,10 +477,7 @@ async function main() {
   });
 
   // ── 7. TOURISTS ───────────────────────────────────────────────────────────
-  const touristMaria = await prisma.tourist.upsert({
-    where: { email: 'm.kovalenko@email.com' },
-    update: {},
-    create: {
+  const touristMaria = await seedTourist('m.kovalenko@email.com', {
       firstName: 'Марія',
       lastName: 'Коваленко',
       email: 'm.kovalenko@email.com',
@@ -472,13 +485,9 @@ async function main() {
       nationality: 'Українець',
       sourceChannel: 'agent',
       isRepeat: false,
-    },
   });
 
-  const touristIvan = await prisma.tourist.upsert({
-    where: { email: 'i.petrenko@email.com' },
-    update: {},
-    create: {
+  const touristIvan = await seedTourist('i.petrenko@email.com', {
       firstName: 'Іван',
       lastName: 'Петренко',
       email: 'i.petrenko@email.com',
@@ -486,7 +495,6 @@ async function main() {
       nationality: 'Українець',
       sourceChannel: 'site',
       isRepeat: false,
-    },
   });
 
   // tourist@eurotrips.ua / test1234 → self-service кабінет туриста (WF5, OPS-03)
@@ -573,6 +581,7 @@ async function main() {
     update: {},
     create: {
       bookingId: booking2.id,
+      tourId: tourAdriaticAug.id,
       touristId: touristIvan.id,
       role: 'contact',
     },
@@ -663,10 +672,7 @@ async function main() {
   for (let i = 0; i < DEMO_NAMES.length; i++) {
     const [firstName, lastName] = DEMO_NAMES[i];
     const idx = String(i + 1).padStart(2, '0');
-    const t = await prisma.tourist.upsert({
-      where: { email: `demo.tourist${idx}@email.com` },
-      update: {},
-      create: {
+    const t = await seedTourist(`demo.tourist${idx}@email.com`, {
         firstName,
         lastName,
         email: `demo.tourist${idx}@email.com`,
@@ -676,7 +682,6 @@ async function main() {
         isRepeat: i % 5 === 0,
         passportNumber: `FN${100000 + i}`,
         dateOfBirth: new Date(1970 + (i % 40), i % 12, (i % 27) + 1),
-      },
     });
     demoTourists.push(t);
   }
@@ -756,6 +761,7 @@ async function main() {
         update: {},
         create: {
           bookingId: booking.id,
+          tourId: tourAdriaticAug.id,
           touristId: tourist.id,
           role: tourist.id === contact.id ? 'contact' : 'participant',
           preferredRoomType: ROOM_TYPES[seq % ROOM_TYPES.length],
@@ -763,7 +769,7 @@ async function main() {
             actualRoomNumber: String(100 + Math.floor(seq / 2)),
             actualRoomType: ROOM_TYPES[seq % ROOM_TYPES.length],
           }),
-          ...(isSeated && { busSeaNumber: seatCursor++ }),
+          ...(isSeated && { busSeatNumber: seatCursor++ }),
         },
       });
     }

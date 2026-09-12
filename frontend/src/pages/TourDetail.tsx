@@ -328,7 +328,7 @@ const TouristsTab: React.FC<{ tourId: string }> = ({ tourId }) => {
                   <td className={`py-2 px-3 whitespace-nowrap font-medium ${t.balance_due > 0 ? 'text-brand-red' : 'text-emerald-600'}`}>
                     {t.balance_due > 0 ? `${t.balance_due.toLocaleString('uk-UA')} €` : '—'}
                   </td>
-                  <td className="py-2 px-3 whitespace-nowrap text-slate-500 dark:text-slate-400">{t.bus_sea_number ?? '—'}</td>
+                  <td className="py-2 px-3 whitespace-nowrap text-slate-500 dark:text-slate-400">{t.bus_seat_number ?? '—'}</td>
                   <td className={`py-2 px-3 whitespace-nowrap ${!t.actual_room_number ? 'text-brand-red' : 'text-slate-500 dark:text-slate-400'}`}>
                     {t.actual_room_number ?? 'немає'}
                   </td>
@@ -1020,7 +1020,7 @@ const SeatingTab: React.FC<{ tourId: string; canEdit: boolean }> = ({ tourId, ca
   if (isLoading) return <p className="text-sm text-slate-400 py-6">Завантаження розсадки…</p>;
   if (isError || !seatMap) return <p className="text-sm text-brand-red py-6">Не вдалося завантажити розсадку.</p>;
 
-  const unassigned = (touristsData?.tourists ?? []).filter((t) => !t.bus_sea_number);
+  const unassigned = (touristsData?.tourists ?? []).filter((t) => !t.bus_seat_number);
 
   return (
     <div>

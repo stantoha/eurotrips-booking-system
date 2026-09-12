@@ -289,35 +289,24 @@ export class ToursService {
 
   // ── UPDATE ────────────────────────────────────────────────────────────────
   async updateTour(id: string, dto: UpdateTourDto, updatedById: string) {
-    const tour = await prisma.tour.findFirst({ where: { id, isArchived: false } });
-    if (!tour) throw Errors.notFound('Тур', id);
+    // BR-01: читання туру, перерахунок місць і запис — в одній транзакції.
+    // Раніше всі три кроки виконувались окремо на кореневому prisma, тому
+    // бронювання, що встигало пройти між читанням і записом, губилося:
+    // availableSeats перезаписувався абсолютним значенням, порахованим до нього.
+    const { updated, previousStatus } = await prisma.$transaction(async (tx) => {
+      const tour = await tx.tour.findFirst({ where: { id, isArchived: false } });
+      if (!tour) throw Errors.notFound('Тур', id);
 
-    // Не можна редагувати завершений або скасований тур
-    if (([TourStatus.completed, TourStatus.cancelled] as TourStatus[]).includes(tour.status)) {
-      throw new AppError(
-        'TOUR_IMMUTABLE',
-        `Тур зі статусом "${tour.status}" не можна редагувати`,
-        422
-      );
-    }
-
-    // Якщо змінюється totalSeats — перераховуємо availableSeats
-    let availableSeatsUpdate: number | undefined;
-    if (dto.totalSeats !== undefined && dto.totalSeats !== tour.totalSeats) {
-      const bookedSeats = tour.totalSeats - tour.availableSeats;
-      if (dto.totalSeats < bookedSeats) {
+      // Не можна редагувати завершений або скасований тур
+      if (([TourStatus.completed, TourStatus.cancelled] as TourStatus[]).includes(tour.status)) {
         throw new AppError(
-          'SEATS_REDUCE_CONFLICT',
-          `Не можна зменшити місця до ${dto.totalSeats}: вже заброньовано ${bookedSeats} місць`,
-          409
+          'TOUR_IMMUTABLE',
+          `Тур зі статусом "${tour.status}" не можна редагувати`,
+          422
         );
       }
-      availableSeatsUpdate = dto.totalSeats - bookedSeats;
-    }
 
-    const updated = await prisma.tour.update({
-      where: { id },
-      data: {
+      const data = {
         ...(dto.name !== undefined && { name: dto.name }),
         ...(dto.product !== undefined && { product: dto.product }),
         ...(dto.direction !== undefined && { direction: dto.direction }),
@@ -334,8 +323,6 @@ export class ToursService {
         ...(dto.depositDeadline !== undefined && { depositDeadline: new Date(dto.depositDeadline) }),
         ...(dto.cancelPolicyId !== undefined && { cancelPolicyId: dto.cancelPolicyId }),
         ...(dto.agentCommissionPct !== undefined && { agentCommissionPct: dto.agentCommissionPct }),
-        ...(dto.totalSeats !== undefined && { totalSeats: dto.totalSeats }),
-        ...(availableSeatsUpdate !== undefined && { availableSeats: availableSeatsUpdate }),
         ...(dto.costPrice !== undefined && { costPrice: dto.costPrice }),
         ...(dto.included !== undefined && { included: dto.included }),
         ...(dto.notIncluded !== undefined && { notIncluded: dto.notIncluded }),
@@ -348,10 +335,49 @@ export class ToursService {
         ...(dto.isFirstExperience !== undefined && { isFirstExperience: dto.isFirstExperience }),
         ...(dto.asanaLink !== undefined && { asanaLink: dto.asanaLink }),
         ...(dto.guideId !== undefined && { guideId: dto.guideId }),
-      },
+      };
+
+      // Місткість не змінюється — звичайний update
+      if (dto.totalSeats === undefined || dto.totalSeats === tour.totalSeats) {
+        const row = await tx.tour.update({ where: { id }, data });
+        return { updated: row, previousStatus: tour.status };
+      }
+
+      // Місткість змінюється. availableSeats зсуваємо на ту саму дельту, що й
+      // totalSeats — кількість уже проданих місць від зміни місткості не
+      // залежить. Абсолютне присвоєння (як було раніше) затирало бронювання,
+      // що встигли пройти між читанням і записом.
+      const delta = dto.totalSeats - tour.totalSeats;
+      const bookedSeats = tour.totalSeats - tour.availableSeats;
+
+      const res = await tx.tour.updateMany({
+        where: {
+          id,
+          isArchived: false,
+          // При зменшенні місткості гарантуємо, що availableSeats не піде в
+          // мінус, навіть якщо хтось забронював після нашого читання.
+          ...(delta < 0 ? { availableSeats: { gte: -delta } } : {}),
+        },
+        data: {
+          ...data,
+          totalSeats: dto.totalSeats,
+          availableSeats: { increment: delta },
+        },
+      });
+
+      if (res.count === 0) {
+        throw new AppError(
+          'SEATS_REDUCE_CONFLICT',
+          `Не можна зменшити місця до ${dto.totalSeats}: вже заброньовано ${bookedSeats} місць`,
+          409
+        );
+      }
+
+      const row = await tx.tour.findUniqueOrThrow({ where: { id } });
+      return { updated: row, previousStatus: tour.status };
     });
 
-    await this.audit(updatedById, 'UPDATE', id, { status: tour.status }, dto);
+    await this.audit(updatedById, 'UPDATE', id, { status: previousStatus }, dto);
 
     return { tour: updated, warnings: this.evaluateMarginRisk(updated) };
   }

@@ -50,21 +50,22 @@ export class SeatMapService {
     const tour = await prisma.tour.findUnique({ where: { id: tourId } });
     if (!tour) throw Errors.notFound('Тур', tourId);
 
-    // Місце в автобусі унікальне в межах усього туру, не одного booking —
-    // тому збираємо зайняті місця по ВСІХ бронюваннях цього туру.
+    // Місце в автобусі унікальне в межах усього виїзду, не одного booking.
+    // tourId тепер лежить на самому учаснику (денормалізація під констрейнт
+    // @@unique([tourId, busSeatNumber])), тож join через booking не потрібен.
     const occupied = await prisma.bookingTourist.findMany({
       where: {
-        busSeaNumber: { not: null },
-        booking: { tourId },
+        busSeatNumber: { not: null },
+        tourId,
       },
       select: {
-        busSeaNumber: true,
+        busSeatNumber: true,
         touristId: true,
         tourist: { select: { firstName: true, lastName: true } },
       },
     });
 
-    const occupiedBySeat = new Map(occupied.map((o) => [o.busSeaNumber as number, o]));
+    const occupiedBySeat = new Map(occupied.map((o) => [o.busSeatNumber as number, o]));
 
     const seats = Array.from({ length: tour.totalSeats }, (_, i) => {
       const seatNumber = i + 1;
@@ -90,41 +91,54 @@ export class SeatMapService {
   // ── PATCH /tours/:id/tourist/:touristId/seat (OPS-17, призначення ops) ───────
   async assignSeatByTourist(tourId: string, touristId: string, seatNumber: number | null) {
     const bookingTourist = await prisma.bookingTourist.findFirst({
-      where: { touristId, booking: { tourId } },
+      where: { touristId, tourId },
     });
     if (!bookingTourist) throw Errors.notFound('Учасник туру', touristId);
 
     if (seatNumber === null) {
       const updated = await prisma.bookingTourist.update({
         where: { id: bookingTourist.id },
-        data: { busSeaNumber: null },
+        data: { busSeatNumber: null },
       });
       return updated;
     }
 
     return prisma.$transaction(async (tx) => {
+      // SELECT ... FOR UPDATE лишається як швидкий шлях: він серіалізує
+      // паралельні призначення на ВЖЕ зайняте місце і дає зрозумілий 409
+      // замість помилки констрейнту. Але він не gap-lock: на ще неіснуючому
+      // рядку (місце вільне) нічого не блокує. Останнє слово — за
+      // @@unique([tourId, busSeatNumber]), який ловить решту гонок.
       await tx.$queryRaw(Prisma.sql`
         SELECT bt.id FROM booking_tourists bt
-        JOIN bookings b ON b.id = bt.booking_id
-        WHERE b.tour_id = ${tourId}::uuid AND bt.bus_seat_number = ${seatNumber}
+        WHERE bt.tour_id = ${tourId}::uuid AND bt.bus_seat_number = ${seatNumber}
         FOR UPDATE
       `);
 
       const conflict = await tx.bookingTourist.findFirst({
         where: {
-          busSeaNumber: seatNumber,
+          busSeatNumber: seatNumber,
           id: { not: bookingTourist.id },
-          booking: { tourId },
+          tourId,
         },
       });
       if (conflict) {
         throw new AppError('SEAT_TAKEN', `Місце ${seatNumber} вже зайняте`, 409);
       }
 
-      return tx.bookingTourist.update({
-        where: { id: bookingTourist.id },
-        data: { busSeaNumber: seatNumber },
-      });
+      try {
+        return await tx.bookingTourist.update({
+          where: { id: bookingTourist.id },
+          data: { busSeatNumber: seatNumber },
+        });
+      } catch (err) {
+        // P2002 = порушення unique. Означає, що місце перехопили між нашою
+        // перевіркою і записом — віддаємо той самий 409, що й при conflict.
+        if ((err as { code?: string }).code === 'P2002') {
+          throw new AppError('SEAT_TAKEN', `Місце ${seatNumber} вже зайняте`, 409);
+        }
+        throw err;
+      }
     });
   }
 
@@ -175,37 +189,45 @@ export class SeatMapService {
       };
     }
 
-    // Унікальність місця в автобусі в межах туру — SELECT ... FOR UPDATE + перевірка
-    if (dto.busSeaNumber !== undefined && dto.busSeaNumber !== null) {
-      const seatNumber = dto.busSeaNumber;
+    // Унікальність місця в межах ВИЇЗДУ: FOR UPDATE як швидкий шлях,
+    // @@unique([tourId, busSeatNumber]) — як остаточна гарантія (див.
+    // коментар у assignSeatByTourist).
+    if (dto.busSeatNumber !== undefined && dto.busSeatNumber !== null) {
+      const seatNumber = dto.busSeatNumber;
 
       const updated = await prisma.$transaction(async (tx) => {
         await tx.$queryRaw(Prisma.sql`
           SELECT bt.id FROM booking_tourists bt
-          JOIN bookings b ON b.id = bt.booking_id
-          WHERE b.tour_id = ${booking.tourId}::uuid AND bt.bus_seat_number = ${seatNumber}
+          WHERE bt.tour_id = ${booking.tourId}::uuid AND bt.bus_seat_number = ${seatNumber}
           FOR UPDATE
         `);
 
         const conflict = await tx.bookingTourist.findFirst({
           where: {
-            busSeaNumber: seatNumber,
+            busSeatNumber: seatNumber,
             id: { not: bookingTourist.id },
-            booking: { tourId: booking.tourId },
+            tourId: booking.tourId,
           },
         });
         if (conflict) {
           throw new AppError('SEAT_TAKEN', `Місце ${seatNumber} вже зайняте`, 409);
         }
 
-        return tx.bookingTourist.update({
-          where: { id: bookingTourist.id },
-          data: {
-            busSeaNumber: seatNumber,
-            ...(dto.preferredRoomType !== undefined && { preferredRoomType: dto.preferredRoomType }),
-            ...(dto.roommatePreference !== undefined && { roommatePreference: dto.roommatePreference }),
-          },
-        });
+        try {
+          return await tx.bookingTourist.update({
+            where: { id: bookingTourist.id },
+            data: {
+              busSeatNumber: seatNumber,
+              ...(dto.preferredRoomType !== undefined && { preferredRoomType: dto.preferredRoomType }),
+              ...(dto.roommatePreference !== undefined && { roommatePreference: dto.roommatePreference }),
+            },
+          });
+        } catch (err) {
+          if ((err as { code?: string }).code === 'P2002') {
+            throw new AppError('SEAT_TAKEN', `Місце ${seatNumber} вже зайняте`, 409);
+          }
+          throw err;
+        }
       });
 
       return { applied: true, data: updated };
@@ -215,7 +237,7 @@ export class SeatMapService {
       where: { id: bookingTourist.id },
       data: {
         ...(dto.preferredRoomType !== undefined && { preferredRoomType: dto.preferredRoomType }),
-        ...(dto.busSeaNumber === null && { busSeaNumber: null }),
+        ...(dto.busSeatNumber === null && { busSeatNumber: null }),
         ...(dto.roommatePreference !== undefined && { roommatePreference: dto.roommatePreference }),
       },
     });

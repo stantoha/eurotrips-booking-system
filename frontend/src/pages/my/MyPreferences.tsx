@@ -60,14 +60,14 @@ const MyPreferences: React.FC = () => {
   useEffect(() => {
     if (myParticipant) {
       setRoomType((myParticipant.preferred_room_type as MyRoomType) ?? 'no_preference');
-      setSeatNumber(myParticipant.bus_sea_number);
+      setSeatNumber(myParticipant.bus_seat_number);
       setRoommate(myParticipant.roommate_preference ?? '');
     }
   }, [myParticipant]);
 
   const handleSeatClick = (seat: number) => {
     const occupiedBySomeoneElse = seatMap?.seats.find((s) => s.seat_number === seat)?.is_occupied
-      && seat !== myParticipant?.bus_sea_number;
+      && seat !== myParticipant?.bus_seat_number;
     if (occupiedBySomeoneElse) return;
     setSeatNumber((prev) => (prev === seat ? null : seat));
   };
@@ -78,7 +78,7 @@ const MyPreferences: React.FC = () => {
     try {
       const result = await mutation.mutateAsync({
         preferredRoomType: roomType,
-        busSeaNumber: seatNumber,
+        busSeatNumber: seatNumber,
         roommatePreference: roommate || undefined,
       });
       if (result.applied) {

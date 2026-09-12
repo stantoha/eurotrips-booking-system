@@ -92,7 +92,7 @@ export class DocumentsService {
         firstName: bt.tourist.firstName,
         passportNumber: bt.tourist.passportNumber,
         dateOfBirth: bt.tourist.dateOfBirth,
-        busSeatNumber: bt.busSeaNumber,
+        busSeatNumber: bt.busSeatNumber,
         phone: bt.tourist.phone,
       }))
     );

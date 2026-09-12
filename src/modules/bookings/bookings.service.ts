@@ -17,6 +17,7 @@ import {
   isTerminalStatus,
 } from '../../shared/utils/booking-status-machine';
 import { calculateCommission } from '../../shared/utils/commission';
+import { claimSeats } from '../../shared/utils/seat-claim';
 import type { JwtPayload } from '../auth/auth.types';
 import type {
   CreateBookingDto,
@@ -149,35 +150,26 @@ export class BookingsService {
   }
 
   // ── CREATE ────────────────────────────────────────────────────────────────
-  // BR-01: транзакція з SELECT + UPDATE available_seats
+  // BR-01: місця списуються атомарним conditional update (див. claimSeats)
   async createBooking(dto: CreateBookingDto, user: JwtPayload) {
     // Якщо агент — перевіряємо чи він може бронювати для вказаного agentId
     const effectiveAgentId = this.resolveAgentId(dto, user);
 
     return await prisma.$transaction(async (tx) => {
-      // 1. Тур існує та має місця (BR-01 — atomic check)
+      // 1. BR-01: атомарний claim місць — перевірка й декремент одним UPDATE.
+      // Раніше тут були findFirst + update. Транзакція від гонки не рятує: на
+      // дефолтному для PostgreSQL READ COMMITTED дві паралельні транзакції
+      // обидві проходять findFirst і обидві віднімають місця → овербукінг.
+      // updateMany кладе умову в WHERE, тож claim або спрацював, або ні.
+      await claimSeats(tx, dto.tourId, dto.personsCount);
+
+      // 2. Тур потрібен далі (basePrice для комісії, cancelPolicy) — читаємо
+      // вже після успішного claim, у тій самій транзакції
       const tour = await tx.tour.findFirst({
-        where: {
-          id: dto.tourId,
-          isArchived: false,
-          availableSeats: { gte: dto.personsCount },
-          status: { in: ['open', 'active', 'almost_full'] },
-        },
+        where: { id: dto.tourId },
         include: { cancelPolicy: true },
       });
-
-      if (!tour) {
-        // Перевіряємо чи тур взагалі існує
-        const exists = await tx.tour.findUnique({ where: { id: dto.tourId } });
-        if (!exists) throw Errors.notFound('Тур', dto.tourId);
-        throw Errors.seatsUnavailable();
-      }
-
-      // 2. Знімаємо місця (BR-01)
-      await tx.tour.update({
-        where: { id: dto.tourId },
-        data:  { availableSeats: { decrement: dto.personsCount } },
-      });
+      if (!tour) throw Errors.notFound('Тур', dto.tourId);
 
       // 3. Генеруємо номер бронювання
       const bookingNumber = await generateBookingNumber();
@@ -216,10 +208,18 @@ export class BookingsService {
       });
 
       // 7. Учасники бронювання
+      // tourId денормалізований з бронювання — потрібен констрейнту
+      // @@unique([tourId, busSeatNumber]) (місце унікальне в межах виїзду).
+      // TODO(stage-2): якщо зʼявиться перенесення бронювання на інший виїзд,
+      // разом з Booking.tourId треба оновлювати tourId в УСІХ його учасників,
+      // інакше денормалізація розсинхронізується і констрейнт почне пускати
+      // дублі місць. Наразі такого функціоналу в проєкті немає — перевірено
+      // grep-ом по booking.update: tourId ніде не змінюється після створення.
       if (dto.participants?.length) {
         await tx.bookingTourist.createMany({
           data: dto.participants.map((p) => ({
             bookingId:            booking.id,
+            tourId:               dto.tourId,
             touristId:            p.touristId,
             role:                 p.role,
             roomType:             p.roomType,
@@ -236,6 +236,7 @@ export class BookingsService {
         await tx.bookingTourist.create({
           data: {
             bookingId: booking.id,
+            tourId:    dto.tourId,
             touristId: dto.contactTouristId,
             role:      'contact',
           },

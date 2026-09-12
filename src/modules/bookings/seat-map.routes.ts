@@ -60,7 +60,7 @@ export async function seatMapRoutes(app: FastifyInstance) {
           type: 'object',
           properties: {
             preferredRoomType: { type: 'string', enum: ['twin', 'double', 'triple', 'single', 'no_preference'] },
-            busSeaNumber: { type: ['number', 'null'] },
+            busSeatNumber: { type: ['number', 'null'] },
             roommatePreference: { type: 'string', maxLength: 1000 },
           },
         },
