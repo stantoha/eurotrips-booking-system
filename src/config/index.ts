@@ -69,14 +69,18 @@ const envSchema = z.object({
   // напівсправно.
   ZOHO_ENABLED: envBool,
 
-  ZOHO_CLIENT_ID: z.string().min(1).optional(),
-  ZOHO_CLIENT_SECRET: z.string().min(1).optional(),
-  ZOHO_REFRESH_TOKEN: z.string().min(1).optional(),
-  ZOHO_ORG_ID: z.string().min(1).optional(),
+  // Базова схема НЕ висуває жодних вимог до цих полів — лише тип.
+  // Будь-який .min() тут означав би, що застосунок можна покласти
+  // залишковим значенням при вимкненій інтеграції. Уся обовʼязковість
+  // і довжина — у superRefine нижче, під гейтом.
+  ZOHO_CLIENT_ID: z.string().optional(),
+  ZOHO_CLIENT_SECRET: z.string().optional(),
+  ZOHO_REFRESH_TOKEN: z.string().optional(),
+  ZOHO_ORG_ID: z.string().optional(),
 
   /// Секрет вебхука. Порожнє значення НЕ означає «пропустити перевірку» —
   /// див. verifyWebhookToken() у shared/utils/webhook-token.ts.
-  ZOHO_WEBHOOK_TOKEN: z.string().min(16, 'Мінімум 16 символів').optional(),
+  ZOHO_WEBHOOK_TOKEN: z.string().optional(),
 
   ZOHO_BASE_URL: z.string().url().default('https://www.zohoapis.com/crm/v8'),
   ZOHO_AUTH_URL: z.string().url().default('https://accounts.zoho.com'),
@@ -84,6 +88,8 @@ const envSchema = z.object({
   ZOHO_TRAVEL_MODULE: z.string().default('Travel'),
 })
   .superRefine((cfg, ctx) => {
+    // Вимкнена інтеграція не має права завалити старт — виходимо мовчки,
+    // хай би що лишалось у ZOHO_*-змінних.
     if (!cfg.ZOHO_ENABLED) return;
 
     const required = [
@@ -102,10 +108,47 @@ const envSchema = z.object({
         });
       }
     }
+
+    // Довжина секрета вебхука — теж під гейтом: закороткий залишок у
+    // змінних не повинен класти застосунок з вимкненою інтеграцією.
+    const MIN_WEBHOOK_TOKEN = 16;
+    if (cfg.ZOHO_WEBHOOK_TOKEN && cfg.ZOHO_WEBHOOK_TOKEN.length < MIN_WEBHOOK_TOKEN) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['ZOHO_WEBHOOK_TOKEN'],
+        message: `Мінімум ${MIN_WEBHOOK_TOKEN} символів при ZOHO_ENABLED=true`,
+      });
+    }
   });
 
+/**
+ * Railway (як і Docker Compose та GitHub Actions) зберігає незадану змінну
+ * як ПОРОЖНІЙ РЯДОК, а не як `undefined`. Для Zod це дві різні речі:
+ * `.optional()` і `.default()` спрацьовують лише на `undefined`, тож `""`
+ * проходить далі й падає на `.min()`, `.url()`, `.email()` чи `z.enum()`.
+ *
+ * Саме це поклало прод на 22 години: `ZOHO_CLIENT_ID=""` не вважався
+ * «не заданим», хоча гейт `ZOHO_ENABLED=false` мав би його пропустити.
+ *
+ * Тому нормалізуємо ДО валідації: порожній (або з самих пробілів) рядок —
+ * це «не задано». Значення з пробілами по краях не обрізаємо: у секретах
+ * вони можуть бути значущими.
+ */
+export function stripEmptyEnv(env: NodeJS.ProcessEnv): Record<string, string | undefined> {
+  const out: Record<string, string | undefined> = {};
+  for (const [key, value] of Object.entries(env)) {
+    out[key] = typeof value === 'string' && value.trim() === '' ? undefined : value;
+  }
+  return out;
+}
+
+/** Чиста функція розбору — щоб конфіг можна було тестувати без process.exit. */
+export function parseEnv(env: NodeJS.ProcessEnv) {
+  return envSchema.safeParse(stripEmptyEnv(env));
+}
+
 function validateConfig() {
-  const result = envSchema.safeParse(process.env);
+  const result = parseEnv(process.env);
   if (!result.success) {
     console.error('❌ Помилка конфігурації:');
     result.error.issues.forEach((issue) => {
